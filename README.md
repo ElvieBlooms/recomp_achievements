@@ -1,7 +1,7 @@
 # Recomp Achievements
 
 ## About
-Recomp Achievements is a Gen1Recomp mod that is inspired by RetroAchievements and tries to bring some of that experience to your games. Instead of connecting to RetroAchievements like an emulator would, it instead stores a list of their achievements locally and allows allows you to earn locally supported achievements using independently written unlock conditions based on Gen1Recomp's events and game state. Those earned achievements are then designed to sync through the save sync feature of G1R so you can keep them between your devices and play sessions.
+Recomp Achievements is a Gen1Recomp mod that is inspired by RetroAchievements and tries to bring some of that experience to your games. Instead of connecting to RetroAchievements like an emulator would, it instead stores a list of their achievements locally and allows you to earn supported achievements using independently written unlock conditions from Gen1Recomp's events and game state. Those earned achievements are then designed to sync through the save sync feature of G1R so you can keep them between your devices and play sessions.
 
 ## Planned Features
  - Bundled reference catalog of published RetroAchievements achievement metadata
