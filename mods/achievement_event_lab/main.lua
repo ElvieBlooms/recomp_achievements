@@ -5,6 +5,8 @@ return function(mod)
             mod.log:info(datatype)
             local message = "Type: " .. datatype
             mod.log:info(message)
+            local gameType = type(ev.game)
+            mod.log:info("Game field type: " .. gameType)
     end)
     mod.log:info("Observer Initialized")
 end
