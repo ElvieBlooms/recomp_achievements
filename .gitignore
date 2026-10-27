@@ -1,0 +1,17 @@
+
+# Pokemon ROM files
+*.gb
+*.gbc
+*.gba
+
+# Game save files
+*.sav
+*.srm
+
+# Private API credentials
+.env
+.env.local
+
+# Local game data
+rom-cache/
+saves/
