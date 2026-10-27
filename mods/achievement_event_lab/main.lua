@@ -7,6 +7,9 @@ return function(mod)
             mod.log:info(message)
             local gameType = type(ev.game)
             mod.log:info("Game field type: " .. gameType)
+                for key, value in pairs(ev) do
+                mod.log:info(key, value)
+                end
     end)
     mod.log:info("Observer Initialized")
 end
