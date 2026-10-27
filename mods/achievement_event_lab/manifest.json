@@ -1,0 +1,9 @@
+{
+"id": "achievement_event_lab",
+"name": "Achievement Event Lab",
+"version": "0.1.0",
+"entry": "main.lua",
+"api": 3,
+"games": ["red"],
+"experimental": true
+}
