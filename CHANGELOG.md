@@ -1,0 +1,23 @@
+# Changelog
+
+## 1.0.0
+
+First public release. Red, Blue and Yellow.
+
+- All 259 official RetroAchievements entries for Red (93), Blue (90) and
+  Yellow (76) are tracked by detectors written for Gen1Recomp. See
+  `docs/COVERAGE.md` for how each one is checked.
+- Official titles, descriptions, points and author credits are shown in the
+  browser and popups.
+- Bonus achievements made for this mod (Pokédex milestones, trainer wins and
+  more). They can be switched off with the BONUS ACHIEVEMENTS option.
+- Existing saves, including cartridge saves imported into Gen1Recomp, are
+  credited for everything provable from the save when they load, with a
+  single "WELCOME BACK" popup.
+- An ACHIEVEMENTS entry in the START menu opens the browser: filters, a
+  detail page, an ABOUT page per achievement, credits on SELECT, and
+  scrolling for long titles.
+- Progress is stored in your save, so it follows Save Sync and rolls back
+  with older saves.
+- Public provider API v1.0.0 lets other mods add their own achievements. See
+  `docs/PROVIDER_API.md`.

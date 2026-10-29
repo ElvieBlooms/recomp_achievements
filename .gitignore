@@ -1,17 +1,6 @@
-
-# Pokemon ROM files
-*.gb
-*.gbc
-*.gba
-
-# Game save files
-*.sav
-*.srm
-
-# Private API credentials
-.env
-.env.local
-
-# Local game data
-rom-cache/
-saves/
+dist/
+*.ra_key
+.ra_key
+recomp_achievements/catalog/links.lua
+tests/e2e/e2e_driver/plan.lua
+tests/e2e/e2e_driver/test.sav

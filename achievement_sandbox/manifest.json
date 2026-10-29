@@ -1,0 +1,19 @@
+{
+  "id": "achievement_sandbox",
+  "name": "Achievement API Sandbox",
+  "version": "0.1.0",
+  "api": 3,
+  "entry": "main.lua",
+  "profile": "content",
+  "game_version": ">=0.3.97",
+  "category": "OTHER",
+  "priority": 100,
+  "dependencies": [],
+  "optional_dependencies": ["recomp_achievements@>=0.1.0"],
+  "conflicts": [],
+  "incompatible": [],
+  "experimental": false,
+  "permissions": [],
+  "games": ["gen1"],
+  "description": "Test provider for Recomp Achievements: registers a few simple community achievements through the public API. Does nothing if Recomp Achievements is not installed."
+}

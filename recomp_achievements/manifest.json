@@ -1,0 +1,21 @@
+{
+  "id": "recomp_achievements",
+  "name": "Recomp Achievements",
+  "version": "1.0.0",
+  "api": 3,
+  "entry": "main.lua",
+  "profile": "content",
+  "game_version": ">=0.3.97",
+  "category": "OTHER",
+  "priority": 50,
+  "dependencies": [],
+  "optional_dependencies": [],
+  "conflicts": [],
+  "incompatible": [],
+  "experimental": false,
+  "permissions": [],
+  "games": [
+    "gen1"
+  ],
+  "description": "The official RetroAchievements lists for Red, Blue and Yellow (259 achievements), checked by this mod as you play and saved in your game, so they follow Save Sync. Browse them from the START menu. Works offline, no account, nothing is sent to RetroAchievements. Achievement text by RetroAchievements and its authors; not affiliated with RetroAchievements. Other mods can add their own achievements through its API."
+}

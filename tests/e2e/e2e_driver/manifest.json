@@ -1,0 +1,14 @@
+{
+  "id": "e2e_driver",
+  "name": "E2E Driver (test only)",
+  "version": "0.0.1",
+  "api": 3,
+  "entry": "main.lua",
+  "profile": "content",
+  "category": "OTHER",
+  "priority": 999,
+  "optional_dependencies": ["recomp_achievements", "achievement_sandbox"],
+  "permissions": ["engine_internals"],
+  "games": ["gen1"],
+  "description": "Test-only driver: runs plan.lua steps against the live game. Never ship this."
+}
