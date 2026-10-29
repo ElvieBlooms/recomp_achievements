@@ -1,4 +1,4 @@
-# Recomp Achievements — Provider API (v1.0.0)
+# Recomp Achievements — Provider API (v1.1.0)
 
 How another Gen1Recomp mod adds its own achievements, reports progress,
 and listens for unlocks. `achievement_sandbox/main.lua` is a complete,
@@ -30,8 +30,8 @@ return function(mod)
 ```
 
 `ach.supports(name)` answers for these capabilities: `register`,
-`register_many`, `unlock`, `progress`, `query`, `events`, `games_filter`
-and `hidden`.
+`register_many`, `unlock`, `progress`, `query`, `events`, `games_filter`,
+`hidden`, and since 1.1.0 `official_totals` and `leaderboard_card`.
 
 ## 3. Connect and register
 
@@ -104,6 +104,12 @@ Anyone can read any achievement:
 `ach.isUnlocked("core:champion")`, `ach.get(key)`,
 `ach.list({ source = "core", unlocked = true })`, `ach.totals()` and
 `ach.currentGame()`.
+
+Since 1.1.0 (check with `ach.supports("leaderboard_card")`):
+`ach.officialTotals()` returns `{ earned, total, points, maxPoints }` for
+the official RetroAchievements list only, and `ach.leaderboardCard()`
+returns what the SELECT page shows: `{ game, name, points, earned, total,
+maxPoints, saveId, code }`, or nil before a save is loaded.
 
 ## 6. What happens to your records
 

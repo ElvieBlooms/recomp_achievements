@@ -611,4 +611,21 @@ function Engine:totals(filterSource)
   return t
 end
 
+-- Official RetroAchievements entries only (no bonus, no other mods):
+-- the numbers the public leaderboard compares.
+function Engine:officialTotals()
+  local t = { earned = 0, total = 0, points = 0, maxPoints = 0 }
+  for _, row in ipairs(self:rows()) do
+    if row.source == "core" and row.official and row.available then
+      t.total = t.total + 1
+      t.maxPoints = t.maxPoints + (row.points or 0)
+      if row.unlocked then
+        t.earned = t.earned + 1
+        t.points = t.points + (row.points or 0)
+      end
+    end
+  end
+  return t
+end
+
 return Engine

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recomp Achievements Leaderboard</title>
+<meta name="description" content="Player totals for the Recomp Achievements mod for Gen1Recomp.">
+<style>
+  :root {
+    --bg: #e9efd8; --panel: #f7f9ef; --ink: #20281a; --muted: #5d6852;
+    --line: #c5cfb0; --accent: #3d6b2a; --red: #c0392b; --blue: #2c5aa0; --yellow: #c79a00;
+    --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151a12; --panel: #1e251a; --ink: #e3ead6; --muted: #9aa58c;
+      --line: #34402c; --accent: #9ccc65; --red: #ef6b5b; --blue: #6f9be0; --yellow: #f2c94c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 32px 16px 48px; }
+  h1 { font: 700 1.6rem/1.2 var(--mono); letter-spacing: .02em; margin: 0 0 6px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+  .tabs { display: flex; gap: 6px; flex: 1; }
+  .tab { font: 600 .95rem var(--mono); padding: 8px 14px; border-radius: 8px; cursor: pointer;
+         border: 2px solid var(--line); background: var(--panel); color: var(--ink); }
+  .tab[aria-selected="true"] { border-color: var(--game); color: var(--game); }
+  .submit { font-weight: 600; text-decoration: none; color: var(--bg); background: var(--accent);
+            padding: 9px 14px; border-radius: 8px; white-space: nowrap; }
+  .panel { background: var(--panel); border: 2px solid var(--line); border-radius: 12px; overflow: hidden; }
+  .meta { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px;
+          border-bottom: 2px solid var(--line); color: var(--muted); font-size: .9rem; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px 16px; text-align: left; }
+  th { font: 600 .75rem var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  tbody tr + tr td { border-top: 1px solid var(--line); }
+  td.rank { width: 3.5em; font-family: var(--mono); color: var(--muted); }
+  td.name { font: 700 1rem var(--mono); overflow-wrap: anywhere; }
+  td.num { text-align: right; font-family: var(--mono); white-space: nowrap; }
+  th.num { text-align: right; }
+  .meter { height: 4px; background: var(--line); border-radius: 2px; margin-top: 4px; }
+  .meter i { display: block; height: 100%; background: var(--game); border-radius: 2px; }
+  tr.top td.rank { color: var(--game); font-weight: 700; }
+  .empty { padding: 32px 16px; text-align: center; color: var(--muted); }
+  footer { color: var(--muted); font-size: .85rem; margin-top: 24px; }
+  footer p { margin: 0 0 8px; }
+  a { color: var(--accent); }
+  @media (max-width: 520px) {
+    .hide-s { display: none; }
+    th, td { padding: 9px 10px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>RECOMP ACHIEVEMENTS</h1>
+  <p class="sub">Leaderboard for the official RetroAchievements lists, played in Gen1Recomp.</p>
+
+  <div class="bar">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <a class="submit" id="submit" href="#">Submit a score</a>
+  </div>
+
+  <section class="panel" id="board" aria-live="polite">
+    <div class="empty">Loading…</div>
+  </section>
+
+  <footer>
+    <p>To submit: in the game open <b>START &gt; ACHIEVEMENTS</b>, press <b>SELECT</b>, and copy the card into the form. Only official list points count; bonus and mod achievements don't.</p>
+    <p>Scores are self-reported (honor system). The check code only catches typos.</p>
+    <p>Not affiliated with or connected to RetroAchievements. Achievement lists are by RetroAchievements and their authors.</p>
+  </footer>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  var GAMES = [
+    { id: "red", label: "Red", color: "var(--red)" },
+    { id: "blue", label: "Blue", color: "var(--blue)" },
+    { id: "yellow", label: "Yellow", color: "var(--yellow)" }
+  ];
+  // Fallback when the page isn't served from <owner>.github.io/<repo>/.
+  var DEFAULT_REPO = "ElvieBlooms/recomp-achievements";
+
+  function repo() {
+    var host = location.hostname.match(/^([^.]+)\.github\.io$/i);
+    var path = location.pathname.split("/").filter(Boolean)[0];
+    if (host && path) return host[1] + "/" + path;
+    return DEFAULT_REPO;
+  }
+  document.getElementById("submit").href =
+    "https://github.com/" + repo() + "/issues/new?template=score.yml";
+
+  var board = null;
+  var current = "red";
+  try { current = localStorage.getItem("ra-board-game") || current; } catch (e) {}
+  var wanted = (location.hash || "").slice(1);
+  if (GAMES.some(function (g) { return g.id === wanted; })) current = wanted;
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = String(text);
+    return n;
+  }
+
+  function drawTabs() {
+    var tabs = document.getElementById("tabs");
+    tabs.textContent = "";
+    GAMES.forEach(function (g) {
+      var b = el("button", "tab", g.label);
+      b.type = "button";
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", g.id === current ? "true" : "false");
+      b.style.setProperty("--game", g.color);
+      b.onclick = function () {
+        current = g.id;
+        try { localStorage.setItem("ra-board-game", current); } catch (e) {}
+        history.replaceState(null, "", "#" + current);
+        drawTabs(); drawBoard();
+      };
+      tabs.appendChild(b);
+    });
+  }
+
+  function drawBoard() {
+    var host = document.getElementById("board");
+    var game = GAMES.filter(function (g) { return g.id === current; })[0];
+    host.style.setProperty("--game", game.color);
+    host.textContent = "";
+    if (!board) { host.appendChild(el("div", "empty", "Couldn't load the leaderboard.")); return; }
+    var slot = (board.games || {})[current] || { entries: [] };
+    var entries = (slot.entries || []).slice();
+
+    var meta = el("div", "meta");
+    meta.appendChild(el("span", null, (slot.title || game.label) + " · " +
+      entries.length + (entries.length === 1 ? " trainer" : " trainers")));
+    meta.appendChild(el("span", null, (slot.maxPoints || "?") + " points possible"));
+    host.appendChild(meta);
+
+    if (!entries.length) {
+      host.appendChild(el("div", "empty", "No scores yet. Be the first!"));
+      return;
+    }
+    var table = el("table");
+    var head = el("tr");
+    [["#", ""], ["Trainer", ""], ["Points", "num"], ["Earned", "num hide-s"], ["Date", "hide-s"]]
+      .forEach(function (h) { head.appendChild(el("th", h[1], h[0])); });
+    var thead = el("thead"); thead.appendChild(head); table.appendChild(thead);
+    var tbody = el("tbody");
+    var place = 0, last = null;
+    entries.forEach(function (e, i) {
+      if (last === null || e.points !== last) { place = i + 1; last = e.points; }
+      var tr = el("tr", place <= 3 ? "top" : "");
+      tr.appendChild(el("td", "rank", place));
+      tr.appendChild(el("td", "name", e.name));
+      var pts = el("td", "num", e.points);
+      var meter = el("div", "meter"), fill = el("i");
+      fill.style.width = Math.min(100, 100 * e.points / (slot.maxPoints || 1)) + "%";
+      meter.appendChild(fill); pts.appendChild(meter);
+      tr.appendChild(pts);
+      tr.appendChild(el("td", "num hide-s", e.earned + "/" + (slot.total || "?")));
+      tr.appendChild(el("td", "hide-s", String(e.date || "").slice(0, 10)));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    host.appendChild(table);
+  }
+
+  drawTabs();
+  fetch("leaderboard.json", { cache: "no-store" })
+    .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(function (data) { board = data; drawBoard(); })
+    .catch(function () { board = null; drawBoard(); });
+})();
+</script>
+</body>
+</html>

@@ -20,7 +20,7 @@ affiliated with RetroAchievements. See [NOTICE.md](NOTICE.md).
 
 ## Install
 
-1. Download `recomp_achievements-1.0.0.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-1.1.0.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
 2. Start Red, Blue or Yellow (Gen1Recomp 0.3.97 or newer).
 3. Open the START menu and choose **ACHIEVEMENTS**.
@@ -35,7 +35,7 @@ Save Sync carries your progress but doesn't install mods.
 | UP / DOWN | move |
 | LEFT / RIGHT | change filter: ALL, EARNED, MISSING, IN PROGRESS, OFFICIAL, BONUS, FROM MODS, ARCHIVED |
 | A | details (RIGHT on the details shows how this mod checks it) |
-| SELECT | credits |
+| SELECT | leaderboard card (RIGHT for credits) |
 | B / START | back |
 
 A filled square means earned, a hollow square means locked, and a slashed
@@ -59,6 +59,27 @@ Options are in the Mods manager:
   description, because Gen1Recomp can't check the original wording exactly
   (for example "unmissable" items). Each one says on its in-game ABOUT page
   exactly what counts. The full list is in [docs/COVERAGE.md](docs/COVERAGE.md).
+
+## Leaderboard
+
+There's an optional public leaderboard at
+**https://elvieblooms.github.io/recomp-achievements**. The mod never goes
+online; you copy a short card into a form yourself:
+
+1. In the game, open **START > ACHIEVEMENTS** and press **SELECT**.
+2. On the website, press **Submit a score**. It opens a GitHub issue form
+   (you need a GitHub account).
+3. Copy the game, trainer name, points, achievements earned, save ID and
+   check code from the card. Submit.
+
+A bot checks the entry within a minute or two, replies on the issue and
+updates the page. To update your score later, edit the same issue with
+the new card.
+
+Only the official RetroAchievements list counts; bonus achievements and
+achievements from other mods don't. The check code only catches typos, so
+the board is an honor system. It has nothing to do with RetroAchievements
+or its leaderboards.
 
 ## For mod authors
 
@@ -91,8 +112,11 @@ recomp_achievements/   the mod (this folder is what ships)
   catalog/               RA metadata (generated)
   ui/                    browser, popups, text helpers
 achievement_sandbox/   example provider mod (not part of the release)
-docs/                  PROVIDER_API.md, COVERAGE.md (generated)
-tools/                 fetch_ra_catalog.py, gen_coverage.lua, build_release.sh
+docs/                  PROVIDER_API.md, COVERAGE.md (generated), and the
+                       leaderboard website (index.html, leaderboard.json)
+.github/               leaderboard issue form and the Action that reads it
+tools/                 fetch_ra_catalog.py, gen_coverage.lua, build_release.sh,
+                       leaderboard_ingest.py
 tests/                 headless tests in the real Gen1Recomp mod loader
 tests/e2e/             runs the actual game under Xvfb with a test driver
 ```
@@ -112,6 +136,10 @@ ENGINE=<unzipped gen1recomp-0.3.97.love> GAMEDATA=<Gen1Recomp data folder> \
 Xvfb) on a copy of your data folder with a test-only driver mod. The driver
 can load saves, press buttons and take screenshots. Never ship
 `tests/e2e/e2e_driver`.
+
+`python3 tests/test_leaderboard.py` tests the leaderboard bot. Setting
+the leaderboard up on a fork is described in
+[docs/LEADERBOARD.md](docs/LEADERBOARD.md).
 
 `tools/build_release.sh` runs the tests, regenerates `docs/COVERAGE.md`
 and writes `dist/recomp_achievements-<version>.zip`.

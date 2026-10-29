@@ -1,0 +1,63 @@
+name: Submit a leaderboard score
+description: Put your Recomp Achievements score on the leaderboard page.
+title: "[Score] "
+labels: ["score"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        In the game, open **START > ACHIEVEMENTS** and press **SELECT** to see your leaderboard card. Copy each value exactly as shown.
+
+        Only the official RetroAchievements list counts (no bonus or mod achievements). The board is an honor system and is not connected to RetroAchievements.
+
+        To update your score later, edit this issue with the new values.
+  - type: dropdown
+    id: game
+    attributes:
+      label: Game
+      options:
+        - Red
+        - Blue
+        - Yellow
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Trainer name
+      description: As shown after TRAINER on the card.
+      placeholder: RED
+    validations:
+      required: true
+  - type: input
+    id: points
+    attributes:
+      label: Points
+      description: The first number after POINTS (e.g. 120 from 120/745).
+      placeholder: "120"
+    validations:
+      required: true
+  - type: input
+    id: earned
+    attributes:
+      label: Achievements earned
+      description: The first number after EARNED (e.g. 20 from 20/93).
+      placeholder: "20"
+    validations:
+      required: true
+  - type: input
+    id: save_id
+    attributes:
+      label: Save ID
+      description: 6 characters after SAVE ID.
+      placeholder: 7KQ2MX
+    validations:
+      required: true
+  - type: input
+    id: code
+    attributes:
+      label: Check code
+      description: The XXXX-XXXX code after CHECK.
+      placeholder: ABCD-1234
+    validations:
+      required: true

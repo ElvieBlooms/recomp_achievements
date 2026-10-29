@@ -39,6 +39,32 @@ Browser.ABOUT = {
   "Not affiliated with RetroAchievements.",
 }
 
+-- Where players submit the leaderboard card.  Change this if the repo
+-- lives somewhere else.  Avoid "_" in the name: the Gen 1 font has no
+-- underscore, so it would show as a space.
+Browser.BOARD_URL = "elvieblooms.github.io/recomp-achievements"
+
+-- Lines of the leaderboard card page (pure, so tests can check it).
+function Browser.cardLines(card, url)
+  if not card then return { "LEADERBOARD", "", "Load a save first." } end
+  local lines = {
+    "LEADERBOARD CARD",
+    "",
+    "GAME    " .. card.game:upper(),
+    "TRAINER " .. tostring(card.name),
+    ("POINTS  %d/%d"):format(card.points, card.maxPoints),
+    ("EARNED  %d/%d"):format(card.earned, card.total),
+    "SAVE ID " .. card.saveId,
+    "CHECK   " .. card.code,
+    "",
+    "Official RA list",
+    "only. Enter at:",
+  }
+  url = url or Browser.BOARD_URL
+  for i = 1, #url, 18 do lines[#lines + 1] = url:sub(i, i + 17) end
+  return lines
+end
+
 -- Slide a long title left and back so the selected row can be read in
 -- full: hold one second, scroll at 4 chars/s, hold, return.
 function Browser.marquee(Text, title, width, t)
@@ -133,7 +159,7 @@ end
 -- The screen object.  Gen 1's state stack calls update(dt) and draw();
 -- popping ourselves (game.stack:pop()) closes the screen.
 -- ------------------------------------------------------------------
-function Browser.newScreen(mod, engine, util, Text, game)
+function Browser.newScreen(mod, engine, util, Text, game, Share)
   local Font = mod.ui.Font
   local Theme = mod.ui.Theme
   -- isOpaque: the state stack stops drawing the world under us
@@ -148,7 +174,7 @@ function Browser.newScreen(mod, engine, util, Text, game)
   local rows, list = {}, {}
   local detail = nil -- the row being inspected, or nil for the list
   local page = 1     -- detail page: 1 = summary, 2 = about this rule
-  local about = false -- the SELECT credits page
+  local about = false -- SELECT pages: 1 = leaderboard card, 2 = credits
   local clock = 0     -- drives the selected row's title scroll
   local reveal = mod.options:get("showHidden") == true
 
@@ -166,10 +192,12 @@ function Browser.newScreen(mod, engine, util, Text, game)
     local input = game.input
     if not input then return end
     if about then
-      if input:wasPressed("b") or input:wasPressed("a") or input:wasPressed("select") then about = false end
+      if input:wasPressed("b") or input:wasPressed("a") or input:wasPressed("select") then about = false
+      elseif input:wasPressed("right") then about = 2
+      elseif input:wasPressed("left") then about = 1 end
       return
     end
-    if input:wasPressed("select") then about = true return end
+    if input:wasPressed("select") then about = Share and 1 or 2 return end
     if detail then
       if input:wasPressed("b") or input:wasPressed("a") then detail, page = nil, 1
       elseif input:wasPressed("right") then page = 2
@@ -328,11 +356,24 @@ function Browser.newScreen(mod, engine, util, Text, game)
     local y = 1
     for _, text in ipairs(Browser.ABOUT) do
       for _, line in ipairs(Text.wrap(text, 18)) do
-        if y > 16 then return end
+        if y > 15 then break end
         Text.draw(Font, line, 1, y); y = y + 1
       end
       y = y + 1
     end
+    if Share then Text.arrow("left", 18, 16) end
+  end
+
+  -- SELECT page 1: what to type into the leaderboard issue form.
+  local function drawCard()
+    Font.drawBox(0, 0, 20, 18)
+    local ok, card = pcall(Share.card, engine)
+    if not ok then card = nil end
+    for i, line in ipairs(Browser.cardLines(card)) do
+      if i > 15 then break end
+      Text.draw(Font, line, 1, i)
+    end
+    Text.arrow("right", 18, 16)
   end
 
   local function drawDetail(row)
@@ -342,7 +383,8 @@ function Browser.newScreen(mod, engine, util, Text, game)
 
   function self:draw()
     clear()
-    if about then drawCredits()
+    if about == 1 then drawCard()
+    elseif about then drawCredits()
     elseif detail then drawDetail(detail)
     else drawList() end
     love.graphics.setColor(1, 1, 1, 1)
@@ -354,9 +396,9 @@ end
 -- ------------------------------------------------------------------
 -- Wiring: register the screen and add the START row.
 -- ------------------------------------------------------------------
-function Browser.install(mod, engine, util, Text)
+function Browser.install(mod, engine, util, Text, Share)
   mod.content.screens:register(Browser.SCREEN_ID, {
-    new = function(game) return Browser.newScreen(mod, engine, util, Text, game) end,
+    new = function(game) return Browser.newScreen(mod, engine, util, Text, game, Share) end,
   })
 
   mod.hooks:wrap("ui.start_menu.items", function(nextFn, game, items)

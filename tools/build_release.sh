@@ -14,6 +14,7 @@ echo "== Recomp Achievements $VERSION"
 echo "== tests"
 PROJECT="$ROOT" luajit tests/run.lua | tail -1
 PROJECT="$ROOT" luajit tests/official.lua | tail -1
+python3 tests/test_leaderboard.py 2>&1 | tail -1
 
 echo "== coverage"
 luajit tools/gen_coverage.lua "$ROOT"

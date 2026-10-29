@@ -25,11 +25,11 @@
 
 local Api = {}
 
-Api.VERSION = "1.0.0"
+Api.VERSION = "1.1.0"
 Api.CAPABILITIES = {
   register = true, register_many = true, unlock = true,
   progress = true, query = true, events = true, games_filter = true,
-  hidden = true,
+  hidden = true, official_totals = true, leaderboard_card = true,
 }
 
 -- Writes per provider per second before calls start returning
@@ -51,7 +51,7 @@ local function method(owner, fn)
   end
 end
 
-function Api.install(mod, engine, util)
+function Api.install(mod, engine, util, Share)
   local registry, ledger = engine.registry, engine.ledger
   local exports = mod.exports
   local handles = {}
@@ -218,6 +218,20 @@ function Api.install(mod, engine, util)
 
   exports.totals = method(exports, function(source)
     return util.plain(engine:totals(source))
+  end)
+
+  -- Official RetroAchievements entries only: { earned, total, points, maxPoints }.
+  exports.officialTotals = method(exports, function()
+    return util.plain(engine:officialTotals())
+  end)
+
+  -- The leaderboard card shown on the browser's SELECT page, or nil
+  -- before a save is loaded: { game, name, points, earned, total,
+  -- maxPoints, saveId, code }.
+  exports.leaderboardCard = method(exports, function()
+    if not Share then return nil end
+    local card = Share.card(engine)
+    return card and util.plain(card) or nil
   end)
 
   -- Which game the active save is, or nil before a save is loaded.

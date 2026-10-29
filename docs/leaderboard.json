@@ -1,0 +1,24 @@
+{
+ "version": 1,
+ "updated": null,
+ "games": {
+  "red": {
+   "title": "Pokemon Red",
+   "maxPoints": 745,
+   "total": 93,
+   "entries": []
+  },
+  "blue": {
+   "title": "Pokemon Blue",
+   "maxPoints": 678,
+   "total": 90,
+   "entries": []
+  },
+  "yellow": {
+   "title": "Pokemon Yellow",
+   "maxPoints": 458,
+   "total": 76,
+   "entries": []
+  }
+ }
+}

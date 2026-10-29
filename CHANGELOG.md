@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+- Leaderboard card: press SELECT in the achievements browser to see your
+  trainer name, official points, a save ID and a check code. Enter them in
+  the project's GitHub issue form to appear on the leaderboard page. The
+  mod itself still never goes online.
+- Credits moved to the second SELECT page (press RIGHT).
+- API 1.1.0 adds `officialTotals()` and `leaderboardCard()`.
+
 ## 1.0.0
 
 First public release. Red, Blue and Yellow.

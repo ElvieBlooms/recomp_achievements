@@ -51,6 +51,7 @@ return function(mod)
   local Text     = import("ui/text.lua")
   local Toast    = import("ui/toast.lua")
   local Browser  = import("ui/browser.lua")
+  local Share    = import("ui/share.lua")
 
   -- ----------------------------------------------------------------
   -- Player options.  These live in mod.options (install-wide), NOT in
@@ -110,7 +111,7 @@ return function(mod)
   -- Public API.  Whatever sits in mod.exports when this function returns
   -- is what other mods get from mod.find("recomp_achievements").exports.
   -- ----------------------------------------------------------------
-  Api.install(mod, engine, util)
+  Api.install(mod, engine, util, Share)
 
   -- ----------------------------------------------------------------
   -- Engine lifecycle.  See core/engine.lua for what each one does.
@@ -120,6 +121,6 @@ return function(mod)
   -- ----------------------------------------------------------------
   -- UI: the START menu row, the browser screen and toasts.
   -- ----------------------------------------------------------------
-  Browser.install(mod, engine, util, Text)
+  Browser.install(mod, engine, util, Text, Share)
   toast:install()
 end

@@ -46,7 +46,7 @@ test("both mods load in dependency order with no errors", function()
   check(env.ok, "loader:load returned false: " .. table.concat(env.loader.errors, "; "))
   eq(env.loader.order[1], "recomp_achievements", "framework loads first")
   eq(env.loader.order[2], "achievement_sandbox", "provider loads second")
-  eq(ach(env).apiVersion, "1.0.0", "api version")
+  eq(ach(env).apiVersion, "1.1.0", "api version")
   check(ach(env).supports("progress"), "supports progress")
   check(not ach(env).supports("leaderboards"), "unknown capability is false")
 end)
@@ -390,7 +390,7 @@ test("browser: open from START, filter, details, hidden, close", function()
   check(env.game.stack:top() == nil, "closed")
 end)
 
-test("browser: long titles scroll on the selected row; SELECT shows credits", function()
+test("browser: long titles scroll on the selected row; SELECT then RIGHT shows credits", function()
   local Browser = dofile(H.PROJECT .. "/recomp_achievements/ui/browser.lua")
   local Text = dofile(H.PROJECT .. "/recomp_achievements/ui/text.lua")
   eq(Browser.marquee(Text, "Short", 16, 99), "Short", "short titles never move")
@@ -402,7 +402,7 @@ test("browser: long titles scroll on the selected row; SELECT shows credits", fu
   for _, item in ipairs(env:startMenu()) do
     if item.label == "ACHIEVEMENTS" then item.onSelect() end
   end
-  env:press("select"); env:draw()
+  env:press("select"); env:press("right"); env:draw()
   check(H.screenHas("RetroAchievements"), "credits page")
   check(H.screenHas("Nothing"), "local-only statement")
   env:press("b"); env:draw()
@@ -459,6 +459,83 @@ test("catalog files are optional: without them rules show local text", function(
   check(row.unlocked, "still earned")
   eq(row.title, "Boulderbadge", "local fallback title")
   eq(row.official, false, "not shown as official without the catalog")
+end)
+
+-- ---------------------------------------------------------- leaderboard
+local function loadShare()
+  return assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/share.lua"))()
+end
+
+test("check code matches tools/leaderboard_ingest.py", function()
+  local Share = loadShare()
+  -- values printed by tools/leaderboard_ingest.py check_code()
+  eq(Share.code({ game = "red", name = "ASH", points = 120, earned = 20, saveId = "ABC123" }), "DHC0-HH32", "red")
+  eq(Share.code({ game = "yellow", name = "red ", points = 0, earned = 0, saveId = "ZZZZZZ" }), "1F4B-5EVD", "spaces + case")
+  eq(Share.code({ game = "blue", name = "Gary\226\153\130", points = 678, earned = 90, saveId = "0K3M9Q" }), "1AB3-YHC5", "utf-8 name")
+  check(Share.code({ game = "red", name = "ASH", points = 121, earned = 20, saveId = "ABC123" }) ~= "DHC0-HH32", "points change the code")
+end)
+
+test("python parity holds for random cards", function()
+  local Share = loadShare()
+  local cards, lines = {}, {}
+  local names = { "ASH", "red", "BLUE", "a b", "PIKA\226\153\128", "x" }
+  for i = 1, 40 do
+    local c = { game = ({ "red", "blue", "yellow" })[i % 3 + 1], name = names[i % #names + 1],
+      points = (i * 37) % 700, earned = (i * 7) % 90, saveId = ("%06d"):format(i * 12345 % 999999) }
+    cards[i] = c
+    lines[i] = table.concat({ c.game, c.name, c.points, c.earned, c.saveId }, "\t")
+  end
+  local tmp = os.tmpname()
+  local f = io.open(tmp, "wb"); f:write(table.concat(lines, "\n")); f:close()
+  local py = io.popen(("python3 -c \"import sys;sys.path.insert(0,'%s/tools');import leaderboard_ingest as L\n"
+    .. "for l in open('%s',encoding='utf-8').read().split('\\n'):\n g,n,p,e,s=l.split('\\t');print(L.check_code(g,n,int(p),int(e),s))\""):format(H.PROJECT, tmp))
+  local i = 0
+  for code in py:lines() do
+    i = i + 1
+    eq(code, Share.code(cards[i]), "card " .. i)
+  end
+  py:close(); os.remove(tmp)
+  eq(i, 40, "python answered every card")
+end)
+
+test("official totals match the leaderboard's per-game maximums", function()
+  local src = assert(io.open(H.PROJECT .. "/tools/leaderboard_ingest.py")):read("*a")
+  for _, game in ipairs({ "red", "blue", "yellow" }) do
+    local env = H.boot({ "recomp_achievements" }, { version = game })
+    env:newGame()
+    local t = ach(env).officialTotals and ach(env).officialTotals() or nil
+    check(t ~= nil, "officialTotals exported")
+    local mp, tot = src:match('"' .. game .. '":%s*{[^}]-"maxPoints":%s*(%d+),%s*"total":%s*(%d+)')
+    eq(t.maxPoints, tonumber(mp), game .. " max points")
+    eq(t.total, tonumber(tot), game .. " total")
+    eq(t.earned, 0, game .. " nothing earned on a new game")
+  end
+end)
+
+test("leaderboard card: official points only, stable save id, shown on SELECT", function()
+  local env = H.boot(BOTH)
+  env:newGame()
+  env.game.save.inventory.BOULDERBADGE = 1
+  env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+  local card = ach(env).leaderboardCard()
+  check(card and card.points > 0 and card.earned >= 1, "badge counted")
+  local t = ach(env).officialTotals()
+  eq(card.points, t.points, "card uses official totals")
+  check(ach(env).totals().points > card.points, "bonus/mod points are left out")
+  check(card.saveId:match("^[0-9A-Z]+$") and #card.saveId == 6, "6-char save id")
+  eq(ach(env).leaderboardCard().saveId, card.saveId, "save id is stable")
+  eq(card.code, loadShare().code(card), "code over the shown fields")
+  for _, item in ipairs(env:startMenu()) do
+    if item.label == "ACHIEVEMENTS" then item.onSelect() end
+  end
+  env:press("select"); env:draw()
+  check(H.screenHas("LEADERBOARD CARD"), "card page")
+  check(H.screenHas(card.code:gsub("%-", "%%-")), "code shown")
+  check(H.screenHas("SAVE ID " .. card.saveId), "save id shown")
+  env:press("right"); env:draw()
+  check(H.screenHas("RetroAchievements"), "credits on RIGHT")
+  env:press("left"); env:draw()
+  check(H.screenHas("LEADERBOARD CARD"), "back on LEFT")
 end)
 
 print(("\n%d passed, %d failed"):format(passed, failed))

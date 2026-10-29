@@ -1,0 +1,79 @@
+# Adds leaderboard submissions (issues made from the "Submit a leaderboard
+# score" form) to docs/leaderboard.json, which the GitHub Pages site shows.
+# Nothing here contacts RetroAchievements.
+name: Leaderboard
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  contents: write
+  issues: write
+
+# One submission at a time, so two players never overwrite each other.
+concurrency:
+  group: leaderboard
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    if: >-
+      contains(github.event.issue.labels.*.name, 'score') ||
+      startsWith(github.event.issue.title, '[Score]')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Issue text is passed through environment variables only, never
+      # pasted into the script, so a submission can't inject commands.
+      - name: Check the submission
+        id: ingest
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+        # Exit 0 = added, 1 = rejected (player gets the reason), 2 = bug.
+        run: |
+          set +e
+          python3 tools/leaderboard_ingest.py --board docs/leaderboard.json --reply "$RUNNER_TEMP/reply.md"
+          rc=$?
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          if [ "$rc" = 0 ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Save the board
+        id: save
+        if: steps.ingest.outputs.ok == 'true'
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/leaderboard.json
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "Leaderboard: issue #$ISSUE_NUMBER"
+          for attempt in 1 2 3; do
+            git push && exit 0
+            git pull --rebase
+          done
+          exit 1
+
+      - name: Reply on the issue
+        if: >-
+          always() && steps.ingest.outcome == 'success' &&
+          (steps.ingest.outputs.ok != 'true' || steps.save.outcome == 'success')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          OK: ${{ steps.ingest.outputs.ok }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --body-file "$RUNNER_TEMP/reply.md"
+          if [ "$OK" = "true" ]; then
+            gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
+          fi
+
+      # Mark the run failed on a bug so the repo owner gets GitHub's
+      # failed-workflow email.
+      - name: Fail on an unexpected error
+        if: steps.ingest.outputs.rc == '2'
+        run: exit 1
