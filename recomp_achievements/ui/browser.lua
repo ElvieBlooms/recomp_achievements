@@ -40,9 +40,9 @@ Browser.ABOUT = {
 }
 
 -- Where players submit the leaderboard card.  Change this if the repo
--- lives somewhere else.  Avoid "_" in the name: the Gen 1 font has no
--- underscore, so it would show as a space.
-Browser.BOARD_URL = "elvieblooms.github.io/recomp-achievements"
+-- lives somewhere else.  The font has no "_"; drawCard draws them as
+-- lines so the URL can still be typed exactly.
+Browser.BOARD_URL = "elvieblooms.github.io/recomp_achievements"
 
 -- Lines of the leaderboard card page (pure, so tests can check it).
 function Browser.cardLines(card, url)
@@ -372,6 +372,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     for i, line in ipairs(Browser.cardLines(card)) do
       if i > 15 then break end
       Text.draw(Font, line, 1, i)
+      if line:find("_", 1, true) then Text.underscores(line, 1, i) end
     end
     Text.arrow("right", 18, 16)
   end

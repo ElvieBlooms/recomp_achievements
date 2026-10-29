@@ -123,6 +123,17 @@ function Text.mark(kind, tx, ty)
 end
 
 -- Small solid arrows drawn as shapes (the font has no < or >).
+-- The font has no "_", so Text.draw shows a space.  For plain ASCII text
+-- (a URL), call this after Text.draw to draw the underscores as lines.
+function Text.underscores(s, tx, ty)
+  love.graphics.setColor(0, 0, 0, 1)
+  local i = 0
+  for ch in tostring(s):gmatch(".") do
+    if ch == "_" then love.graphics.rectangle("fill", (tx + i) * 8, ty * 8 + 6, 7, 1) end
+    i = i + 1
+  end
+end
+
 function Text.arrow(dir, tx, ty)
   local x, y = tx * 8, ty * 8
   love.graphics.setColor(0, 0, 0, 1)

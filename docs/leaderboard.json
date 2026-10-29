@@ -1,6 +1,7 @@
 {
  "version": 1,
  "updated": null,
+ "banned": [],
  "games": {
   "red": {
    "title": "Pokemon Red",

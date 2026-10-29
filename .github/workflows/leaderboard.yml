@@ -1,11 +1,15 @@
-# Adds leaderboard submissions (issues made from the "Submit a leaderboard
-# score" form) to docs/leaderboard.json, which the GitHub Pages site shows.
+# Adds leaderboard submissions to docs/leaderboard.json, which the GitHub
+# Pages site shows.  Submissions arrive two ways:
+#   * an issue made from the "Submit a leaderboard score" form
+#   * the Discord bot (discord/worker.js), as a repository_dispatch event
 # Nothing here contacts RetroAchievements.
 name: Leaderboard
 
 on:
   issues:
     types: [opened, edited, reopened]
+  repository_dispatch:
+    types: [discord-score]
 
 permissions:
   contents: write
@@ -19,24 +23,24 @@ concurrency:
 jobs:
   ingest:
     if: >-
+      github.event_name == 'repository_dispatch' ||
       contains(github.event.issue.labels.*.name, 'score') ||
       startsWith(github.event.issue.title, '[Score]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Issue text is passed through environment variables only, never
-      # pasted into the script, so a submission can't inject commands.
+      # The script reads the submission straight from the event file.
+      # Nothing from it goes into the command line or environment, so a
+      # submission can't inject commands and the Discord reply token never
+      # appears in this (public) log.
+      # Exit 0 = added, 1 = rejected (the player gets the reason), 2 = bug.
       - name: Check the submission
         id: ingest
-        env:
-          ISSUE_BODY: ${{ github.event.issue.body }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
-          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
-        # Exit 0 = added, 1 = rejected (player gets the reason), 2 = bug.
         run: |
           set +e
-          python3 tools/leaderboard_ingest.py --board docs/leaderboard.json --reply "$RUNNER_TEMP/reply.md"
+          python3 tools/leaderboard_ingest.py --event "$GITHUB_EVENT_PATH" \
+            --board docs/leaderboard.json --reply "$RUNNER_TEMP/reply.md"
           rc=$?
           echo "rc=$rc" >> "$GITHUB_OUTPUT"
           if [ "$rc" = 0 ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
@@ -44,14 +48,12 @@ jobs:
       - name: Save the board
         id: save
         if: steps.ingest.outputs.ok == 'true'
-        env:
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/leaderboard.json
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Leaderboard: issue #$ISSUE_NUMBER"
+          git commit -m "Leaderboard: ${{ github.event_name == 'repository_dispatch' && 'Discord submission' || format('issue #{0}', github.event.issue.number) }}"
           for attempt in 1 2 3; do
             git push && exit 0
             git pull --rebase
@@ -60,7 +62,8 @@ jobs:
 
       - name: Reply on the issue
         if: >-
-          always() && steps.ingest.outcome == 'success' &&
+          always() && github.event_name == 'issues' &&
+          steps.ingest.outcome == 'success' &&
           (steps.ingest.outputs.ok != 'true' || steps.save.outcome == 'success')
         env:
           GH_TOKEN: ${{ github.token }}
@@ -71,6 +74,16 @@ jobs:
           if [ "$OK" = "true" ]; then
             gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
           fi
+
+      - name: Reply in Discord
+        if: >-
+          always() && github.event_name == 'repository_dispatch' &&
+          steps.ingest.outcome == 'success'
+        run: |
+          if [ "${{ steps.ingest.outputs.ok }}" = "true" ] && [ "${{ steps.save.outcome }}" != "success" ]; then
+            echo "Something went wrong saving the board. The maintainer will take a look." > "$RUNNER_TEMP/reply.md"
+          fi
+          python3 tools/discord_reply.py --event "$GITHUB_EVENT_PATH" --reply "$RUNNER_TEMP/reply.md"
 
       # Mark the run failed on a bug so the repo owner gets GitHub's
       # failed-workflow email.

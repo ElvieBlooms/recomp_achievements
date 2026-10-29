@@ -22,6 +22,17 @@ def body(game="Red", name="ASH", points="120", earned="20", save="ABC123", code=
             f"### Check code\n\n{code}\n")
 
 
+def discord_event(path, score, owner="ab" * 16, token="t" * 40):
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump({"action": "discord-score", "client_payload": {
+            "score": score, "owner": owner, "app_id": "999888777666555444", "token": token}}, f)
+
+
+def card(game="red", name="ASH", points=120, earned=20, save="ABC123"):
+    return {"game": game, "name": name, "points": str(points), "earned": str(earned),
+            "save_id": save, "code": L.check_code(game, name, points, earned, save)}
+
+
 class Ingest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp()
@@ -76,6 +87,119 @@ class Ingest(unittest.TestCase):
             rc, _ = self.run_ingest(body(name=name or "_No response_"))
             self.assertEqual(rc, 1, name)
 
+    def test_blocked_names_rejected(self):
+        for name in ["FUCK", "F_U_U_CK", "5H1T", "A55", "C0CK", "xXdickXx"]:
+            rc, reply = self.run_ingest(body(name=name))
+            self.assertEqual(rc, 1, name)
+            self.assertIn("can't be shown", reply)
+            self.assertNotIn(name, reply)
+        self.assertFalse(os.path.exists(self.board))
+
+    def test_filter_catches_tricks(self):
+        for name in ["SHIIIT", "ASSES", "KKK", "HELL", "N1GGA", "BUTTS"]:
+            self.assertTrue(L.name_blocked(name), name)
+
+    def test_filter_spares_ordinary_names(self):
+        for name in ["ASH", "RED", "CLASS", "BASS", "HELLO", "SHELL", "PEACOCK", "GRAPE",
+                     "SPICY", "SHOE", "RACCOON", "ASSUME", "BUTTON", "TORPEDO", "ESSEX",
+                     "TITAN", "BROCK", "COCKY", "NIGEL", "SASSY", "PIKA!", "Gary\u2642",
+                     "MISTY", "KOKO", "BUTCH"]:
+            self.assertFalse(L.name_blocked(name), name)
+
+    def test_blocklist_file_parses(self):
+        lists = L.load_blocklist()
+        self.assertIn("fuck", lists["contains"])
+        self.assertIn("ass", lists["exact"])
+        self.assertNotIn("ass", lists["contains"])
+
+    def test_workflow_ignores_reports(self):
+        with open(os.path.join(ROOT, ".github", "workflows", "leaderboard.yml")) as f:
+            wf = f.read()
+        self.assertIn("'score'", wf)
+        self.assertIn("'[Score]'", wf)
+        self.assertNotIn("report", wf.lower())
+
+    def test_banned_save(self):
+        self.run_ingest(body())
+        with open(self.board, encoding="utf-8") as f:
+            board = json.load(f)
+        board["games"]["red"]["entries"] = []
+        board["banned"] = ["red:ABC123"]
+        with open(self.board, "w", encoding="utf-8") as f:
+            json.dump(board, f)
+        rc, reply = self.run_ingest(body(points="300", earned="40"))
+        self.assertEqual(rc, 1)
+        self.assertIn("removed", reply)
+        rc, _ = self.run_ingest(body(game="Blue"))
+        self.assertEqual(rc, 0, "same id in another game is separate")
+
+    def run_event(self, event_path, now="2026-10-29T00:00:00Z"):
+        env = {k: v for k, v in os.environ.items() if not k.startswith("ISSUE_")}
+        p = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "leaderboard_ingest.py"),
+                            "--event", event_path, "--board", self.board, "--reply", self.reply,
+                            "--now", now], env=env, capture_output=True, text=True)
+        with open(self.reply, encoding="utf-8") as f:
+            return p.returncode, f.read()
+
+    def test_issue_event_file(self):
+        ev = os.path.join(self.dir, "ev.json")
+        with open(ev, "w") as f:
+            json.dump({"action": "opened", "issue": {"number": 5, "body": body(),
+                                                    "user": {"login": "Alice"}}}, f)
+        rc, reply = self.run_event(ev)
+        self.assertEqual(rc, 0, reply)
+        e = self.entries()[0]
+        self.assertEqual((e["github"], e["issue"], e["owner"], e["via"]), ("Alice", 5, "gh:alice", "github"))
+        self.assertIn("edit this issue", reply)
+
+    def test_discord_event(self):
+        ev = os.path.join(self.dir, "ev.json")
+        discord_event(ev, card())
+        rc, reply = self.run_event(ev)
+        self.assertEqual(rc, 0, reply)
+        self.assertIn("/score", reply)
+        # same Discord account updates; a different one can't take the save
+        discord_event(ev, card(points=300, earned=40))
+        self.assertEqual(self.run_event(ev)[0], 0)
+        discord_event(ev, card(points=400, earned=50), owner="cd" * 16)
+        rc, reply = self.run_event(ev)
+        self.assertEqual(rc, 1)
+        self.assertIn("another account", reply)
+        self.assertEqual(self.entries()[0]["points"], 300)
+
+    def test_discord_and_github_dont_share_a_save(self):
+        self.run_ingest(body())
+        ev = os.path.join(self.dir, "ev.json")
+        discord_event(ev, card(points=300, earned=40))
+        rc, reply = self.run_event(ev)
+        self.assertEqual(rc, 1)
+        self.assertIn("another account", reply)
+
+    def test_discord_checks_match_issue_checks(self):
+        ev = os.path.join(self.dir, "ev.json")
+        for score, why in [(card(name="5H1T"), "can't be shown"),
+                           (dict(card(), points="746"), "745"),
+                           (dict(card(), code="AAAA-AAAA"), "check code")]:
+            discord_event(ev, score)
+            rc, reply = self.run_event(ev)
+            self.assertEqual(rc, 1, score)
+            self.assertIn(why, reply)
+
+    def test_discord_event_needs_owner(self):
+        ev = os.path.join(self.dir, "ev.json")
+        discord_event(ev, card(), owner="")
+        self.assertEqual(self.run_event(ev)[0], 1)
+
+    def test_old_entries_without_owner_still_belong_to_their_github_user(self):
+        self.run_ingest(body())
+        with open(self.board, encoding="utf-8") as f:
+            board = json.load(f)
+        del board["games"]["red"]["entries"][0]["owner"]
+        with open(self.board, "w", encoding="utf-8") as f:
+            json.dump(board, f)
+        self.assertEqual(self.run_ingest(body(points="300", earned="40"), author="ALICE")[0], 0)
+        self.assertEqual(self.run_ingest(body(points="400", earned="50"), author="bob")[0], 1)
+
     def test_update_same_save(self):
         self.run_ingest(body())
         rc, reply = self.run_ingest(body(points="300", earned="40"), issue=1)
@@ -105,6 +229,52 @@ class Ingest(unittest.TestCase):
         rc, reply = self.run_ingest(body())
         self.assertEqual(rc, 2)
         self.assertIn("maintainer", reply)
+
+
+class DiscordReply(unittest.TestCase):
+    """tools/discord_reply.py against a fake Discord API."""
+
+    def test_edits_the_original_message(self):
+        import http.server
+        import threading
+        got = {}
+
+        class Fake(http.server.BaseHTTPRequestHandler):
+            def do_PATCH(self):
+                got["path"] = self.path
+                got["body"] = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"{}")
+
+            def log_message(self, *a):
+                pass
+
+        srv = http.server.HTTPServer(("127.0.0.1", 0), Fake)
+        threading.Thread(target=srv.handle_request, daemon=True).start()
+        d = tempfile.mkdtemp()
+        ev, reply = os.path.join(d, "ev.json"), os.path.join(d, "r.md")
+        discord_event(ev, card(), token="tok_" + "x" * 30)
+        with open(reply, "w") as f:
+            f.write("Added: **ASH** @everyone\n")
+        env = dict(os.environ, DISCORD_API=f"http://127.0.0.1:{srv.server_port}/api/v10")
+        p = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "discord_reply.py"),
+                            "--event", ev, "--reply", reply], env=env, capture_output=True, text=True)
+        srv.server_close()
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(got["path"], "/api/v10/webhooks/999888777666555444/tok_" + "x" * 30 + "/messages/@original")
+        self.assertIn("ASH", got["body"]["content"])
+        self.assertEqual(got["body"]["allowed_mentions"], {"parse": []})
+        self.assertNotIn("tok_", p.stdout + p.stderr)
+
+    def test_refuses_event_without_token(self):
+        d = tempfile.mkdtemp()
+        ev = os.path.join(d, "ev.json")
+        discord_event(ev, card(), token="")
+        p = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "discord_reply.py"),
+                            "--event", ev, "--reply", os.path.join(d, "r.md")],
+                           capture_output=True, text=True)
+        self.assertEqual(p.returncode, 1)
 
 
 if __name__ == "__main__":

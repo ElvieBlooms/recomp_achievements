@@ -30,6 +30,8 @@
   .tab[aria-selected="true"] { border-color: var(--game); color: var(--game); }
   .submit { font-weight: 600; text-decoration: none; color: var(--bg); background: var(--accent);
             padding: 9px 14px; border-radius: 8px; white-space: nowrap; }
+  .submit.alt { background: var(--panel); color: var(--accent); border: 2px solid var(--accent); padding: 7px 12px; }
+  [hidden] { display: none !important; }
   .panel { background: var(--panel); border: 2px solid var(--line); border-radius: 12px; overflow: hidden; }
   .meta { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px;
           border-bottom: 2px solid var(--line); color: var(--muted); font-size: .9rem; }
@@ -39,6 +41,9 @@
   tbody tr + tr td { border-top: 1px solid var(--line); }
   td.rank { width: 3.5em; font-family: var(--mono); color: var(--muted); }
   td.name { font: 700 1rem var(--mono); overflow-wrap: anywhere; }
+  td.report { width: 1%; text-align: right; }
+  td.report a { color: var(--muted); font-size: .8rem; text-decoration: none; padding: 4px; }
+  td.report a:hover, td.report a:focus { color: var(--ink); text-decoration: underline; }
   td.num { text-align: right; font-family: var(--mono); white-space: nowrap; }
   th.num { text-align: right; }
   .meter { height: 4px; background: var(--line); border-radius: 2px; margin-top: 4px; }
@@ -61,6 +66,7 @@
 
   <div class="bar">
     <div class="tabs" role="tablist" id="tabs"></div>
+    <a class="submit alt" id="discord" href="#" hidden>Submit on Discord</a>
     <a class="submit" id="submit" href="#">Submit a score</a>
   </div>
 
@@ -69,8 +75,8 @@
   </section>
 
   <footer>
-    <p>To submit: in the game open <b>START &gt; ACHIEVEMENTS</b>, press <b>SELECT</b>, and copy the card into the form. Only official list points count; bonus and mod achievements don't.</p>
-    <p>Scores are self-reported (honor system). The check code only catches typos.</p>
+    <p>To submit: in the game open <b>START &gt; ACHIEVEMENTS</b>, press <b>SELECT</b>, and copy the card into the form<span id="discord-note" hidden>, or send it to the Discord bot with <code>/score</code></span>. Only official list points count; bonus and mod achievements don't.</p>
+    <p>Scores are self-reported (honor system). The check code only catches typos. See a name that shouldn't be here? Use <b>Report</b> on its row.</p>
     <p>Not affiliated with or connected to RetroAchievements. Achievement lists are by RetroAchievements and their authors.</p>
   </footer>
 </main>
@@ -83,8 +89,16 @@
     { id: "blue", label: "Blue", color: "var(--blue)" },
     { id: "yellow", label: "Yellow", color: "var(--yellow)" }
   ];
+  // The Discord bot's install link (discord/README.md, step 6).  Leave
+  // empty to hide the Discord button.
+  var DISCORD_INSTALL = "";
+  if (DISCORD_INSTALL) {
+    var d = document.getElementById("discord");
+    d.href = DISCORD_INSTALL; d.hidden = false;
+    document.getElementById("discord-note").hidden = false;
+  }
   // Fallback when the page isn't served from <owner>.github.io/<repo>/.
-  var DEFAULT_REPO = "ElvieBlooms/recomp-achievements";
+  var DEFAULT_REPO = "ElvieBlooms/recomp_achievements";
 
   function repo() {
     var host = location.hostname.match(/^([^.]+)\.github\.io$/i);
@@ -92,8 +106,15 @@
     if (host && path) return host[1] + "/" + path;
     return DEFAULT_REPO;
   }
-  document.getElementById("submit").href =
-    "https://github.com/" + repo() + "/issues/new?template=score.yml";
+  var ISSUES = "https://github.com/" + repo() + "/issues/new";
+  document.getElementById("submit").href = ISSUES + "?template=score.yml";
+
+  function reportUrl(game, entry) {
+    return ISSUES + "?template=report.yml" +
+      "&title=" + encodeURIComponent("[Report] " + game.label + " save " + entry.saveId) +
+      "&game=" + encodeURIComponent(game.label) +
+      "&save_id=" + encodeURIComponent(entry.saveId);
+  }
 
   var board = null;
   var current = "red";
@@ -148,7 +169,7 @@
     }
     var table = el("table");
     var head = el("tr");
-    [["#", ""], ["Trainer", ""], ["Points", "num"], ["Earned", "num hide-s"], ["Date", "hide-s"]]
+    [["#", ""], ["Trainer", ""], ["Points", "num"], ["Earned", "num hide-s"], ["Date", "hide-s"], ["", ""]]
       .forEach(function (h) { head.appendChild(el("th", h[1], h[0])); });
     var thead = el("thead"); thead.appendChild(head); table.appendChild(thead);
     var tbody = el("tbody");
@@ -165,6 +186,12 @@
       tr.appendChild(pts);
       tr.appendChild(el("td", "num hide-s", e.earned + "/" + (slot.total || "?")));
       tr.appendChild(el("td", "hide-s", String(e.date || "").slice(0, 10)));
+      var rep = el("td", "report"), link = el("a", null, "Report");
+      link.href = reportUrl(game, e);
+      link.target = "_blank"; link.rel = "noopener";
+      link.title = "Report this name to the maintainer";
+      link.setAttribute("aria-label", "Report the name in row " + place);
+      rep.appendChild(link); tr.appendChild(rep);
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);

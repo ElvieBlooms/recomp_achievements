@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
-"""Read one leaderboard submission (a GitHub issue form) and update
-docs/leaderboard.json.
+"""Read one leaderboard submission and update docs/leaderboard.json.
 
-The GitHub Action in .github/workflows/leaderboard.yml runs this with the
-issue's body, number and author in environment variables.  It can also be
-run by hand:
+Submissions come from two places, both handled by the GitHub Action in
+.github/workflows/leaderboard.yml:
+
+  * a GitHub issue made from the "Submit a leaderboard score" form, and
+  * the Discord bot (discord/worker.js), which sends a repository_dispatch
+    event of type "discord-score".
+
+The Action passes --event "$GITHUB_EVENT_PATH"; the script reads whichever
+kind of event it is.  For a quick manual run you can use environment
+variables instead:
 
     ISSUE_BODY="$(cat body.md)" ISSUE_NUMBER=7 ISSUE_AUTHOR=someone \
         python3 tools/leaderboard_ingest.py --board docs/leaderboard.json
 
 It never talks to the network.  It writes a short Markdown reply to
---reply (the Action posts it on the issue) and exits 0 when the entry was
-accepted, 1 when it was rejected.
+--reply (the Action posts it on the issue or in Discord) and exits 0 when
+the entry was accepted, 1 when it was rejected and 2 on a bug.
 
 The CHECK CODE is a checksum, not a signature.  It catches typos; it does
 not stop anyone who reads the mod's source from making up a score.  The
@@ -40,6 +46,7 @@ GAMES = {
 }
 
 NAME_MAX = 12  # Gen 1 names are 7 characters; leave room for imports
+BLOCKLIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "name_blocklist.txt")
 
 
 # ---------------------------------------------------------------- checksum
@@ -89,6 +96,56 @@ def normalize_code(code):
     return c[:4] + "-" + c[4:] if len(c) == 8 else c
 
 
+# ------------------------------------------------------------ name filter
+LEET = {"0": "o", "3": "e", "4": "a", "5": "s", "7": "t", "8": "b",
+        "@": "a", "$": "s", "!": "i", "|": "l", "+": "t"}
+
+
+def load_blocklist(path=BLOCKLIST):
+    lists = {"contains": set(), "exact": set()}
+    section = None
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.split("#", 1)[0].strip().lower()
+            if not line:
+                continue
+            if line in ("[contains]", "[exact]"):
+                section = line[1:-1]
+            elif section and re.fullmatch(r"[a-z]+", line):
+                lists[section].add(line)
+    return lists
+
+
+def _squash(s):
+    return re.sub(r"(.)\1+", r"\1", s)
+
+
+def name_forms(name):
+    """(letters, squashed) spellings of a name to test against the blocklist:
+    1 is tried as both i and l."""
+    out = set()
+    low = name.lower()
+    for one in ("i", "l"):
+        letters = "".join(LEET.get(ch, one if ch == "1" else ch) for ch in low)
+        letters = re.sub(r"[^a-z]", "", letters)
+        if letters:
+            out.add((letters, _squash(letters)))
+    return out
+
+
+def name_blocked(name, lists=None):
+    lists = lists or load_blocklist()
+    for letters, squashed in name_forms(name):
+        for word in lists["contains"]:
+            if word in letters or _squash(word) in squashed:
+                return True
+        for word in lists["exact"]:
+            for form, w in ((letters, word), (squashed, _squash(word))):
+                if form in (w, w + "s", w + "es"):
+                    return True
+    return False
+
+
 # ---------------------------------------------------------- issue parsing
 FIELDS = {
     "game": "Game",
@@ -136,6 +193,9 @@ def validate(fields):
         raise Rejected(f"The trainer name must be 1 to {NAME_MAX} characters.")
     if any(ord(ch) < 32 or ch in "<>`\\" or 0x7f <= ord(ch) < 0xa0 for ch in name):
         raise Rejected("The trainer name has characters the board can't show.")
+    if name_blocked(name):
+        raise Rejected("That trainer name can't be shown on the board. "
+                       "Scores from a save with a different name are welcome.")
 
     def whole(key, label, top):
         raw = fields[key].replace(",", "").strip()
@@ -167,7 +227,7 @@ def validate(fields):
 
 # ---------------------------------------------------------------- board
 def empty_board():
-    return {"version": 1, "updated": None,
+    return {"version": 1, "updated": None, "banned": [],
             "games": {g: dict(info, entries=[]) for g, info in GAMES.items()}}
 
 
@@ -176,6 +236,7 @@ def load_board(path):
         return empty_board()
     with open(path, encoding="utf-8") as f:
         board = json.load(f)
+    board.setdefault("banned", [])
     for g, info in GAMES.items():
         slot = board.setdefault("games", {}).setdefault(g, {"entries": []})
         slot.update({k: v for k, v in info.items()})
@@ -187,40 +248,87 @@ def rank(entries):
     entries.sort(key=lambda e: (-e["points"], -e["earned"], e.get("first", "")))
 
 
-def upsert(board, entry, author, issue, now):
+def owner_of(e):
+    """Who may update an entry: "gh:<login>" or "discord:<hash>"."""
+    if e.get("owner"):
+        return e["owner"]
+    return "gh:" + str(e.get("github") or "").lower()
+
+
+def upsert(board, entry, sub, now):
+    banned = {str(b).lower() for b in board.get("banned", [])}
+    if f"{entry['game']}:{entry['saveId']}".lower() in banned:
+        raise Rejected("This save has been removed from the board by the maintainer.")
     entries = board["games"][entry["game"]]["entries"]
     for e in entries:
         if e["saveId"] == entry["saveId"]:
-            if e.get("github") and author and e["github"].lower() != author.lower():
-                raise Rejected("That save ID is already on the board for another "
-                               "GitHub account.")
+            if owner_of(e) != sub.owner:
+                raise Rejected("That save ID is already on the board for another account.")
             e.update(name=entry["name"], points=entry["points"],
-                     earned=entry["earned"], date=now, issue=issue)
+                     earned=entry["earned"], date=now, via=sub.source)
+            if sub.issue:
+                e["issue"] = sub.issue
             rank(entries)
             return "updated"
-    entries.append({"name": entry["name"], "points": entry["points"],
-                    "earned": entry["earned"], "saveId": entry["saveId"],
-                    "github": author, "issue": issue, "date": now, "first": now})
+    row = {"name": entry["name"], "points": entry["points"],
+           "earned": entry["earned"], "saveId": entry["saveId"],
+           "owner": sub.owner, "via": sub.source, "date": now, "first": now}
+    if sub.source == "github":
+        row.update(github=sub.login, issue=sub.issue)
+    entries.append(row)
     rank(entries)
     return "added"
+
+
+# ------------------------------------------------------------- submission
+class Submission:
+    """Where a score came from: fields to validate plus who sent it."""
+
+    def __init__(self, source, fields, owner, login=None, issue=None):
+        self.source, self.fields, self.owner = source, fields, owner
+        self.login, self.issue = login, issue
+
+
+def read_submission(event_path=None):
+    event = {}
+    if event_path:
+        with open(event_path, encoding="utf-8") as f:
+            event = json.load(f)
+    payload = event.get("client_payload")
+    if "issue" not in event and isinstance(payload, dict):
+        # repository_dispatch from the Discord bot.  The bot has already
+        # replaced the Discord user id with a keyed hash.
+        score = payload.get("score") if isinstance(payload.get("score"), dict) else {}
+        fields = {k: str(score.get(k, "")) for k in FIELDS}
+        owner = str(payload.get("owner", ""))
+        if not re.fullmatch(r"[0-9a-f]{16,64}", owner):
+            raise Rejected("The Discord bot sent no sender id.")
+        return Submission("discord", fields, "discord:" + owner)
+    issue = event.get("issue") or {}
+    body = issue.get("body") if issue else os.environ.get("ISSUE_BODY", "")
+    login = ((issue.get("user") or {}).get("login") if issue
+             else os.environ.get("ISSUE_AUTHOR", "")) or ""
+    number = issue.get("number") if issue else int(os.environ.get("ISSUE_NUMBER", "0") or 0)
+    return Submission("github", parse_issue(body or ""), "gh:" + login.lower(),
+                      login=login, issue=number)
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--board", default="docs/leaderboard.json")
     ap.add_argument("--reply", default="reply.md")
+    ap.add_argument("--event", help="GitHub event JSON ($GITHUB_EVENT_PATH)")
     ap.add_argument("--now", help="timestamp override (tests)")
     args = ap.parse_args(argv)
 
-    body = os.environ.get("ISSUE_BODY", "")
-    author = os.environ.get("ISSUE_AUTHOR", "")
-    issue = int(os.environ.get("ISSUE_NUMBER", "0") or 0)
     now = args.now or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    sub = None
 
     try:
-        entry = validate(parse_issue(body))
+        sub = read_submission(args.event)
+        entry = validate(sub.fields)
         board = load_board(args.board)
-        how = upsert(board, entry, author, issue, now)
+        how = upsert(board, entry, sub, now)
     except Rejected as err:
         with open(args.reply, "w", encoding="utf-8") as f:
             f.write(f"Couldn't add this score: {err}\n")
@@ -245,8 +353,11 @@ def main(argv=None):
         f.write(f"{'Added' if how == 'added' else 'Updated'}: **{entry['name']}** on "
                 f"{info['title']} with {entry['points']}/{info['maxPoints']} points "
                 f"({entry['earned']}/{info['total']} achievements), "
-                f"currently #{place}. The page updates in a minute or two.\n\n"
-                "To update your score later, edit this issue with the new card.\n")
+                f"currently #{place}. The page updates in a minute or two.\n\n")
+        if sub.source == "discord":
+            f.write("To update your score later, send `/score` again with the new card.\n")
+        else:
+            f.write("To update your score later, edit this issue with the new card.\n")
     print(f"{how}: {entry}")
     return 0
 

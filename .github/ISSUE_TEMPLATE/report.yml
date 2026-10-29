@@ -1,0 +1,26 @@
+name: Report a leaderboard name
+description: Flag a trainer name on the leaderboard that shouldn't be there.
+title: "[Report] "
+labels: ["report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for flagging this. The maintainer will review it and remove the entry if needed. The fields below are filled in from the row you clicked; you don't need to retype the name.
+  - type: input
+    id: game
+    attributes:
+      label: Game
+    validations:
+      required: true
+  - type: input
+    id: save_id
+    attributes:
+      label: Save ID
+      description: Identifies the row on the board.
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Anything else? (optional)

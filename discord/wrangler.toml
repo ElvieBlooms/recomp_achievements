@@ -1,0 +1,11 @@
+# Cloudflare Worker for the leaderboard's Discord bot.  See discord/README.md.
+name = "recomp-achievements-bot"
+main = "worker.js"
+compatibility_date = "2024-09-23"
+
+[vars]
+GITHUB_REPO = "ElvieBlooms/recomp_achievements"
+BOARD_URL = "https://elvieblooms.github.io/recomp_achievements/"
+
+# Secrets, set with `npx wrangler secret put NAME` (never put them here):
+#   DISCORD_PUBLIC_KEY, GITHUB_TOKEN, OWNER_SALT

@@ -63,23 +63,26 @@ Options are in the Mods manager:
 ## Leaderboard
 
 There's an optional public leaderboard at
-**https://elvieblooms.github.io/recomp-achievements**. The mod never goes
+**https://elvieblooms.github.io/recomp_achievements**. The mod never goes
 online; you copy a short card into a form yourself:
 
 1. In the game, open **START > ACHIEVEMENTS** and press **SELECT**.
 2. On the website, press **Submit a score**. It opens a GitHub issue form
-   (you need a GitHub account).
+   (you need a GitHub account). If the Discord bot is set up, you can
+   instead send it `/score` with the same values.
 3. Copy the game, trainer name, points, achievements earned, save ID and
    check code from the card. Submit.
 
-A bot checks the entry within a minute or two, replies on the issue and
-updates the page. To update your score later, edit the same issue with
-the new card.
+A bot checks the entry within a minute or two, replies (on the issue, or
+by editing its Discord message) and updates the page. To update your
+score later, edit the same issue, or send `/score` again from the same
+Discord account.
 
 Only the official RetroAchievements list counts; bonus achievements and
 achievements from other mods don't. The check code only catches typos, so
-the board is an honor system. It has nothing to do with RetroAchievements
-or its leaderboards.
+the board is an honor system. Trainer names are filtered for offensive
+words, and every row has a Report link. It has nothing to do with
+RetroAchievements or its leaderboards.
 
 ## For mod authors
 
@@ -114,9 +117,11 @@ recomp_achievements/   the mod (this folder is what ships)
 achievement_sandbox/   example provider mod (not part of the release)
 docs/                  PROVIDER_API.md, COVERAGE.md (generated), and the
                        leaderboard website (index.html, leaderboard.json)
-.github/               leaderboard issue form and the Action that reads it
+.github/               leaderboard issue forms and the Action that reads them
+discord/               optional Discord bot (Cloudflare Worker) for submissions
 tools/                 fetch_ra_catalog.py, gen_coverage.lua, build_release.sh,
-                       leaderboard_ingest.py
+                       leaderboard_ingest.py, discord_reply.py,
+                       discord_register.py, name_blocklist.txt
 tests/                 headless tests in the real Gen1Recomp mod loader
 tests/e2e/             runs the actual game under Xvfb with a test driver
 ```
@@ -137,7 +142,8 @@ Xvfb) on a copy of your data folder with a test-only driver mod. The driver
 can load saves, press buttons and take screenshots. Never ship
 `tests/e2e/e2e_driver`.
 
-`python3 tests/test_leaderboard.py` tests the leaderboard bot. Setting
+`python3 tests/test_leaderboard.py` and `node tests/test_discord_worker.mjs`
+test the leaderboard bot and the Discord bot. Setting
 the leaderboard up on a fork is described in
 [docs/LEADERBOARD.md](docs/LEADERBOARD.md).
 

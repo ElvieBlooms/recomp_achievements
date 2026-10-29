@@ -6,6 +6,10 @@
   trainer name, official points, a save ID and a check code. Enter them in
   the project's GitHub issue form to appear on the leaderboard page. The
   mod itself still never goes online.
+- The leaderboard bot filters offensive trainer names, and each row on the
+  page has a Report link.
+- Optional Discord bot: players can submit with `/score` instead of a
+  GitHub issue.
 - Credits moved to the second SELECT page (press RIGHT).
 - API 1.1.0 adds `officialTotals()` and `leaderboardCard()`.
 

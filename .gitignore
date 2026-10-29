@@ -4,3 +4,6 @@ dist/
 recomp_achievements/catalog/links.lua
 tests/e2e/e2e_driver/plan.lua
 tests/e2e/e2e_driver/test.sav
+discord/.wrangler/
+discord/.dev.vars
+node_modules/

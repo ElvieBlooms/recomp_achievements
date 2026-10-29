@@ -1,0 +1,100 @@
+# Trainer names the leaderboard bot refuses (tools/leaderboard_ingest.py).
+#
+# Names are compared after lower-casing, undoing look-alike swaps
+# (0->o, 1->i or l, 3->e, 4->a, 5->s, 7->t, 8->b, @->a, $->s, !->i, |->l,
+# +->t) and removing everything that isn't a letter.  Each name is checked
+# both as-is and with repeated letters squashed, so "F_U_U_CK", "5H1T" and
+# "SHIIIT" are all caught.  Write words in plain lowercase.
+#
+# contains:  blocked if the word appears anywhere in the name.  Only for
+#            words that don't turn up inside ordinary names.
+# exact:     blocked only when the whole name is the word (or the word plus
+#            "s" or "es").  For words that hide inside ordinary names:
+#            "ass" in CLASS, "cock" in PEACOCK, "rape" in GRAPE, "spic" in
+#            SPICY, "hell" in HELLO.
+#
+# A new word only affects new submissions; remove an entry that's already
+# on the board by hand (docs/LEADERBOARD.md).  Check a new word doesn't
+# block ordinary names with:  python3 tests/test_leaderboard.py
+
+[contains]
+fuck
+fuk
+fck
+shit
+bitch
+biatch
+cunt
+asshole
+asshat
+dumbass
+jackass
+dick
+pussy
+penis
+vagina
+twat
+wank
+bollock
+bastard
+whore
+slut
+porn
+molest
+nazi
+hitler
+heil
+nigger
+nigga
+niger
+nigr
+faggot
+dyke
+tranny
+retard
+chink
+gook
+kike
+wetback
+beaner
+raghead
+towelhead
+honkey
+jizz
+semen
+boob
+tits
+dildo
+horny
+orgasm
+blowjob
+handjob
+killyourself
+
+[exact]
+kkk
+ass
+fag
+tit
+nig
+cock
+hoe
+spic
+coon
+cum
+anal
+anus
+sex
+paki
+pedo
+rape
+rapist
+cracker
+kys
+damn
+hell
+crap
+piss
+poop
+fart
+butt
