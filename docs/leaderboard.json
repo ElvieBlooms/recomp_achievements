@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-10-30T02:50:41Z",
+ "updated": "2026-10-30T23:26:23Z",
  "banned": [],
  "games": {
   "red": {
@@ -32,6 +32,66 @@
    "maxPoints": 458,
    "total": 76,
    "entries": []
+  },
+  "gold": {
+   "entries": [],
+   "title": "Pokemon Gold",
+   "maxPoints": 685,
+   "total": 72
+  },
+  "silver": {
+   "entries": [],
+   "title": "Pokemon Silver",
+   "maxPoints": 616,
+   "total": 75
+  },
+  "crystal": {
+   "entries": [],
+   "title": "Pokemon Crystal",
+   "maxPoints": 864,
+   "total": 113
+  },
+  "firered": {
+   "entries": [],
+   "title": "Pokemon FireRed",
+   "maxPoints": 453,
+   "total": 61
+  },
+  "leafgreen": {
+   "entries": [],
+   "title": "Pokemon LeafGreen",
+   "maxPoints": 781,
+   "total": 128
+  },
+  "emerald": {
+   "entries": [],
+   "title": "Pokemon Emerald",
+   "maxPoints": 2086,
+   "total": 197
+  },
+  "ruby": {
+   "entries": [
+    {
+     "name": "ELVIE",
+     "points": 1,
+     "earned": 1,
+     "saveId": "RVAFDW",
+     "time": 12,
+     "owner": "discord:19f7e31d3cc343740b10454a66371bc1",
+     "via": "discord",
+     "date": "2026-10-30T23:26:23Z",
+     "first": "2026-10-30T23:26:23Z"
+    }
+   ],
+   "title": "Pokemon Ruby",
+   "maxPoints": 485,
+   "total": 49
+  },
+  "sapphire": {
+   "entries": [],
+   "title": "Pokemon Sapphire",
+   "maxPoints": 485,
+   "total": 49
   }
  }
 }
