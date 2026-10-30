@@ -579,6 +579,63 @@ test("a new game's card has 0:00 and old records fall back to the current time",
   eq(ach(env).leaderboardCard().time, 120, "falls back to the play time now")
 end)
 
+-- ---------------------------------------------------------- unlock sound
+local function clearSounds() for i = #H.sounds, 1, -1 do H.sounds[i] = nil end end
+local function earnBadge(env)
+  env.game.save.inventory.BOULDERBADGE = 1
+  env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+end
+
+test("unlock sound: the jingle is generated in range", function()
+  local Chime = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/chime.lua"))()
+  for kind, song in pairs(Chime.SONGS) do
+    local s = Chime.render(song)
+    check(#s > Chime.RATE * 0.5 and #s < Chime.RATE * 1.0, kind .. " is about half a second")
+    local peak = 0
+    for _, v in ipairs(s) do peak = math.max(peak, math.abs(v)) end
+    check(peak > 0.3 and peak <= 1, kind .. " is audible and doesn't clip")
+    eq(s[#s] == s[#s] and math.abs(s[#s]) < 0.05, true, kind .. " fades out")
+  end
+end)
+
+test("unlock sound plays when the popup appears, at the game's SFX volume", function()
+  local env = H.boot({ "recomp_achievements" })
+  env:newGame()
+  env:hud(); H.advance(5); env:hud(); clearSounds()
+  env.game.save.options.sfxVol = 7
+  earnBadge(env)
+  eq(#H.sounds, 0, "nothing until the popup shows")
+  env:hud()
+  eq(#H.sounds, 1, "one sound with the popup")
+  check(math.abs(H.sounds[1].volume - 0.45) < 1e-6, "full SFX VOL")
+  env:hud(); eq(#H.sounds, 1, "not again on the next frame")
+  H.advance(5); clearSounds()
+  env.game.save.options.sfxVol = 3
+  env.game.save.inventory.CASCADEBADGE = 1
+  env:setFlag("EVENT_BEAT_MISTY"); env:frame(); env:hud()
+  check(#H.sounds >= 1 and math.abs(H.sounds[1].volume - 0.45 * 3 / 7) < 1e-6, "scaled by SFX VOL")
+end)
+
+test("unlock sound respects its option, SFX VOL 0, and works without popups", function()
+  local env = H.boot({ "recomp_achievements" })
+  env.loader.modOptions.recomp_achievements = { unlockSound = false }
+  env:newGame(); env:hud(); H.advance(5); clearSounds()
+  earnBadge(env); env:hud()
+  eq(#H.sounds, 0, "option off: silent")
+
+  local env2 = H.boot({ "recomp_achievements" })
+  env2:newGame(); env2:hud(); H.advance(5); clearSounds()
+  env2.game.save.options.sfxVol = 0
+  earnBadge(env2); env2:hud()
+  eq(#H.sounds, 0, "SFX VOL 0: silent")
+
+  local env3 = H.boot({ "recomp_achievements" })
+  env3.loader.modOptions.recomp_achievements = { toasts = false }
+  env3:newGame(); H.advance(5); clearSounds()
+  earnBadge(env3)
+  eq(#H.sounds, 1, "popups off: sound plays at the unlock")
+end)
+
 print(("\n%d passed, %d failed"):format(passed, failed))
 H.cleanup()
 os.exit(failed == 0 and 0 or 1)

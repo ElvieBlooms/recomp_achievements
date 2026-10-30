@@ -35,6 +35,19 @@ local clockNow = 0
 love.timer = { getTime = function() return clockNow end }
 function H.advance(seconds) clockNow = clockNow + seconds end
 
+-- Fake love.sound / love.audio: every play is recorded in H.sounds.
+H.sounds = {}
+love.sound = { newSoundData = function(n, rate, bits, channels)
+  return { n = n, rate = rate, setSample = function() end }
+end }
+love.audio = { newSource = function(data)
+  local src = { data = data }
+  function src:stop() end
+  function src:setVolume(v) self.volume = v end
+  function src:play() H.sounds[#H.sounds + 1] = { samples = self.data.n, volume = self.volume } end
+  return src
+end }
+
 local FakeFont = {}
 function FakeFont.draw(text, x, y)
   drawn[#drawn + 1] = { text = text, tx = x / 8, ty = y / 8 }

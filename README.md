@@ -20,7 +20,7 @@ affiliated with RetroAchievements. See [NOTICE.md](NOTICE.md).
 
 ## Install
 
-1. Download `recomp_achievements-1.2.0.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-1.3.0.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
 2. Start Red, Blue or Yellow (Gen1Recomp 0.3.97 or newer).
 3. Open the START menu and choose **ACHIEVEMENTS**.
@@ -43,6 +43,7 @@ square means archived (earned with a mod that isn't loaded right now).
 
 Options are in the Mods manager:
 - **UNLOCK POPUPS**
+- **UNLOCK SOUND**: a short jingle on each unlock, at the game's SFX VOL
 - **BONUS ACHIEVEMENTS**: this mod's extras, which aren't part of the RA lists
 - **REVEAL HIDDEN**
 - **SHOW RA REFERENCE**: adds a page listing every RA entry for the game
@@ -117,7 +118,7 @@ recomp_achievements/   the mod (this folder is what ships)
   rules/gen1_lib.lua     the building blocks those detectors use
   rules/gen1.lua         bonus achievements
   catalog/               RA metadata (generated)
-  ui/                    browser, popups, text helpers
+  ui/                    browser, popups, unlock sound, text helpers
 achievement_sandbox/   example provider mod (not part of the release)
 docs/                  PROVIDER_API.md, COVERAGE.md (generated), and the
                        leaderboard website (index.html, leaderboard.json)

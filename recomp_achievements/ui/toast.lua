@@ -23,9 +23,15 @@ local function now()
   return os.clock()
 end
 
-function Toast.new(mod, util, Text)
-  return setmetatable({ mod = mod, util = util, Text = Text, queue = {},
+-- chime (ui/chime.lua) is optional: the unlock sound, played as each
+-- popup appears, or straight away when popups are switched off.
+function Toast.new(mod, util, Text, chime)
+  return setmetatable({ mod = mod, util = util, Text = Text, chime = chime, queue = {},
                         current = nil, overflow = 0 }, Toast)
+end
+
+function Toast:sound(kind)
+  if self.chime then pcall(self.chime.play, self.chime, kind) end
 end
 
 function Toast:enabled()
@@ -35,7 +41,7 @@ end
 -- def: the registry definition; shown: what to display for it on this
 -- game (Registry:display -- the official RA text when linked).
 function Toast:push(def, shown)
-  if not self:enabled() then return end
+  if not self:enabled() then return self:sound("unlock") end
   if #self.queue >= Toast.MAX_QUEUE then
     self.overflow = self.overflow + 1
     return
@@ -50,8 +56,9 @@ function Toast:push(def, shown)
 end
 
 function Toast:pushSummary(n)
-  if not self:enabled() then return end
+  if not self:enabled() then return self:sound("summary") end
   self.queue[#self.queue + 1] = {
+    kind = "summary",
     heading = "WELCOME BACK!",
     line = ("%d PAST MILESTONES"):format(n),
     right = "", from = "",
@@ -75,6 +82,7 @@ function Toast:tick()
     if not nextOne then return nil end
     nextOne.started = t
     self.current = nextOne
+    self:sound(nextOne.kind or "unlock")
   end
   local c = self.current
   local age = t - c.started

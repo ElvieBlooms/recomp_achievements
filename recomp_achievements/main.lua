@@ -51,6 +51,7 @@ return function(mod)
   local Text     = import("ui/text.lua")
   local Toast    = import("ui/toast.lua")
   local Browser  = import("ui/browser.lua")
+  local Chime    = import("ui/chime.lua")
   local Share    = import("ui/share.lua")
 
   -- ----------------------------------------------------------------
@@ -59,6 +60,7 @@ return function(mod)
   -- ----------------------------------------------------------------
   mod.options:define({
     { key = "toasts", type = "toggle", label = "UNLOCK POPUPS", default = true },
+    { key = "unlockSound", type = "toggle", label = "UNLOCK SOUND", default = true },
     { key = "extras", type = "toggle", label = "BONUS ACHIEVEMENTS", default = true },
     { key = "showHidden", type = "toggle", label = "REVEAL HIDDEN", default = false },
     { key = "showReference", type = "toggle", label = "SHOW RA REFERENCE", default = false },
@@ -67,7 +69,7 @@ return function(mod)
 
   local ledger = Ledger.new(mod, util)
   local registry = Registry.new(util)
-  local toast = Toast.new(mod, util, Text)
+  local toast = Toast.new(mod, util, Text, Chime.new(mod))
   local engine = Engine.new({
     mod = mod, util = util, ledger = ledger, registry = registry, toast = toast,
   })
