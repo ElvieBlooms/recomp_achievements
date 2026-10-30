@@ -3,7 +3,7 @@
 An achievements mod for **Gen1Recomp**, inspired by
 [RetroAchievements](https://retroachievements.org). It uses the achievement
 lists RetroAchievements publishes for **Pokémon Red, Blue, Yellow, Gold,
-Silver, Crystal, FireRed and LeafGreen** (all 708 entries: titles,
+Silver, Crystal, Ruby, Sapphire, Emerald, FireRed and LeafGreen** (all 1003 entries: titles,
 descriptions and point values) and checks them with
 its own unlock logic, written from scratch for Gen1Recomp. Everything
 unlocks and is saved locally, in your game.
@@ -33,11 +33,10 @@ and each achievement's author, and are credited in the game. See
 
 ## Install
 
-1. Download `recomp_achievements-2.2.1.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-2.4.0.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
-2. Start Red, Blue, Yellow, Gold, Silver, Crystal, FireRed or LeafGreen
-   (Gen1Recomp 0.3.97 or newer). Ruby, Sapphire and Emerald are coming in
-   a later release.
+2. Start Red, Blue, Yellow, Gold, Silver, Crystal, Ruby, Sapphire, Emerald,
+   FireRed or LeafGreen (Gen1Recomp 0.3.97 or newer).
 3. Open the START menu and choose **TROPHIES** (**TROPHY** in Gold, Silver
    and Crystal, whose menu is narrower).
 
@@ -88,7 +87,7 @@ Options are in the Mods manager:
   they need OPTION > BATTLE STYLE set to SET (every game here has this
   option) plus the level cap or other limits listed on the achievement's
   "How it's checked" page.
-- In LeafGreen, "defeat every trainer in the gym" means before the Gym
+- In LeafGreen and Emerald, "defeat every trainer in the gym" means before the Gym
   Leader: once the leader falls, the game marks the remaining gym trainers
   as beaten without a fight.
 
@@ -158,8 +157,9 @@ recomp_achievements/   the mod (this folder is what ships)
   core/                  ledger (save data), registry, engine, public API
   adapters/gen1.lua      Red/Blue/Yellow save + game data -> "facts"
   adapters/gen2.lua      Gold/Silver/Crystal save + game data -> "facts"
-  adapters/gen3.lua      FireRed/LeafGreen save -> "facts"
-  rules/gen1_official.lua, rules/gen2_official.lua, rules/gen3_official.lua
+  adapters/gen3.lua      Ruby/Sapphire/Emerald/FireRed/LeafGreen save -> "facts"
+  rules/gen1_official.lua, rules/gen2_official.lua, rules/gen3_official.lua,
+  rules/gen3_emerald.lua, rules/gen3_rs.lua
                          one detector per RetroAchievements-list entry
   rules/gen1_lib.lua, rules/gen2_lib.lua, rules/gen3_lib.lua
                          the building blocks those detectors use
@@ -167,6 +167,8 @@ recomp_achievements/   the mod (this folder is what ships)
                          bonus achievements
   data/gen2_*.lua        Gen 2 flag numbers, trainers and items (generated)
   data/gen3_frlg.lua     FireRed/LeafGreen flags, trainers and items (generated)
+  data/gen3_emerald.lua  Emerald flags, trainers, items, moves, decorations (generated)
+  data/gen3_rs.lua       Ruby/Sapphire flags, trainers, items, moves, decorations (generated)
   catalog/               RA metadata (generated)
   ui/                    menu (modern + classic), popups, unlock sound, text helpers
 achievement_sandbox/   example provider mod (not part of the release)
@@ -231,9 +233,21 @@ gift, the VS Seeker rematch table and the gym trainers the game marks
 beaten after each leader. Its flag numbers are checked against the
 engine's own FireRed flag table by `tests/run.lua`.
 
+`data/gen3_emerald.lua` comes from
+[pret/pokeemerald](https://github.com/pret/pokeemerald) the same way, plus
+move numbers and the decoration catalogue; its flags, vars, species, items
+and trainers are checked against the engine's own Emerald tables.
+
+`data/gen3_rs.lua` comes from [pret/pokeruby](https://github.com/pret/pokeruby)
+(one file covers both versions) and is checked against the engine's Ruby
+tables.
+
 ```
-git clone https://github.com/pret/pokefirered
+git clone https://github.com/pret/pokefirered && git clone https://github.com/pret/pokeemerald
+git clone https://github.com/pret/pokeruby
 python3 tools/gen3_data.py pokefirered
+python3 tools/gen3_data.py pokeemerald
+python3 tools/gen3_data.py pokeruby
 ```
 
 ## License

@@ -128,14 +128,19 @@ return function(mod)
     addRules(import("rules/gen2.lua"), true)
     loadCatalogs({ "gold", "silver", "crystal" })
   elseif mod.generation == 3 then
-    -- FireRed and LeafGreen first; Ruby/Sapphire/Emerald come later (the
-    -- adapter reports no game for them, so their saves stay untouched).
+    -- FireRed, LeafGreen, Emerald, Ruby and Sapphire.
     engine:setAdapter(import("adapters/gen3.lua").new(mod, util, function(f) return import("data/gen3_" .. f .. ".lua") end))
     if mod:info("rules/gen3_official.lua") then
       addRules(import("rules/gen3_official.lua")(import("rules/gen3_lib.lua")))
     end
+    if mod:info("rules/gen3_emerald.lua") then
+      addRules(import("rules/gen3_emerald.lua")(import("rules/gen3_lib.lua")))
+    end
+    if mod:info("rules/gen3_rs.lua") then
+      addRules(import("rules/gen3_rs.lua")(import("rules/gen3_lib.lua")))
+    end
     if mod:info("rules/gen3.lua") then addRules(import("rules/gen3.lua"), true) end
-    loadCatalogs({ "firered", "leafgreen" })
+    loadCatalogs({ "firered", "leafgreen", "emerald", "ruby", "sapphire" })
   else
     supported = false
     mod.log:info("this generation isn't supported yet; achievements stay off")

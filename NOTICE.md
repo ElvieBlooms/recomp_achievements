@@ -40,10 +40,12 @@ projects. It holds names and numbers only, no game code or assets.
 
 ## Gen 3 game facts
 
-`recomp_achievements/data/gen3_frlg.lua` is generated the same way by
-`tools/gen3_data.py` from the
-[pret/pokefirered](https://github.com/pret/pokefirered) disassembly
-project: names and numbers only.
+`recomp_achievements/data/gen3_frlg.lua`, `gen3_emerald.lua` and
+`gen3_rs.lua` are generated the same way by `tools/gen3_data.py` from the
+[pret/pokefirered](https://github.com/pret/pokefirered),
+[pret/pokeemerald](https://github.com/pret/pokeemerald) and
+[pret/pokeruby](https://github.com/pret/pokeruby) decompilation
+projects: names and numbers only.
 
 ## Pokémon
 

@@ -47,6 +47,9 @@ GAMES = {
     "crystal": {"title": "Pokemon Crystal", "maxPoints": 864, "total": 113},
     "firered":   {"title": "Pokemon FireRed",   "maxPoints": 453, "total": 61},
     "leafgreen": {"title": "Pokemon LeafGreen", "maxPoints": 781, "total": 128},
+    "emerald":   {"title": "Pokemon Emerald",   "maxPoints": 2086, "total": 197},
+    "ruby":      {"title": "Pokemon Ruby",      "maxPoints": 485, "total": 49},
+    "sapphire":  {"title": "Pokemon Sapphire",  "maxPoints": 485, "total": 49},
 }
 
 NAME_MAX = 12  # Gen 1 names are 7 characters; leave room for imports

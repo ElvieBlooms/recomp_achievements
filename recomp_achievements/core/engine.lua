@@ -468,6 +468,7 @@ function Engine:wire()
       used = lead and { lead } or {}, -- species the player sent out
       payDay = 0,
     }
+    for k, v in pairs(info.extra or {}) do self.battle[k] = v end
     self:dispatch("battle.started", ev)
   end)
   if mod:supports("events", "battle.fainted") then

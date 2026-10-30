@@ -23,8 +23,9 @@
 local Gen3 = {}
 Gen3.__index = Gen3
 
-Gen3.FAMILY = { firered = "frlg", leafgreen = "frlg" }
+Gen3.FAMILY = { firered = "frlg", leafgreen = "frlg", emerald = "emerald", ruby = "rs", sapphire = "rs" }
 Gen3.KANTO = { "BOULDER", "CASCADE", "THUNDER", "RAINBOW", "SOUL", "MARSH", "VOLCANO", "EARTH" }
+Gen3.HOENN = { "STONE", "KNUCKLE", "DYNAMO", "HEAT", "BALANCE", "FEATHER", "MIND", "RAIN" }
 
 local EMPTY = { flags = {}, trainerIds = {}, vars = {}, species = {}, itemIds = {},
                 trainers = {}, items = {}, hidden = {}, gifts = {}, rematches = {}, initial = {} }
@@ -192,8 +193,22 @@ function Gen3:bagSnapshot()
 end
 
 -- battle.started gives the trainer as a number; rules use pret names.
+-- Battle Frontier, Trainer Hill, Trainer Tower and secret-base battles use
+-- their own numbering, so their trainer numbers are left as numbers (a
+-- Battle Tower opponent 400 isn't the map trainer 400).
+local SPECIAL_KINDS = { "frontier", "battleTower", "dome", "palace", "arena", "factory", "pike",
+                        "pyramid", "trainerHill", "secretBase", "frontierTrainer" }
 function Gen3:battleInfo(ev)
   local id = type(ev) == "table" and tonumber(ev.trainerId) or nil
+  local st = type(ev) == "table" and type(ev.battle) == "table" and ev.battle or nil
+  local kinds = st and type(st.kinds) == "table" and st.kinds or {}
+  local special = st ~= nil and (st.battleTower == true or st.trainerTower == true or st.pyramid == true
+    or st.secretBase == true)
+  for _, k in ipairs(SPECIAL_KINDS) do if kinds[k] then special = true end end
+  if special then
+    return { extra = { special = true, battleTower = st.battleTower == true or kinds.battleTower == true,
+                       multi = st.multi == true or kinds.partner == true } }
+  end
   return { trainerName = id and self:data().trainerIds[id] or nil }
 end
 
@@ -227,8 +242,10 @@ function Gen3:facts()
   f.countFlags = function(list) local n = 0 for _, id in ipairs(list) do if f.flag(id) then n = n + 1 end end return n end
   f.anyFlag = function(list) for _, id in ipairs(list) do if f.flag(id) then return true end end return false end
   f.hasBadge = function(name)
-    for i, b in ipairs(Gen3.KANTO) do
-      if b == name then return f.flag(("FLAG_BADGE%02d_GET"):format(i)) end
+    for _, list in ipairs({ Gen3.KANTO, Gen3.HOENN }) do
+      for i, b in ipairs(list) do
+        if b == name then return f.flag(("FLAG_BADGE%02d_GET"):format(i)) end
+      end
     end
     return false
   end
@@ -295,6 +312,87 @@ function Gen3:facts()
     return n
   end
   f.data = function() return self_:data() end
+  -- ------------------------------------------------ Emerald
+  f.frontier = function() return type(save.frontier) == "table" and save.frontier or {} end
+  -- decoration ids owned in one category (0 desk .. 7 cushion)
+  f.decorations = function(cat)
+    local inv = type(save.decorationInventory) == "table" and save.decorationInventory or {}
+    local list = inv[cat] or inv[tostring(cat)] or {}
+    local out = {}
+    for _, id in pairs(type(list) == "table" and list or {}) do
+      if tonumber(id) and tonumber(id) > 0 then out[tonumber(id)] = true end
+    end
+    return out
+  end
+  local function filled(list)
+    local n = 0
+    for _, v in pairs(type(list) == "table" and list or {}) do if (tonumber(v) or 0) > 0 then n = n + 1 end end
+    return n
+  end
+  f.secretBaseDecorations = function()
+    local sb = type(save.secretBases) == "table" and save.secretBases[1] or nil
+    return type(sb) == "table" and filled(sb.decorations) or 0
+  end
+  f.roomDecorations = function() return filled(save.playerRoomDecorations) end
+  f.pokeblockCount = function() return filled((function()
+    local out = {}
+    for i, b in pairs(type(save.pokeblocks) == "table" and save.pokeblocks or {}) do
+      out[i] = type(b) == "table" and ((tonumber(b.color) or 0) > 0 and 1 or 0) or 0
+    end
+    return out end)()) end
+  -- best contest ribbon rank (0 none .. 4 Master) in a category, across all Pokemon
+  local RIBBON_SHIFT = { cool = 0, beauty = 3, cute = 6, smart = 9, tough = 12 }
+  f.ribbonRank = function(category)
+    local shift, best = RIBBON_SHIFT[category], 0
+    if not shift then return 0 end
+    self_:eachMon(function(m)
+      local r = m.ribbons
+      local v = 0
+      if type(r) == "number" then v = math.floor(r / 2 ^ shift) % 8
+      elseif type(r) == "table" then v = tonumber(r[category]) or 0 end
+      if v > best then best = v end
+    end)
+    return best
+  end
+  f.trainerHillCleared = function(mode)
+    local t = type(save.trainerHillTimes) == "table" and save.trainerHillTimes or {}
+    local v = tonumber(t[mode + 1]) or tonumber(t[tostring(mode + 1)])
+    return v ~= nil and v > 0 and v < 215999
+  end
+  f.apprenticesFinished = function()
+    local n = 0
+    for _, a in pairs(type(save.apprentices) == "table" and save.apprentices or {}) do
+      if type(a) == "table" and (tonumber(a.id) or 16) < 16 then n = n + 1 end
+    end
+    return n
+  end
+  -- any stored Pokemon (eggs aside) passing test(speciesName, mon)
+  f.anyMon = function(test)
+    local found = false
+    self_:eachMon(function(m) if not found and test(monSpecies(self_, m), m) then found = true end end)
+    return found
+  end
+  f.battleTower = function() return type(save.battleTower) == "table" and save.battleTower or {} end
+  f.museum = function(slot)
+    local w = type(save.contestWinners) == "table" and save.contestWinners[slot] or nil
+    return type(w) == "table" and (tonumber(w.species) or 0) > 0
+  end
+  f.pokeblocks = function() return type(save.pokeblocks) == "table" and save.pokeblocks or {} end
+  -- a stored Pokemon of one of `species` that knows `move`
+  f.knowsMove = function(speciesList, move)
+    local want = {}
+    for _, s in ipairs(speciesList) do want[s] = true end
+    local mv = self_:data().moves and self_:data().moves[move]
+    local found = false
+    self_:eachMon(function(m)
+      if found or not want[monSpecies(self_, m)] then return end
+      for _, x in pairs(type(m.moves) == "table" and m.moves or {}) do
+        local id = type(x) == "table" and (x.id or x.move) or x
+        if id == mv or id == move then found = true end
+      end
+    end)
+    return found
+  end
   -- How many rows of a generated list (trainers/items/hidden/gifts) are done.
   -- keep(row) filters; rows are { flagId, name, ..., map, region }.  Flags the
   -- game sets at New Game never count (they'd look done from the start).

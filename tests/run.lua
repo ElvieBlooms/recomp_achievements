@@ -969,7 +969,8 @@ test("Gen 3 adapter reads FireRed/LeafGreen saves", function()
   eq(f.hasItem(d.itemNames[361]), true, "key item by name")
   eq(f.battleStyle(), "set", "battle style from the game's OPTION menu")
   eq(a:battleInfo({ trainerId = 414 }).trainerName, d.trainerIds[414], "trainer number -> name")
-  eq(gen3Adapter({ version = "emerald" }):version(), nil, "Emerald waits for a later release")
+  eq(gen3Adapter({ version = "emerald" }):version(), "emerald", "Emerald")
+  eq(gen3Adapter({ version = "ruby" }):version(), "ruby", "Ruby")
   eq(gen3Adapter({ version = "crystal" }):version(), nil, "not a Gen 3 save")
 end)
 
@@ -1206,6 +1207,128 @@ test("progress cards: same count shows only the nearest goal; up to three stack"
   T:pushProgress(def("dex10", "POKEMON"), nil, 9, 10)
   cards = T:tickProgress()
   eq(#cards, 1, "one card"); eq(cards[1][1].goal, 10, "9 / 10 wins over 9 / 100")
+end)
+
+
+test("Emerald: every RA entry linked once, every name real, checks run on a fresh and a finished save", function()
+  local P = H.PROJECT .. "/recomp_achievements/"
+  local rules = dofile(P .. "rules/gen3_emerald.lua")(dofile(P .. "rules/gen3_lib.lua"))
+  local d = dofile(P .. "data/gen3_emerald.lua")
+  local linked, ids = {}, {}
+  for _, r in ipairs(rules) do
+    check(not ids[r.id], "unique " .. r.id); ids[r.id] = true
+    check(#r.title <= 32, "title fits " .. r.title)
+    for g, raId in pairs(r.ra) do
+      eq(g, "emerald", r.id .. " is an Emerald rule")
+      check(not linked[raId], "linked once " .. raId); linked[raId] = true
+    end
+  end
+  local c = dofile(P .. "catalog/emerald.lua")
+  local pts = 0
+  for _, e in ipairs(c.entries) do
+    check(linked[e.id], "entry " .. e.id .. " " .. e.title .. " has a rule"); pts = pts + e.points
+  end
+  local src = assert(io.open(H.PROJECT .. "/tools/leaderboard_ingest.py")):read("*a")
+  local mp, tot = src:match('"emerald":%s*{[^}]-"maxPoints":%s*(%d+),%s*"total":%s*(%d+)')
+  eq(tonumber(mp), pts, "leaderboard max points"); eq(tonumber(tot), #c.entries, "leaderboard total")
+  -- every quoted pret name in the rules exists
+  local text = assert(io.open(P .. "rules/gen3_emerald.lua")):read("*a")
+  for name in text:gmatch('"([A-Z][A-Z0-9_]+)"') do
+    if name:match("_$") then -- a prefix, not a name
+    elseif name:match("^FLAG_") or (name:match("^TRAINER_") and name:match("_%d$")) then check(d.flags[name] ~= nil, "flag " .. name)
+    elseif name:match("^VAR_") then check(d.vars[name] ~= nil, "var " .. name) end
+  end
+  -- checks run against a blank save without errors and claim nothing
+  local a = gen3Adapter({ version = "emerald", flags = {}, vars = {}, dex = { caught = {}, seen = {} },
+    party = {}, storage = { boxes = {}, items = {} }, bag = { pockets = {} } })
+  local f = a:facts()
+  for _, r in ipairs(rules) do
+    if r.check then
+      local ok, v = pcall(r.check, f)
+      check(ok, r.id .. " runs: " .. tostring(v))
+      check(v ~= true, r.id .. " not done on a blank save")
+    end
+  end
+  -- names and numbers agree with the engine's own Emerald tables, when available
+  local ENGINE = os.getenv("ENGINE") or "/home/claude/engine"
+  local okF, ft = pcall(dofile, ENGINE .. "/src/core/game3/constants/emerald/flags.lua")
+  if okF then
+    local n = 0
+    for name, id in pairs(d.flags) do
+      if name:match("^FLAG_") and ft.byName[name] then n = n + 1; eq(ft.byName[name], id, name) end
+    end
+    check(n > 1000, "compared " .. n .. " flags")
+  end
+end)
+
+
+test("Ruby/Sapphire: every RA entry linked once, every name real, checks run", function()
+  local P = H.PROJECT .. "/recomp_achievements/"
+  local rules = dofile(P .. "rules/gen3_rs.lua")(dofile(P .. "rules/gen3_lib.lua"))
+  local d = dofile(P .. "data/gen3_rs.lua")
+  local linked, ids = { ruby = {}, sapphire = {} }, {}
+  for _, r in ipairs(rules) do
+    check(not ids[r.id], "unique " .. r.id); ids[r.id] = true
+    check(#r.title <= 32, "title fits " .. r.title)
+    for g, raId in pairs(r.ra) do
+      check(linked[g] ~= nil, r.id .. " is a Ruby/Sapphire rule")
+      check(not linked[g][raId], "linked once " .. raId); linked[g][raId] = true
+    end
+  end
+  local src = assert(io.open(H.PROJECT .. "/tools/leaderboard_ingest.py")):read("*a")
+  for _, g in ipairs({ "ruby", "sapphire" }) do
+    local c = dofile(P .. "catalog/" .. g .. ".lua")
+    local pts = 0
+    for _, e in ipairs(c.entries) do check(linked[g][e.id], g .. " " .. e.id .. " " .. e.title .. " has a rule"); pts = pts + e.points end
+    local mp, tot = src:match('"' .. g .. '":%s*{[^}]-"maxPoints":%s*(%d+),%s*"total":%s*(%d+)')
+    eq(tonumber(mp), pts, g .. " leaderboard max points"); eq(tonumber(tot), #c.entries, g .. " leaderboard total")
+  end
+  local text = assert(io.open(P .. "rules/gen3_rs.lua")):read("*a")
+  for name in text:gmatch('"([A-Z][A-Z0-9_]+)"') do
+    if name:match("_$") then
+    elseif name:match("^FLAG_") or name:match("^TRAINER_") then check(d.flags[name] ~= nil, "flag " .. name)
+    elseif name:match("^VAR_") then check(d.vars[name] ~= nil, "var " .. name) end
+  end
+  for _, g in ipairs({ "ruby", "sapphire" }) do
+    local f = gen3Adapter({ version = g, flags = {}, vars = {}, dex = { caught = {}, seen = {} },
+      party = {}, storage = { boxes = {}, items = {} }, bag = { pockets = {} } }):facts()
+    for _, r in ipairs(rules) do
+      if r.check and r.ra[g] then
+        local ok, v = pcall(r.check, f)
+        check(ok, r.id .. " runs: " .. tostring(v)); check(v ~= true, r.id .. " not done on a blank save")
+      end
+    end
+  end
+  local ENGINE = os.getenv("ENGINE") or "/home/claude/engine"
+  local okF, ft = pcall(dofile, ENGINE .. "/src/core/game3/constants/ruby/flags.lua")
+  if okF then
+    local n = 0
+    for name, id in pairs(d.flags) do
+      if name:match("^FLAG_") and ft.byName[name] then n = n + 1; eq(ft.byName[name], id, name) end
+    end
+    check(n > 500, "compared " .. n .. " flags")
+  end
+end)
+
+
+test("Ruby/Sapphire: villain fights follow pokeruby's version.inc", function()
+  local P = H.PROJECT .. "/recomp_achievements/"
+  local rules = dofile(P .. "rules/gen3_rs.lua")(dofile(P .. "rules/gen3_lib.lua"))
+  local d = dofile(P .. "data/gen3_rs.lua")
+  local want = {
+    rs_chimney_r = "TRAINER_MAXIE_3", rs_weather_r = "TRAINER_COURTNEY_1", rs_hideout_r = "TRAINER_TABITHA_1",
+    rs_seafloor_r = "TRAINER_MAXIE_2", rs_master_ball_r = "FLAG_ITEM_MAGMA_HIDEOUT_B1F_1",
+    rs_chimney_s = "TRAINER_ARCHIE_3", rs_weather_s = "TRAINER_SHELLY_1", rs_hideout_s = "TRAINER_MATT_1",
+    rs_seafloor_s = "TRAINER_ARCHIE_2", rs_master_ball_s = "FLAG_ITEM_AQUA_HIDEOUT_B1F_2",
+  }
+  local byId = {}
+  for _, r in ipairs(rules) do byId[r.id] = r end
+  for id, name in pairs(want) do
+    local game = id:sub(-1) == "r" and "ruby" or "sapphire"
+    local f = gen3Adapter({ version = game, flags = { [d.flags[name]] = true }, vars = {},
+      dex = { caught = {}, seen = {} }, party = {}, storage = { boxes = {}, items = {} }, bag = { pockets = {} } }):facts()
+    eq(byId[id].check(f), true, id .. " reads " .. name)
+  end
 end)
 
 print(("\n%d passed, %d failed"):format(passed, failed))

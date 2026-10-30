@@ -1,5 +1,38 @@
 # Changelog
 
+## 2.4.0
+
+- **Ruby and Sapphire.** All 49 entries of each version's RetroAchievements
+  list are tracked, so every Gen 3 game is covered (1003 entries across
+  the eleven games). Loading a save you've been playing credits what it
+  can prove: badges, rival and Wally battles, the Magma/Aqua story,
+  legendaries, Trick House, gift Pokémon, Battle Tower records, contest
+  ribbons, secret base decorations, berries and more.
+- "Caught without a Master Ball" achievements read the ball the Pokémon
+  is in, so a legendary caught earlier still counts if it isn't in one.
+- The leaderboard and the Discord bot accept Ruby and Sapphire scores.
+  Bot owners: deploy the worker and run the register script again.
+
+## 2.3.0
+
+- **Emerald.** All 197 entries of the RetroAchievements list are tracked.
+  Loading a save you've been playing credits what it can prove: badges,
+  story, gifts, trades, Frontier symbols, Trainer Hill times, Master Rank
+  contest ribbons, decorations, gym leader rematches and cleared areas.
+- Emerald's "every trainer in the gym" achievements count wins before the
+  Gym Leader, as in LeafGreen. The 30 area achievements ("find every item"
+  and "defeat every trainer") are read from the game's map data and list
+  the places they cover.
+- A few Emerald moments leave nothing in the save, so they're counted
+  while you play: Battle Tent prizes, the Blend Master, the clearance sale,
+  a big Game Corner win, a 5x5 Cut, and stealing from rematch trainers.
+  Each says how it's checked on its details page.
+- Battle Frontier, Trainer Hill and secret-base battles are told apart
+  from story battles, so a Frontier opponent can't count as a map trainer.
+- The leaderboard and the Discord bot accept Emerald scores. Bot owners:
+  deploy the worker and run the register script again.
+- Ruby and Sapphire aren't covered yet; the mod doesn't load for them.
+
 ## 2.2.1
 
 - Progress popups no longer come one after another for a single catch.

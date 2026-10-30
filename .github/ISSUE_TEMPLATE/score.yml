@@ -22,8 +22,11 @@ body:
         - Gold
         - Silver
         - Crystal
+        - Ruby
+        - Sapphire
         - FireRed
         - LeafGreen
+        - Emerald
     validations:
       required: true
   - type: input

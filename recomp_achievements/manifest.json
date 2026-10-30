@@ -1,7 +1,7 @@
 {
   "id": "recomp_achievements",
   "name": "Recomp Achievements",
-  "version": "2.2.1",
+  "version": "2.4.0",
   "api": 3,
   "entry": "main.lua",
   "profile": "content",
@@ -18,7 +18,10 @@
     "gen1",
     "gen2",
     "firered",
-    "leafgreen"
+    "leafgreen",
+    "emerald",
+    "ruby",
+    "sapphire"
   ],
-  "description": "An unofficial achievements mod inspired by RetroAchievements: their lists for Red, Blue, Yellow, Gold, Silver, Crystal, FireRed and LeafGreen (708 achievements), checked by this mod as you play and saved in your game, so they follow Save Sync. Browse them from the START menu. Works offline, no account, nothing is sent to RetroAchievements. Achievement text by RetroAchievements and its authors; not affiliated with RetroAchievements. Other mods can add their own achievements through its API."
+  "description": "An unofficial achievements mod inspired by RetroAchievements: their lists for Red, Blue, Yellow, Gold, Silver, Crystal, Ruby, Sapphire, Emerald, FireRed and LeafGreen (1003 achievements), checked by this mod as you play and saved in your game, so they follow Save Sync. Browse them from the START menu. Works offline, no account, nothing is sent to RetroAchievements. Achievement text by RetroAchievements and its authors; not affiliated with RetroAchievements. Other mods can add their own achievements through its API."
 }

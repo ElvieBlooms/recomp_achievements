@@ -108,9 +108,9 @@ end
 -- one of the three versions is ever fought).
 local function inMaps(map, list, skip)
   for _, s in ipairs(skip or {}) do
-    if map == s or map:sub(1, #s + 1) == s .. "_" then return false end
+    if map:sub(1, #s) == s then return false end -- plain prefix
   end
-  if map:match("_Gym$") then return false end
+  if map:match("_Gym$") or map:match("_Gym_") then return false end
   for _, m in ipairs(list) do
     if map == m or map:sub(1, #m + 1) == m .. "_" then return true end
   end
@@ -118,7 +118,9 @@ local function inMaps(map, list, skip)
 end
 L.inMaps = inMaps
 
-local NOT_SWEPT = { "TRAINER_RIVAL_", "TRAINER_CHAMPION_" }
+-- (Gabby and Ty move around Hoenn; each of their teams is its own trainer.)
+local NOT_SWEPT = { "TRAINER_RIVAL_", "TRAINER_CHAMPION_", "TRAINER_BRENDAN_", "TRAINER_MAY_",
+                    "TRAINER_GABBY_AND_TY_" }
 local function sweepable(row)
   local name = row[2]
   for _, p in ipairs(NOT_SWEPT) do if name:sub(1, #p) == p then return false end end
@@ -137,7 +139,10 @@ function L.area(id, ra, title, opts, extra)
   local function test(row)
     local map = row[#row - 1]
     if not inMaps(map, opts.maps, opts.skip) then return false end
-    if row[2]:match("^TRAINER_") then return sweepable(row) end
+    if row[2]:match("^TRAINER_") then
+      if opts.trainerPrefix and row[2]:sub(1, #opts.trainerPrefix) ~= opts.trainerPrefix then return false end
+      return sweepable(row)
+    end
     if opts.noItem and opts.noItem[row[3]] then return false end
     return true
   end

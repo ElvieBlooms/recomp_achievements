@@ -44,13 +44,14 @@ on Discord" button.
 
 ## What the Action checks
 
-- The game is Red, Blue, Yellow, Gold, Silver, Crystal, FireRed or LeafGreen.
+- The game is Red, Blue, Yellow, Gold, Silver, Crystal, Ruby, Sapphire, FireRed, LeafGreen or Emerald.
 - The trainer name is 1–12 characters with nothing the page can't show,
   and doesn't match `tools/name_blocklist.txt` (see "Name filter" below).
 - Points and achievements are whole numbers no higher than the game's
   RetroAchievements-list totals (Red 745/93, Blue 678/90, Yellow 458/76,
   Gold 685/72, Silver 616/75, Crystal 864/113, FireRed 453/61,
-  LeafGreen 781/128). If the RA lists
+  LeafGreen 781/128, Emerald 2086/197, Ruby 485/49,
+  Sapphire 485/49). If the RA lists
   change, update `GAMES` in `tools/leaderboard_ingest.py`; `tests/run.lua`
   fails until the two agree.
 - The play time, if given, is H:MM. Cards from mod 1.1.0 have no TIME line

@@ -112,7 +112,7 @@ await test("/score with a typo answers at once and sends nothing", async () => {
   assert.match((await r.json()).data.content, /check code/);
   assert.equal(c.jobs.length, 0);
   assert.equal(calls.length, 0);
-  assert.match(precheck({ ...CARD, game: "emerald" }), /from the list/);
+  assert.match(precheck({ ...CARD, game: "diamond" }), /from the list/);
   assert.equal(precheck({ ...CARD, game: "gold", code: checkCode("gold", "ASH", 120, 20, "ABC123") }), null, "gold accepted");
   assert.match(precheck({ ...CARD, save_id: "AB" }), /save ID/);
 });
