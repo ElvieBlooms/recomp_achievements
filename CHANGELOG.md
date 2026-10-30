@@ -10,6 +10,8 @@
   ribbons, secret base decorations, berries and more.
 - "Caught without a Master Ball" achievements read the ball the Pokémon
   is in, so a legendary caught earlier still counts if it isn't in one.
+- New Discord command: `/check game` posts the top 3 for a game as a
+  small embed in the channel.
 - The leaderboard and the Discord bot accept Ruby and Sapphire scores.
   Bot owners: deploy the worker and run the register script again.
 

@@ -8,7 +8,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import worker, { checkCode, normalizeCode, parseTime, precheck } from "../discord/worker.js";
+import worker, { boardEmbed, checkCode, normalizeCode, parseTime, precheck, topEntries } from "../discord/worker.js";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 let passed = 0;
@@ -47,6 +47,56 @@ function scoreInteraction(o, user = { id: "123456789012345678" }) {
 
 const CARD = { game: "red", name: "ASH", points: 120, earned: 20, save_id: "ABC123" };
 CARD.code = checkCode(CARD.game, CARD.name, CARD.points, CARD.earned, CARD.save_id);
+
+await test("/check posts the top 3 for a game as a public embed", async () => {
+  const board = { games: { ruby: { title: "Pokemon Ruby", maxPoints: 485, total: 49, entries: [
+    { name: "SLOW", points: 400, earned: 39, time: 900, first: "2026-01-01" },
+    { name: "FAST", points: 400, earned: 39, time: 600, first: "2026-01-02" },
+    { name: "TOP_*", points: 485, earned: 49, time: 59999, first: "2026-01-03" },
+    { name: "OLD", points: 400, earned: 39, time: null, first: "2025-01-01" },
+    { name: "LOW", points: 3, earned: 1, time: 5, first: "2026-01-04" } ] },
+    sapphire: { title: "Pokemon Sapphire", maxPoints: 485, total: 49, entries: [] } } };
+  const calls = stubFetch((url) => url.includes("leaderboard.json")
+    ? new Response(JSON.stringify(board), { status: 200 }) : new Response(null, { status: 200 }));
+  const c = ctx();
+  const r = await worker.fetch(await signed({ type: 2, application_id: "1", token: "tok",
+    data: { name: "check", options: [{ name: "game", value: "ruby" }] } }), ENV, c);
+  const reply = await r.json();
+  assert.equal(reply.type, 5, "deferred");
+  assert.equal(reply.data, undefined, "public, not ephemeral");
+  await Promise.all(c.jobs);
+  assert.match(calls[0].url, /^https:\/\/elvieblooms\.github\.io\/recomp_achievements\/leaderboard\.json\?t=\d+$/);
+  assert.match(calls[1].url, /webhooks\/1\/tok\/messages\/@original$/);
+  const sent = JSON.parse(calls[1].init.body);
+  const e = sent.embeds[0];
+  assert.equal(e.title, "Pokemon Ruby: top 3");
+  assert.equal(e.url, "https://elvieblooms.github.io/recomp_achievements/#ruby");
+  const lines = e.description.split("\n");
+  assert.equal(lines.length, 3);
+  assert.match(lines[0], /TOP\\_\\\*\*\*  485 \/ 485 pts · 49\/49 · 999:59$/);
+  assert.match(lines[1], /\*\*FAST\*\*  400 \/ 485 pts · 39\/49 · 10:00$/, "equal points: shorter time first");
+  assert.match(lines[2], /\*\*SLOW\*\*/, "timed before untimed");
+  assert.equal(e.footer.text, "5 trainers on the board");
+  assert.deepEqual(sent.allowed_mentions, { parse: [] });
+
+  const empty = boardEmbed("sapphire", board.games.sapphire, ENV.BOARD_URL);
+  assert.match(empty.description, /No scores yet/);
+  assert.equal(topEntries(undefined).length, 0);
+  assert.match(boardEmbed("red", { entries: [{ name: "@everyone", points: 1, earned: 1 }] }, "").description,
+    /@​everyone/, "mentions defused");
+});
+
+await test("/check: unknown game, and the board unreachable", async () => {
+  let r = await worker.fetch(await signed({ type: 2, data: { name: "check", options: [{ name: "game", value: "diamond" }] } }), ENV, ctx());
+  assert.match((await r.json()).data.content, /from the list/);
+  const calls = stubFetch((url) => new Response("nope", { status: url.includes("leaderboard.json") ? 503 : 200 }));
+  const c = ctx();
+  r = await worker.fetch(await signed({ type: 2, application_id: "1", token: "tok",
+    data: { name: "check", options: [{ name: "game", value: "red" }] } }), ENV, c);
+  assert.equal((await r.json()).type, 5);
+  await Promise.all(c.jobs);
+  assert.match(JSON.parse(calls[1].init.body).content, /Couldn't load the leaderboard/);
+});
 
 await test("check code matches the Python and Lua vectors", () => {
   assert.equal(checkCode("red", "ASH", 120, 20, "ABC123"), "DHC0-HH32");

@@ -10,6 +10,8 @@
 // Commands (registered by tools/discord_register.py):
 //   /score game name points earned save_id code [time]
 //   /leaderboard            link to the page
+//   /check game             the top 3 for a game, posted as a small embed
+//                           (read from the public leaderboard.json)
 //
 // Secrets (wrangler secret put ...):
 //   DISCORD_PUBLIC_KEY  from the Discord developer portal
@@ -30,6 +32,10 @@ const GAMES = { red: "Pokemon Red", blue: "Pokemon Blue", yellow: "Pokemon Yello
                 firered: "Pokemon FireRed", leafgreen: "Pokemon LeafGreen", emerald: "Pokemon Emerald",
                 ruby: "Pokemon Ruby", sapphire: "Pokemon Sapphire" };
 const EPHEMERAL = 64;
+// Embed colours, the light-theme ones from docs/index.html.
+const COLORS = { red: 0xc0392b, blue: 0x2c5aa0, yellow: 0xc79a00, gold: 0xa8801a, silver: 0x6f7a86,
+                 crystal: 0x2b8fa8, firered: 0xd9622b, leafgreen: 0x4f9a3a, emerald: 0x1f8f6a,
+                 ruby: 0xb0233a, sapphire: 0x2a4fb0 };
 
 // ---------------------------------------------------------- check code
 // Same as recomp_achievements/ui/share.lua and tools/leaderboard_ingest.py.
@@ -181,6 +187,79 @@ async function dispatch(env, interaction, o) {
   if (r.status !== 204) throw new Error("GitHub said " + r.status);
 }
 
+// ---------------------------------------------------------- /check
+// Same order as rank() in tools/leaderboard_ingest.py: most points, then
+// the shorter play time (untimed entries after timed ones), then the
+// earlier submission.
+export function topEntries(entries, n = 3) {
+  const list = (Array.isArray(entries) ? entries : []).filter(e => e && typeof e.name === "string");
+  list.sort((a, b) => {
+    if ((b.points | 0) !== (a.points | 0)) return (b.points | 0) - (a.points | 0);
+    const ta = a.time == null ? null : a.time, tb = b.time == null ? null : b.time;
+    if ((ta === null) !== (tb === null)) return ta === null ? 1 : -1;
+    if (ta !== tb) return ta - tb;
+    return String(a.first || "").localeCompare(String(b.first || ""));
+  });
+  return list.slice(0, n);
+}
+
+function clock(minutes) {
+  return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
+}
+
+// Trainer names are shown as written; Markdown and mentions are escaped.
+function plain(s) {
+  return String(s).replace(/[\\*_~`|>#\[\]()-]/g, "\\$&").replace(/@/g, "@\u200b");
+}
+
+export function boardEmbed(game, slot, boardUrl) {
+  const title = (slot && slot.title) || GAMES[game];
+  const max = slot && slot.maxPoints, total = slot && slot.total;
+  const entries = (slot && slot.entries) || [];
+  const top = topEntries(entries);
+  const medals = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
+  const lines = top.map((e, i) => {
+    let line = `${medals[i]} **${plain(e.name)}**  ${e.points | 0}${max ? " / " + max : ""} pts`;
+    line += ` \u00b7 ${e.earned | 0}${total ? "/" + total : ""}`;
+    if (typeof e.time === "number") line += ` \u00b7 ${clock(e.time)}`;
+    return line;
+  });
+  const base = String(boardUrl || "").replace(/#.*$/, "");
+  return {
+    title: `${title}: top ${top.length || 3}`,
+    url: base ? `${base}#${game}` : undefined,
+    color: COLORS[game],
+    description: lines.length ? lines.join("\n")
+      : "No scores yet. Be the first with `/score`!",
+    footer: { text: entries.length === 1 ? "1 trainer on the board"
+      : `${entries.length} trainers on the board` },
+  };
+}
+
+async function loadBoard(env) {
+  const base = String(env.BOARD_URL || "").replace(/#.*$/, "").replace(/\/?$/, "/");
+  const r = await fetch(`${base}leaderboard.json?t=${Date.now()}`, {
+    headers: { "User-Agent": "recomp-achievements-discord-bot" }, cf: { cacheTtl: 0 },
+  });
+  if (!r.ok) throw new Error("board said " + r.status);
+  return r.json();
+}
+
+async function postCheck(env, interaction, game) {
+  let body;
+  try {
+    const board = await loadBoard(env);
+    body = { embeds: [boardEmbed(game, board.games && board.games[game], env.BOARD_URL)] };
+  } catch (e) {
+    body = { content: "Couldn't load the leaderboard right now. Please try again in a few minutes." };
+  }
+  await fetch(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}/messages/@original`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...body, allowed_mentions: { parse: [] } }),
+  });
+}
+
 async function editReply(interaction, content) {
   await fetch(`https://discord.com/api/v10/webhooks/${interaction.application_id}/${interaction.token}/messages/@original`, {
     method: "PATCH",
@@ -206,6 +285,13 @@ export default {
       const name = interaction.data && interaction.data.name;
       if (name === "leaderboard") {
         return say(`The leaderboard: ${env.BOARD_URL}\nSubmit with \`/score\` and the card from START > TROPHIES > SELECT.`);
+      }
+      if (name === "check") {
+        const game = String(options(interaction).game || "").toLowerCase();
+        if (!GAMES[game]) return say("Pick the game from the list.");
+        if (!env.BOARD_URL) return say("The bot isn't set up yet. Please tell the maintainer.");
+        ctx.waitUntil(postCheck(env, interaction, game));
+        return json({ type: 5 }); // "thinking…", then the embed replaces it (public)
       }
       if (name === "score") {
         const o = options(interaction);

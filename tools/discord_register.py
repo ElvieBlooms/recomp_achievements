@@ -20,17 +20,19 @@ import urllib.request
 # was added to a server or installed by the user.
 WHERE = {"integration_types": [0, 1], "contexts": [0, 1, 2]}
 
+GAME_CHOICES = [{"name": "Red", "value": "red"}, {"name": "Blue", "value": "blue"},
+                {"name": "Yellow", "value": "yellow"}, {"name": "Gold", "value": "gold"},
+                {"name": "Silver", "value": "silver"}, {"name": "Crystal", "value": "crystal"},
+                {"name": "FireRed", "value": "firered"}, {"name": "LeafGreen", "value": "leafgreen"},
+                {"name": "Ruby", "value": "ruby"}, {"name": "Sapphire", "value": "sapphire"},
+                {"name": "Emerald", "value": "emerald"}]
+
 COMMANDS = [
     dict(WHERE, name="score", type=1,
          description="Put your Recomp Achievements score on the leaderboard",
          options=[
              {"type": 3, "name": "game", "description": "GAME on the card", "required": True,
-              "choices": [{"name": "Red", "value": "red"}, {"name": "Blue", "value": "blue"},
-                          {"name": "Yellow", "value": "yellow"}, {"name": "Gold", "value": "gold"},
-                          {"name": "Silver", "value": "silver"}, {"name": "Crystal", "value": "crystal"},
-                          {"name": "FireRed", "value": "firered"}, {"name": "LeafGreen", "value": "leafgreen"},
-                          {"name": "Ruby", "value": "ruby"}, {"name": "Sapphire", "value": "sapphire"},
-                          {"name": "Emerald", "value": "emerald"}]},
+              "choices": GAME_CHOICES},
              {"type": 3, "name": "name", "description": "TRAINER on the card",
               "required": True, "max_length": 12},
              {"type": 4, "name": "points", "description": "First number after POINTS",
@@ -46,6 +48,10 @@ COMMANDS = [
          ]),
     dict(WHERE, name="leaderboard", type=1,
          description="Link to the Recomp Achievements leaderboard"),
+    dict(WHERE, name="check", type=1,
+         description="Show the top 3 on the leaderboard for a game",
+         options=[{"type": 3, "name": "game", "description": "Which game", "required": True,
+                   "choices": GAME_CHOICES}]),
 ]
 
 

@@ -12,6 +12,12 @@ Otherwise it says "Checking your score…" and edits that message a minute
 later with the result: added, updated, or why it was refused. Only the
 player can see these messages. `/leaderboard` replies with a link to the page.
 
+`/check game:ruby` posts a small embed in the channel, visible to everyone,
+with the top 3 for that game: name, points, achievements and play time,
+linking to that game's tab on the page. It reads the public
+`leaderboard.json`, so it needs no extra secrets. GitHub Pages can take a
+few minutes to serve a new score.
+
 ## How it works
 
 ```
@@ -72,7 +78,7 @@ computer.
    ```
    DISCORD_APP_ID=<application id> DISCORD_BOT_TOKEN=<bot token> python3 tools/discord_register.py
    ```
-   It prints `registered: /score, /leaderboard`. Commands can take a few
+   It prints `registered: /score, /leaderboard, /check`. Commands can take a few
    minutes to appear in Discord.
 6. **Let people use it.** On *Installation*, tick **User Install** and
    **Guild Install**, with the `applications.commands` scope (add `bot`
