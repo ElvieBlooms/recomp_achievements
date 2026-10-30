@@ -99,6 +99,8 @@ local FILTERS = {
   { id = "reference", label = "RA REFERENCE", optional = true },
 }
 
+Browser.FILTERS = FILTERS
+
 local function passes(filter, row)
   if filter == "reference" then return row.reference == true end
   if row.reference then return false end
@@ -200,7 +202,11 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
       elseif input:wasPressed("left") then about = 1 end
       return
     end
-    if input:wasPressed("select") then about = Share and 1 or 2 return end
+    if input:wasPressed("select") then
+      about = Share and 1 or 2
+      if about == 1 then pcall(engine.dispatch, engine, "ui.card_opened", {}) end
+      return
+    end
     if detail then
       if input:wasPressed("b") or input:wasPressed("a") then detail, page = nil, 1
       elseif input:wasPressed("right") then page = 2
@@ -400,10 +406,39 @@ end
 -- ------------------------------------------------------------------
 -- Wiring: register the screen and add the START row.
 -- ------------------------------------------------------------------
-function Browser.install(mod, engine, util, Text, Share)
+-- Modern (ui/modern.lua) is the default menu; the CLASSIC MENU option
+-- brings back the Game Boy text-box version above.
+function Browser.install(mod, engine, util, Text, Share, Modern)
   mod.content.screens:register(Browser.SCREEN_ID, {
-    new = function(game) return Browser.newScreen(mod, engine, util, Text, game, Share) end,
+    new = function(game)
+      if Modern and not mod.options:get("classicMenu") then
+        return Modern.newScreen({ mod = mod, engine = engine, Browser = Browser, Share = Share,
+                                  game = game, boardUrl = Browser.BOARD_URL })
+      end
+      return Browser.newScreen(mod, engine, util, Text, game, Share)
+    end,
   })
+
+  -- The modern menu draws at window resolution, after the game frame.
+  -- Installed before the popups' hook, so unlock popups stay on top.
+  if Modern then
+    -- Drawn BEFORE handing on, so anything later in the chain (the unlock
+    -- popups included) lands on top of the menu whichever order the
+    -- hooks were installed in.
+    mod.hooks:wrap("render.hud", function(nextFn, game, vp, ...)
+      local live = mod.game or game
+      local states = live and live.stack and live.stack.states
+      local top = states and states[#states]
+      if top and top.modern and top.drawWindow and type(vp) == "table" then
+        local ok, err = pcall(top.drawWindow, top, vp)
+        if not ok and not Browser.warned then
+          Browser.warned = true
+          mod.log:warn("achievements menu draw failed: %s", tostring(err))
+        end
+      end
+      return nextFn(game, vp, ...)
+    end)
+  end
 
   mod.hooks:wrap("ui.start_menu.items", function(nextFn, game, items)
     items = nextFn(game, items)

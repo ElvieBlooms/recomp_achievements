@@ -1,11 +1,22 @@
 # Recomp Achievements
 
-Achievements for **Gen1Recomp**: the official RetroAchievements lists for
-**Pokémon Red, Blue and Yellow**, all 259 entries, checked as you play and
-saved in your game.
+An achievements mod for **Gen1Recomp**, inspired by
+[RetroAchievements](https://retroachievements.org). It uses the achievement
+lists RetroAchievements publishes for **Pokémon Red, Blue and Yellow** (all
+259 entries: titles, descriptions and point values) and checks them with
+its own unlock logic, written from scratch for Gen1Recomp. Everything
+unlocks and is saved locally, in your game.
 
-- **Works offline.** No account, no sign-in, and nothing is ever sent to
-  RetroAchievements. Unlocks are local to your game.
+> **This is an unofficial fan project.** It is not made, endorsed or
+> supported by RetroAchievements, and it doesn't connect to them in any way.
+> Unlocks here don't count on retroachievements.org, and RetroAchievements'
+> own unlock code isn't used. If you want achievements that count on your
+> RetroAchievements profile, use RetroAchievements with a supported
+> emulator. Please report problems with this mod here, not to
+> RetroAchievements.
+
+- **Local only.** No account, no sign-in, and nothing is ever sent to
+  RetroAchievements or anywhere else. Unlocks live in your save.
 - **Follows your save.** Progress is stored inside the save, so it travels
   with Gen1Recomp's Save Sync and rolls back if you load an older save.
 - **Credits your existing saves.** Load a save you've been playing,
@@ -15,12 +26,13 @@ saved in your game.
 - **Open to other mods.** Other mods can add their own achievements, which
   appear in the same list.
 
-Achievement text is by RetroAchievements and its authors. This mod is not
-affiliated with RetroAchievements. See [NOTICE.md](NOTICE.md).
+Achievement titles and descriptions are by the RetroAchievements community
+and each achievement's author, and are credited in the game. See
+[NOTICE.md](NOTICE.md).
 
 ## Install
 
-1. Download `recomp_achievements-1.3.0.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-1.6.0.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
 2. Start Red, Blue or Yellow (Gen1Recomp 0.3.97 or newer).
 3. Open the START menu and choose **ACHIEVEMENTS**.
@@ -30,22 +42,32 @@ Save Sync carries your progress but doesn't install mods.
 
 ## Using it
 
-| In the browser | |
+The menu shows your achievements on the left and the selected one's
+details on the right, drawn sharply at your window's resolution.
+
+| In the menu | |
 |---|---|
-| UP / DOWN | move |
-| LEFT / RIGHT | change filter: ALL, EARNED, MISSING, IN PROGRESS, OFFICIAL, BONUS, FROM MODS, ARCHIVED |
-| A | details (RIGHT on the details shows how this mod checks it) |
-| SELECT | leaderboard card (RIGHT for credits) |
+| UP / DOWN | move (hold to scroll) |
+| LEFT / RIGHT | change filter: All, Earned, Missing, In progress, RA list, Bonus, From mods, Archived |
+| A | switch the details between the description and how it's checked |
+| SELECT | leaderboard card (RIGHT for About) |
 | B / START | back |
 
-A filled square means earned, a hollow square means locked, and a slashed
-square means archived (earned with a mod that isn't loaded right now).
+A gold disc with a tick means earned, a ring means locked, a partly green
+ring shows progress, and a slashed ring means archived (earned with a mod
+that isn't loaded right now). Prefer the original Game Boy text-box look?
+Turn on **CLASSIC MENU**.
 
 Options are in the Mods manager:
 - **UNLOCK POPUPS**
+- **POPUP STYLE**: Modern (a banner in your theme, the default), Corner (a
+  small card in the top-right corner) or Classic GB (the Game Boy text box)
 - **UNLOCK SOUND**: a short jingle on each unlock, at the game's SFX VOL
 - **BONUS ACHIEVEMENTS**: this mod's extras, which aren't part of the RA lists
 - **REVEAL HIDDEN**
+- **THEME**: colours for the menu and popups: Game Boy (default), Gruvbox
+  Dark, Gruvbox Light, Nord or Midnight
+- **CLASSIC MENU**: the Game Boy-style menu instead of the modern one
 - **SHOW RA REFERENCE**: adds a page listing every RA entry for the game
 - **DEBUG LOG**
 
@@ -56,14 +78,14 @@ Options are in the Mods manager:
   was done in the past, so those only count from when the mod is installed.
 - "Without resetting" means within one play session. Loading a save starts
   the attempt over.
-- About a fifth of the entries are a **local reading** of the official
+- About a fifth of the entries are a **local reading** of the RetroAchievements
   description, because Gen1Recomp can't check the original wording exactly
   (for example "unmissable" items). Each one says on its in-game ABOUT page
   exactly what counts. The full list is in [docs/COVERAGE.md](docs/COVERAGE.md).
 
 ## Leaderboard
 
-There's an optional public leaderboard at
+There's an optional, community-run leaderboard at
 **https://elvieblooms.github.io/recomp_achievements**. The mod never goes
 online; you copy a short card into a form yourself:
 
@@ -81,13 +103,15 @@ Discord account.
 
 Players are ranked by points. On equal points, the shorter TIME ranks
 higher: that's your play time when you reached the score (your latest
-official unlock), so playing on afterwards doesn't count against you.
+unlock from the RetroAchievements list), so playing on afterwards doesn't
+count against you.
 
-Only the official RetroAchievements list counts; bonus achievements and
+Only achievements from the RetroAchievements lists count; bonus achievements and
 achievements from other mods don't. The check code only catches typos, so
 the board is an honor system. Trainer names are filtered for offensive
 words, and every row has a Report link. It has nothing to do with
-RetroAchievements or its leaderboards.
+RetroAchievements or its leaderboards, and scores here mean nothing on
+retroachievements.org.
 
 ## For mod authors
 
@@ -114,11 +138,11 @@ recomp_achievements/   the mod (this folder is what ships)
   main.lua               wiring; start reading here
   core/                  ledger (save data), registry, engine, public API
   adapters/gen1.lua      Red/Blue/Yellow save + game data -> "facts"
-  rules/gen1_official.lua  one detector per official RA entry
+  rules/gen1_official.lua  one detector per RetroAchievements-list entry
   rules/gen1_lib.lua     the building blocks those detectors use
   rules/gen1.lua         bonus achievements
   catalog/               RA metadata (generated)
-  ui/                    browser, popups, unlock sound, text helpers
+  ui/                    menu (modern + classic), popups, unlock sound, text helpers
 achievement_sandbox/   example provider mod (not part of the release)
 docs/                  PROVIDER_API.md, COVERAGE.md (generated), and the
                        leaderboard website (index.html, leaderboard.json)

@@ -28,8 +28,27 @@ local drawn = {}
 H.drawn = drawn
 local function noop() end
 _G.love = _G.love or {}
+-- A fake font (6 px per character) so window-space UI can be measured.
+local function fakeFont(px)
+  local f = { px = px }
+  function f:getWidth(s) local n = 0 for _ in tostring(s):gmatch("[%z\1-\127\194-\244][\128-\191]*") do n = n + 1 end return n * px * 0.6 end
+  function f:getHeight() return px end
+  function f:getWrap(s, width)
+    local lines, line = {}, ""
+    for word in tostring(s):gmatch("%S+") do
+      local try = line == "" and word or (line .. " " .. word)
+      if self:getWidth(try) > width and line ~= "" then lines[#lines + 1] = line; line = word else line = try end
+    end
+    if line ~= "" then lines[#lines + 1] = line end
+    return width, lines
+  end
+  return f
+end
 love.graphics = setmetatable({
   getColor = function() return 1, 1, 1, 1 end,
+  newFont = function(px) return fakeFont(px) end,
+  -- window-space text (the modern menu) is recorded like Font.draw text
+  print = function(s, x, y) drawn[#drawn + 1] = { text = tostring(s), tx = (x or 0) / 8, ty = (y or 0) / 8, window = true } end,
 }, { __index = function() return noop end })
 local clockNow = 0
 love.timer = { getTime = function() return clockNow end }
@@ -234,6 +253,9 @@ function H.boot(modIds, opts)
   Runtime.emit("save.created", { save = game.save })
   Runtime.emit("game.ready", { game = game })
   local env = { loader = loader, game = game, data = data, ok = ok, version = version }
+  -- Most screen tests read the classic menu's text; opts.modern opts out.
+  loader.modOptions.recomp_achievements = { classicMenu = not opts.modern,
+                                            popupStyle = opts.modern and "modern" or "classic" }
   return setmetatable(env, { __index = H.Env })
 end
 
@@ -331,11 +353,18 @@ function Env:draw()
   return H.screenText()
 end
 
-function Env:hud()
+function Env:hud(vp)
   H.clearDrawn()
   Runtime.call("render.hud", function() end, self.game,
-    { gameX = 0, gameY = 0, gameWidth = 160, gameHeight = 144, scale = 1 })
+    vp or { gameX = 0, gameY = 0, gameWidth = 160, gameHeight = 144, scale = 1 })
   return H.screenText()
+end
+
+-- Everything printed in window space by the last hud call, as one string.
+function H.windowText()
+  local out = {}
+  for _, d in ipairs(drawn) do if d.window then out[#out + 1] = d.text end end
+  return table.concat(out, "\n")
 end
 
 function Env:startMenu()

@@ -13,7 +13,8 @@ reference and reuse achievement titles, descriptions and related metadata.
   used. Every unlock check in this mod was written independently against
   Gen1Recomp's own save data and events.
 - No RetroAchievements **badge artwork** is included.
-- This mod is **not affiliated with or endorsed by RetroAchievements**.
+- This mod is an **unofficial fan project, inspired by RetroAchievements and
+  not affiliated with, endorsed by or supported by RetroAchievements**.
   Unlocks are local to your game. They are never sent to RetroAchievements
   and don't count toward any RetroAchievements account, rank or leaderboard.
 

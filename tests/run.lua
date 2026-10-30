@@ -437,7 +437,7 @@ test("reference view lists RA entries; only tracked ones count", function()
   local env = H.boot(BOTH)
   env:newGame()
   local before = ach(env).totals().total
-  env.loader.modOptions.recomp_achievements = { showReference = true }
+  env.loader.modOptions.recomp_achievements.showReference = true
   for _, item in ipairs(env:startMenu()) do
     if item.label == "ACHIEVEMENTS" then item.onSelect() end
   end
@@ -618,7 +618,7 @@ end)
 
 test("unlock sound respects its option, SFX VOL 0, and works without popups", function()
   local env = H.boot({ "recomp_achievements" })
-  env.loader.modOptions.recomp_achievements = { unlockSound = false }
+  env.loader.modOptions.recomp_achievements.unlockSound = false
   env:newGame(); env:hud(); H.advance(5); clearSounds()
   earnBadge(env); env:hud()
   eq(#H.sounds, 0, "option off: silent")
@@ -630,10 +630,162 @@ test("unlock sound respects its option, SFX VOL 0, and works without popups", fu
   eq(#H.sounds, 0, "SFX VOL 0: silent")
 
   local env3 = H.boot({ "recomp_achievements" })
-  env3.loader.modOptions.recomp_achievements = { toasts = false }
+  env3.loader.modOptions.recomp_achievements.toasts = false
   env3:newGame(); H.advance(5); clearSounds()
   earnBadge(env3)
   eq(#H.sounds, 1, "popups off: sound plays at the unlock")
+end)
+
+-- ---------------------------------------------------------- modern menu
+local function openMenu(env)
+  for _, item in ipairs(env:startMenu()) do
+    if item.label == "ACHIEVEMENTS" then item.onSelect() end
+  end
+  local states = env.game.stack.states
+  return states[#states]
+end
+local BIG = { gameX = 80, gameY = 0, gameWidth = 800, gameHeight = 720, scale = 5 }
+
+test("modern menu is the default and draws at window resolution", function()
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env:newGame()
+  env.game.save.inventory.BOULDERBADGE = 1
+  env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+  local screen = openMenu(env)
+  check(screen and screen.modern, "modern screen on top")
+  env:hud(BIG)
+  local txt = H.windowText()
+  check(txt:find("Achievements", 1, true), "title")
+  check(txt:find("Pokémon Red", 1, true), "game name")
+  check(txt:find("All", 1, true) and txt:find("RA list", 1, true), "filter chips")
+  check(not txt:find("OFFICIAL", 1, true), "no 'official' wording")
+  local first = screen.state.list[1]
+  check(first and txt:find(first.title:sub(1, 4), 1, true), "the first achievement row")
+  check(txt:find("Earned", 1, true), "status text")
+end)
+
+test("modern menu: filters, A for how it's checked, SELECT for the card", function()
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env:newGame()
+  env.game.save.inventory.BOULDERBADGE = 1
+  env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+  local screen = openMenu(env)
+  env:press("right"); env:hud(BIG)
+  eq(screen.state.filter, 2, "RIGHT moves to the next filter")
+  for _, row in ipairs(screen.state.list) do eq(row.unlocked, true, "earned filter shows earned rows") end
+  env:press("a"); env:hud(BIG)
+  check(H.windowText():find("How it's checked", 1, true), "A shows how it's checked")
+  env:press("select"); env:hud(BIG)
+  local card = ach(env).leaderboardCard()
+  local txt = H.windowText()
+  check(txt:find("Leaderboard card", 1, true), "card tab")
+  check(txt:find(card.code, 1, true), "check code shown")
+  check(txt:find(card.saveId, 1, true), "save id shown")
+  env:press("right"); env:hud(BIG)
+  check(H.windowText():find("unofficial", 1, true), "About page")
+  env:press("b"); env:hud(BIG)
+  eq(screen.state.modal, nil, "B closes the card")
+  env:press("b")
+  local states = env.game.stack.states
+  check(states[#states] ~= screen, "B again closes the menu")
+end)
+
+test("modern menu fits Gen 2 and Gen 3 screen shapes and hides spoilers", function()
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env:newGame()
+  openMenu(env)
+  for _, vp in ipairs({
+    { gameX = 0, gameY = 0, gameWidth = 960, gameHeight = 640, scale = 4 },   -- 240x160 (GBA)
+    { gameX = 0, gameY = 0, gameWidth = 160, gameHeight = 144, scale = 1 },   -- tiny window
+    { gameX = 100, gameY = 0, gameWidth = 1440, gameHeight = 1296, scale = 9 },
+  }) do
+    env:hud(vp)
+    check(H.windowText():find("Achievements", 1, true), "draws at " .. vp.gameWidth .. "x" .. vp.gameHeight)
+  end
+  local Modern = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/modern.lua"))()
+  local f = love.graphics.newFont(10)
+  eq(Modern.ellipsize(f, "Short", 1000), "Short", "fits")
+  check(f:getWidth(Modern.ellipsize(f, "A very long achievement title indeed", 60)) <= 60, "ellipsized to width")
+  for game in pairs(Modern.GAME_NAMES) do check(Modern.ACCENTS[game], game .. " has an accent") end
+end)
+
+test("CLASSIC MENU option brings back the Game Boy menu", function()
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env.loader.modOptions.recomp_achievements.classicMenu = true
+  env:newGame()
+  local screen = openMenu(env)
+  check(screen and not screen.modern, "classic screen")
+  env:draw()
+  check(H.screenHas("ALL"), "classic filter label")
+end)
+
+-- ---------------------------------------------------------- show and tell + themes
+test("Show and Tell: opening the leaderboard card earns 1 bonus point", function()
+  for _, modern in ipairs({ true, false }) do
+    local env = H.boot({ "recomp_achievements" }, { modern = modern })
+    env:newGame()
+    local before = ach(env).officialTotals()
+    eq(ach(env).isUnlocked("core:show_and_tell"), false, "locked at first")
+    openMenu(env)
+    env:press("select"); env:frame()
+    eq(ach(env).isUnlocked("core:show_and_tell"), true, (modern and "modern" or "classic") .. " menu awards it")
+    local row = ach(env).get("core:show_and_tell")
+    eq(row.points, 1, "one point")
+    eq(row.official, false, "not from the RA list")
+    eq(ach(env).officialTotals().points, before.points, "leaderboard points unchanged")
+  end
+end)
+
+test("Show and Tell follows the BONUS ACHIEVEMENTS option", function()
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env.loader.modOptions.recomp_achievements.extras = false
+  env:newGame()
+  openMenu(env)
+  env:press("select"); env:frame()
+  eq(ach(env).isUnlocked("core:show_and_tell"), false, "bonus off: not awarded")
+end)
+
+test("menu palettes: every theme is complete and the option switches it", function()
+  local Modern = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/modern.lua"))()
+  local keys = { "backdrop", "panel", "raised", "track", "border", "text", "muted", "faint",
+                 "earned", "progress", "onAccent", "hues" }
+  for _, name in ipairs(Modern.THEME_ORDER) do
+    local theme = Modern.THEMES[name]
+    for _, k in ipairs(keys) do check(theme[k] ~= nil, name .. " has " .. k) end
+    for game, hue in pairs(Modern.GAME_HUE) do check(theme.hues[hue], name .. " has a " .. hue .. " for " .. game) end
+  end
+  eq(Modern.DEFAULT_THEME, "gameboy", "Game Boy palette by default")
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env:newGame()
+  openMenu(env)
+  for _, name in ipairs(Modern.THEME_ORDER) do
+    env.loader.modOptions.recomp_achievements.menuTheme = name
+    env:hud(BIG)
+    check(H.windowText():find("Achievements", 1, true), name .. " draws")
+  end
+  env.loader.modOptions.recomp_achievements.menuTheme = "no_such_theme"
+  env:hud(BIG)
+  check(H.windowText():find("Achievements", 1, true), "unknown theme falls back")
+end)
+
+test("popup styles: modern banner, corner card and classic all draw", function()
+  for _, style in ipairs({ "modern", "corner", "classic" }) do
+    local env = H.boot({ "recomp_achievements" }, { modern = true })
+    env.loader.modOptions.recomp_achievements.popupStyle = style
+    env:newGame(); env:hud(BIG); H.advance(5)
+    env.game.save.inventory.BOULDERBADGE = 1
+    env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+    local title = ach(env).get("core:off_boulderbadge").title
+    env:hud(BIG)
+    if style == "classic" then
+      check(H.screenHas("ACHIEVEMENT!"), "classic Game Boy box")
+    else
+      local txt = H.windowText()
+      check(txt:find("Achievement unlocked", 1, true), style .. " heading")
+      check(txt:find(title:sub(1, 5), 1, true), style .. " shows the title")
+      check(txt:find("+", 1, true), style .. " shows points")
+    end
+  end
 end)
 
 print(("\n%d passed, %d failed"):format(passed, failed))

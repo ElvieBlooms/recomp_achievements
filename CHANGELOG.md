@@ -1,5 +1,35 @@
 # Changelog
 
+## 1.6.0
+
+- Unlock popups now come in three styles (POPUP STYLE option): Modern, a
+  banner in your chosen theme (the new default); Corner, a small card in
+  the top-right corner that stays out of the way; and Classic GB, the
+  Game Boy text box from earlier versions.
+- The Game Boy palette is now the default theme. MENU THEME is now just
+  THEME, since it colours the popups too.
+
+## 1.5.0
+
+- New bonus achievement, **Show and Tell** (1 point): open your leaderboard
+  card. Sharing it is optional. Like the other bonus achievements it
+  isn't from the RetroAchievements list, so it doesn't change leaderboard
+  points, and the BONUS ACHIEVEMENTS option turns it off.
+- MENU THEME option with five palettes: Gruvbox Dark (the new default),
+  Gruvbox Light, Nord, Midnight (the 1.4.0 look) and Game Boy. Each game
+  still gets its own accent colour, picked from the palette.
+
+## 1.4.0
+
+- New achievements menu: a list with the selected achievement's details
+  beside it, filter chips, progress bars and rings, and a leaderboard card
+  and About page on SELECT. It's drawn at your window's resolution and
+  sized for any screen shape, ready for the Gen 2 and Gen 3 games later;
+  each game gets its own accent colour.
+- The old Game Boy text-box menu is still there: turn on CLASSIC MENU.
+- Hold UP or DOWN to scroll the list.
+- Unlock popups now always draw on top of the menu.
+
 ## 1.3.0
 
 - Unlock sound: a short Game Boy-style jingle plays as each popup appears

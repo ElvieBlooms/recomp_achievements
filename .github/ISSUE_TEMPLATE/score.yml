@@ -8,7 +8,7 @@ body:
       value: |
         In the game, open **START > ACHIEVEMENTS** and press **SELECT** to see your leaderboard card. Copy each value exactly as shown.
 
-        Only the official RetroAchievements list counts (no bonus or mod achievements). The board is an honor system and is not connected to RetroAchievements.
+        Only achievements from the RetroAchievements lists count (no bonus or mod achievements). The board is an unofficial, honor-system fan project; it isn't affiliated with or connected to RetroAchievements.
 
         To update your score later, edit this issue with the new values.
   - type: dropdown

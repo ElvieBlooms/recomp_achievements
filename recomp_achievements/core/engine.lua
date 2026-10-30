@@ -477,6 +477,8 @@ function Engine:wire()
   for name in pairs(self.trackerEvents) do names[name] = true end
   -- driven from core.update below, not engine events
   names.tick, names.frame = nil, nil
+  -- sent by this mod's own menus (rules/common.lua)
+  for name in pairs(names) do if name:match("^ui%.") then names[name] = nil end end
   for name in pairs(names) do
     if not wired[name] then
       wired[name] = true

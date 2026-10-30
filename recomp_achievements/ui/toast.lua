@@ -49,6 +49,7 @@ function Toast:push(def, shown)
   shown = shown or def
   local points = shown.points or def.points or 0
   self.queue[#self.queue + 1] = {
+    kind = "unlock", title = shown.title or def.title, points = points,
     heading = "ACHIEVEMENT!",
     line = shown.title or def.title,
     right = points > 0 and (tostring(points) .. "P") or "",
@@ -58,7 +59,7 @@ end
 function Toast:pushSummary(n)
   if not self:enabled() then return self:sound("summary") end
   self.queue[#self.queue + 1] = {
-    kind = "summary",
+    kind = "summary", title = ("%d past milestones"):format(n),
     heading = "WELCOME BACK!",
     line = ("%d PAST MILESTONES"):format(n),
     right = "", from = "",
@@ -74,7 +75,8 @@ function Toast:tick()
   local t = now()
   if not self.current then
     if #self.queue == 0 and self.overflow > 0 then
-      self.queue[1] = { heading = "ACHIEVEMENTS!", line = ("+%d MORE"):format(self.overflow),
+      self.queue[1] = { kind = "more", title = ("+%d more"):format(self.overflow),
+                        heading = "ACHIEVEMENTS!", line = ("+%d MORE"):format(self.overflow),
                         right = "", from = "" }
       self.overflow = 0
     end
@@ -98,10 +100,26 @@ function Toast:tick()
   return c, shown
 end
 
--- Draw in Game Boy pixel space (160 x 144), scaled onto the window.
+-- POPUP STYLE: "modern" (a banner in the menu's palette), "corner" (a
+-- small card in the top-right corner) or "classic" (the Game Boy text box).
+function Toast:style()
+  local s = self.mod.options:get("popupStyle")
+  if s == "classic" or not self.Modern then return "classic" end
+  if s == "corner" then return "corner" end
+  return "modern"
+end
+
 function Toast:draw(vp)
   local c, shown = self:tick()
   if not c or not vp or not vp.gameWidth or vp.gameWidth <= 0 then return end
+  local style = self:style()
+  if style ~= "classic" and self.Modern then
+    return self.Modern.drawToast(c, shown, vp, {
+      style = style, theme = self.mod.options:get("menuTheme"),
+      game = self.gameOf and self.gameOf() or nil,
+    })
+  end
+  -- Classic: Game Boy pixel space (160 x 144), scaled onto the window.
   local Font = self.mod.ui.Font
   local Text = self.Text
   local g = love.graphics

@@ -52,6 +52,7 @@ return function(mod)
   local Toast    = import("ui/toast.lua")
   local Browser  = import("ui/browser.lua")
   local Chime    = import("ui/chime.lua")
+  local Modern   = import("ui/modern.lua")
   local Share    = import("ui/share.lua")
 
   -- ----------------------------------------------------------------
@@ -60,19 +61,27 @@ return function(mod)
   -- ----------------------------------------------------------------
   mod.options:define({
     { key = "toasts", type = "toggle", label = "UNLOCK POPUPS", default = true },
+    { key = "popupStyle", type = "choice", label = "POPUP STYLE", default = "modern",
+      choices = { { "MODERN", "modern" }, { "CORNER", "corner" }, { "CLASSIC GB", "classic" } } },
     { key = "unlockSound", type = "toggle", label = "UNLOCK SOUND", default = true },
     { key = "extras", type = "toggle", label = "BONUS ACHIEVEMENTS", default = true },
     { key = "showHidden", type = "toggle", label = "REVEAL HIDDEN", default = false },
     { key = "showReference", type = "toggle", label = "SHOW RA REFERENCE", default = false },
+    { key = "menuTheme", type = "choice", label = "THEME", default = "gameboy",
+      choices = { { "GAME BOY", "gameboy" }, { "GRUVBOX DARK", "gruvbox_dark" },
+                  { "GRUVBOX LIGHT", "gruvbox_light" }, { "NORD", "nord" }, { "MIDNIGHT", "midnight" } } },
+    { key = "classicMenu", type = "toggle", label = "CLASSIC MENU", default = false },
     { key = "debug", type = "toggle", label = "DEBUG LOG", default = false },
   })
 
   local ledger = Ledger.new(mod, util)
   local registry = Registry.new(util)
   local toast = Toast.new(mod, util, Text, Chime.new(mod))
+  toast.Modern = Modern
   local engine = Engine.new({
     mod = mod, util = util, ledger = ledger, registry = registry, toast = toast,
   })
+  toast.gameOf = function() return engine.game end -- popup accent colour
 
   -- ----------------------------------------------------------------
   -- Built-in content for the running generation.  Phase 1 ships Gen 1
@@ -88,6 +97,10 @@ return function(mod)
       engine:addRule(rule)
     end
     for _, rule in ipairs(import("rules/gen1.lua")) do
+      rule.extra = true
+      engine:addRule(rule)
+    end
+    for _, rule in ipairs(import("rules/common.lua")) do
       rule.extra = true
       engine:addRule(rule)
     end
@@ -123,6 +136,6 @@ return function(mod)
   -- ----------------------------------------------------------------
   -- UI: the START menu row, the browser screen and toasts.
   -- ----------------------------------------------------------------
-  Browser.install(mod, engine, util, Text, Share)
+  Browser.install(mod, engine, util, Text, Share, Modern)
   toast:install()
 end
