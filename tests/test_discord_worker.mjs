@@ -67,6 +67,8 @@ await test("v2 codes (with play time) match Python and Lua", () => {
   assert.equal(precheck(timed), null);
   assert.match(precheck({ ...timed, time: "12:43" }), /check code/);
   assert.match(precheck({ ...timed, time: "soon" }), /H:MM/);
+  assert.match(precheck({ ...timed, time: undefined }), /TIME line/, "hint when the time is left out");
+  assert.doesNotMatch(precheck({ ...timed, time: "12:43" }), /TIME line/);
   assert.equal(precheck({ ...timed, save_id: "abc123" }), null);
   const zero = { ...CARD, save_id: "3N0S2H", code: checkCode("red", "ASH", 120, 20, "3N0S2H") };
   assert.equal(precheck({ ...zero, save_id: "3NOS2H" }), null, "O typed for 0");

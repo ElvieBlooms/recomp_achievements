@@ -242,7 +242,9 @@ def validate(fields):
     if code != expected:
         raise Rejected("The check code doesn't match the other fields. "
                        "Check each value against the card in the game "
-                       "(START > ACHIEVEMENTS > SELECT) and edit the issue.")
+                       "(START > ACHIEVEMENTS > SELECT) and edit the issue."
+                       + (" If your card has a TIME line, fill in Play time too; "
+                          "the time is part of the code." if minutes is None else ""))
     return {"game": game, "name": name, "points": points, "earned": earned,
             "saveId": save_id, "time": minutes}
 

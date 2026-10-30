@@ -145,7 +145,8 @@ export function precheck(o) {
   if (minutes === undefined) return "Play time is the H:MM after TIME on the card, like 12:34.";
   if (normalizeCode(o.code || "") !== checkCode(game, name, points, earned, saveId, minutes)) {
     return "The check code doesn't match the other values. Check each one against the card " +
-      "(START > ACHIEVEMENTS > SELECT) and try again.";
+      "(START > ACHIEVEMENTS > SELECT) and try again." +
+      (minutes === null ? " If your card has a TIME line, add it too: time:H:MM (the time is part of the code)." : "");
   }
   return null;
 }
