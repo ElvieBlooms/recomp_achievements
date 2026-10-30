@@ -1,7 +1,7 @@
 {
   "id": "recomp_achievements",
   "name": "Recomp Achievements",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "api": 3,
   "entry": "main.lua",
   "profile": "content",

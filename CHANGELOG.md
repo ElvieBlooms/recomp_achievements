@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.1
+
+- Progress popups no longer come one after another for a single catch.
+  Goals that count the same thing (the Pokédex 10, 50, 100 and the RA
+  list's full Pokédex) show one card, for the nearest goal. Different
+  things moving at once stack, up to three cards down the left side,
+  instead of waiting in line.
+
 ## 2.2.0
 
 - **Progress popups.** When an achievement with a goal moves along (your

@@ -380,7 +380,7 @@ function Modern.drawProgress(c, shown, vp, opts)
   local barH = math.max(2, 1.1 * u)
   local h = pad * 2 + fTitle:getHeight() + barH + 1.4 * u
   local x = x0 + 3 * u - (1 - ease) * (w + 4 * u)
-  local y = y0 + 3 * u
+  local y = y0 + 3 * u + ((opts.slot or 1) - 1) * (h + 1.5 * u)
   local count = c.unit == "PCT" and (("%d%%"):format(c.value)) or ("%d / %d"):format(c.value, c.goal)
   G.push("all")
   G.setScissor(x0, y0, W, H)

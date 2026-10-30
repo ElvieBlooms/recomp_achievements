@@ -1177,6 +1177,37 @@ test("progress notes: a small card for each step forward, none for a loaded save
   check(not H.windowText():find("3 / 8", 1, true), "no note for progress the save already had")
 end)
 
+
+test("progress cards: same count shows only the nearest goal; up to three stack", function()
+  local Toast = dofile(H.PROJECT .. "/recomp_achievements/ui/toast.lua")
+  local opts = {}
+  local T = Toast.new({ options = { get = function(_, k) return opts[k] end } }, {}, {}, nil)
+  local function def(key, unit) return { key = key, title = key, unit = unit } end
+  -- one catch moves three Pokedex goals at once
+  T:pushProgress(def("dex50", "POKEMON"), nil, 12, 50)
+  T:pushProgress(def("dex100", "POKEMON"), nil, 12, 100)
+  T:pushProgress(def("dex10", "POKEMON"), nil, 12, 151) -- the RA list's full dex
+  T:pushProgress(def("badges", "BADGES"), nil, 3, 8)
+  T:pushProgress(def("steps", "STEPS"), nil, 400, 1000)
+  T:pushProgress(def("money", "COINS"), nil, 50, 100)
+  local cards = T:tickProgress()
+  eq(#cards, 3, "three at once")
+  eq(cards[1][1].key, "dex50", "only the nearest Pokedex goal")
+  eq(cards[1][1].goal, 50, "12 / 50")
+  eq(cards[2][1].key, "badges", "a different thing gets its own card")
+  eq(cards[3][1].key, "steps", "third card")
+  H.advance(3)
+  cards = T:tickProgress()
+  eq(#cards, 1, "the fourth card follows once the first ones go")
+  eq(cards[1][1].key, "money", "the waiting card")
+  -- a nearer goal arriving later takes over the card
+  T:clear()
+  T:pushProgress(def("dex100", "POKEMON"), nil, 9, 100)
+  T:pushProgress(def("dex10", "POKEMON"), nil, 9, 10)
+  cards = T:tickProgress()
+  eq(#cards, 1, "one card"); eq(cards[1][1].goal, 10, "9 / 10 wins over 9 / 100")
+end)
+
 print(("\n%d passed, %d failed"):format(passed, failed))
 H.cleanup()
 os.exit(failed == 0 and 0 or 1)

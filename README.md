@@ -33,7 +33,7 @@ and each achievement's author, and are credited in the game. See
 
 ## Install
 
-1. Download `recomp_achievements-2.2.0.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-2.2.1.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
 2. Start Red, Blue, Yellow, Gold, Silver, Crystal, FireRed or LeafGreen
    (Gen1Recomp 0.3.97 or newer). Ruby, Sapphire and Emerald are coming in
@@ -69,7 +69,8 @@ Options are in the Mods manager:
 - **POPUP STYLE**: Modern (a banner in your theme, the default), Corner (a
   small card in the top-right corner) or Classic GB (the Game Boy text box)
 - **PROGRESS POPUPS**: a small see-through card in the top-left corner
-  when an achievement with a goal moves along ("3 / 50")
+  when an achievement with a goal moves along ("3 / 50"); goals that count
+  the same thing show only the nearest one, and up to three stack
 - **UNLOCK SOUND**: a short jingle on each unlock, at the game's SFX VOL
 - **BONUS ACHIEVEMENTS**: this mod's extras, which aren't part of the RA lists
 - **REVEAL HIDDEN**
