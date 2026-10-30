@@ -8,7 +8,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import worker, { checkCode, normalizeCode, precheck } from "../discord/worker.js";
+import worker, { checkCode, normalizeCode, parseTime, precheck } from "../discord/worker.js";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 let passed = 0;
@@ -55,11 +55,29 @@ await test("check code matches the Python and Lua vectors", () => {
   assert.equal(normalizeCode("dhcohh32"), "DHC0-HH32");
 });
 
+await test("v2 codes (with play time) match Python and Lua", () => {
+  assert.equal(checkCode("red", "ASH", 745, 93, "ABC123", 754), "K8ZM-8GYP");
+  assert.equal(checkCode("red", "ASH", 745, 93, "ABC123", 0), "ESH4-99C6");
+  assert.equal(checkCode("blue", "Gary\u2642", 678, 90, "0K3M9Q", 59999), "0A0S-ZNDV");
+  assert.equal(parseTime("12:34"), 754);
+  assert.equal(parseTime(""), null);
+  assert.equal(parseTime(undefined), null);
+  assert.equal(parseTime("12:60"), undefined);
+  const timed = { ...CARD, time: "12:34", code: checkCode("red", "ASH", 120, 20, "ABC123", 754) };
+  assert.equal(precheck(timed), null);
+  assert.match(precheck({ ...timed, time: "12:43" }), /check code/);
+  assert.match(precheck({ ...timed, time: "soon" }), /H:MM/);
+  assert.equal(precheck({ ...timed, save_id: "abc123" }), null);
+  const zero = { ...CARD, save_id: "3N0S2H", code: checkCode("red", "ASH", 120, 20, "3N0S2H") };
+  assert.equal(precheck({ ...zero, save_id: "3NOS2H" }), null, "O typed for 0");
+});
+
 await test("check code matches Python on 40 random cards", () => {
   const cards = [];
   for (let i = 0; i < 40; i++) {
     cards.push([["red", "blue", "yellow"][i % 3], ["ASH", "red", "a b", "PIKA♀", "x"][i % 5],
-      (i * 37) % 700, (i * 7) % 90, String(i * 12345 % 999999).padStart(6, "0")]);
+      (i * 37) % 700, (i * 7) % 90, String(i * 12345 % 999999).padStart(6, "0"),
+      i % 4 === 0 ? null : i * 97 % 60000]);
   }
   const py = execFileSync("python3", ["-c",
     "import sys,json;sys.path.insert(0,sys.argv[1]);import leaderboard_ingest as L\n" +

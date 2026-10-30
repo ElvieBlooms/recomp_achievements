@@ -14,12 +14,13 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 import leaderboard_ingest as L  # noqa: E402
 
 
-def body(game="Red", name="ASH", points="120", earned="20", save="ABC123", code=None):
+def body(game="Red", name="ASH", points="120", earned="20", save="ABC123", code=None, time=None):
+    minutes = None if not time else int(time.split(":")[0]) * 60 + int(time.split(":")[1])
     if code is None:
-        code = L.check_code(game.lower(), name, int(points), int(earned), save)
+        code = L.check_code(game.lower(), name, int(points), int(earned), save, minutes)
     return (f"### Game\n\n{game}\n\n### Trainer name\n\n{name}\n\n### Points\n\n{points}\n\n"
-            f"### Achievements earned\n\n{earned}\n\n### Save ID\n\n{save}\n\n"
-            f"### Check code\n\n{code}\n")
+            f"### Achievements earned\n\n{earned}\n\n### Play time\n\n{time or '_No response_'}\n\n"
+            f"### Save ID\n\n{save}\n\n### Check code\n\n{code}\n")
 
 
 def discord_event(path, score, owner="ab" * 16, token="t" * 40):
@@ -28,9 +29,10 @@ def discord_event(path, score, owner="ab" * 16, token="t" * 40):
             "score": score, "owner": owner, "app_id": "999888777666555444", "token": token}}, f)
 
 
-def card(game="red", name="ASH", points=120, earned=20, save="ABC123"):
+def card(game="red", name="ASH", points=120, earned=20, save="ABC123", minutes=None):
     return {"game": game, "name": name, "points": str(points), "earned": str(earned),
-            "save_id": save, "code": L.check_code(game, name, points, earned, save)}
+            "save_id": save, "time": "" if minutes is None else f"{minutes // 60}:{minutes % 60:02d}",
+            "code": L.check_code(game, name, points, earned, save, minutes)}
 
 
 class Ingest(unittest.TestCase):
@@ -83,7 +85,7 @@ class Ingest(unittest.TestCase):
         self.assertIn("745", reply)
 
     def test_bad_names(self):
-        for name in ["", "A" * 13, "<b>x</b>"]:
+        for name in ["", "A" * 13, "<b>x</b>"]:  # noqa
             rc, _ = self.run_ingest(body(name=name or "_No response_"))
             self.assertEqual(rc, 1, name)
 
@@ -199,6 +201,53 @@ class Ingest(unittest.TestCase):
             json.dump(board, f)
         self.assertEqual(self.run_ingest(body(points="300", earned="40"), author="ALICE")[0], 0)
         self.assertEqual(self.run_ingest(body(points="400", earned="50"), author="bob")[0], 1)
+
+    def test_v2_vectors(self):
+        self.assertEqual(L.check_code("red", "ASH", 745, 93, "ABC123", 754), "K8ZM-8GYP")
+        self.assertEqual(L.check_code("red", "ASH", 745, 93, "ABC123", 0), "ESH4-99C6")
+        self.assertEqual(L.check_code("red", "ASH", 745, 93, "ABC123"),
+                         L.check_code("red", "ASH", 745, 93, "ABC123", None))
+
+    def test_play_time_is_stored_and_checked(self):
+        rc, reply = self.run_ingest(body(time="12:34"))
+        self.assertEqual(rc, 0, reply)
+        self.assertIn("12:34", reply)
+        self.assertEqual(self.entries()[0]["time"], 754)
+        # a typo in the time breaks the code
+        b = body(time="12:34").replace("12:34", "12:43")
+        rc, reply = self.run_ingest(b, author="alice")
+        self.assertEqual(rc, 1)
+        self.assertIn("check code", reply)
+
+    def test_time_formats(self):
+        self.assertEqual(L.parse_time("12:34"), 754)
+        self.assertEqual(L.parse_time(" 0:05 "), 5)
+        self.assertEqual(L.parse_time("12h34m"), 754)
+        self.assertIsNone(L.parse_time(""))
+        for bad in ["12:60", "abc", "1234", "12:3"]:
+            with self.assertRaises(L.Rejected, msg=bad):
+                L.parse_time(bad)
+
+    def test_save_id_o_is_zero(self):
+        b = body(save="3N0S2H").replace("### Save ID\n\n3N0S2H", "### Save ID\n\n3nOs2h")
+        rc, reply = self.run_ingest(b)
+        self.assertEqual(rc, 0, reply)
+        self.assertEqual(self.entries()[0]["saveId"], "3N0S2H")
+
+    def test_old_cards_without_time_still_work(self):
+        rc, reply = self.run_ingest(body())  # v1 code, no TIME line
+        self.assertEqual(rc, 0, reply)
+        self.assertIsNone(self.entries()[0]["time"])
+
+    def test_equal_points_rank_by_shorter_time(self):
+        for i, (name, time, save) in enumerate([("SLOW", "40:00", "AAAAAA"), ("NOTIME", None, "BBBBBB"),
+                                                ("FAST", "25:10", "CCCCCC"), ("MID", "30:00", "DDDDDD")]):
+            rc, reply = self.run_ingest(body(name=name, points="745", earned="93", save=save, time=time),
+                                        author=f"u{i}", now=f"2026-10-29T00:00:0{i}Z")
+            self.assertEqual(rc, 0, reply)
+        self.run_ingest(body(name="MORE", points="500", earned="60", save="EEEEEE", time="1:00"),
+                        author="u9")
+        self.assertEqual([e["name"] for e in self.entries()], ["FAST", "MID", "SLOW", "NOTIME", "MORE"])
 
     def test_update_same_save(self):
         self.run_ingest(body())

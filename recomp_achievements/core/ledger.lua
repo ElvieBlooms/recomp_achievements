@@ -18,6 +18,7 @@
 --   record = {
 --     at = <os.time()>, how = "event" | "backfill" | "api",
 --     source = "core" | "mod:<provider>", title = "<last known title>",
+--     pt = <play time in seconds when earned; missing on 1.1.0 records>,
 --   }
 --
 -- Keys look like "core:boulder_badge" or "mod:sandbox:first_steps".
@@ -137,6 +138,8 @@ function Ledger:unlock(game, key, fields)
     how = fields.how or "event",
     source = fields.source,
     title = self.util.text(fields.title, Ledger.TITLE_MAX),
+    -- in-game play time (seconds) when it was earned, if the game has one
+    pt = tonumber(fields.pt) and math.floor(tonumber(fields.pt)) or nil,
   }
   data.progress[key] = nil -- the record supersedes partial progress
   return true

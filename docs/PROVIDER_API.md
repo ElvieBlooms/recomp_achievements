@@ -1,4 +1,4 @@
-# Recomp Achievements — Provider API (v1.1.0)
+# Recomp Achievements — Provider API (v1.2.0)
 
 How another Gen1Recomp mod adds its own achievements, reports progress,
 and listens for unlocks. `achievement_sandbox/main.lua` is a complete,
@@ -110,6 +110,10 @@ Since 1.1.0 (check with `ach.supports("leaderboard_card")`):
 the official RetroAchievements list only, and `ach.leaderboardCard()`
 returns what the SELECT page shows: `{ game, name, points, earned, total,
 maxPoints, saveId, code }`, or nil before a save is loaded.
+
+Since 1.2.0, `officialTotals()` also has `reachedAt`: the play time in
+seconds of the latest official unlock (nil with none), and the card has
+`time`: the same in whole minutes.
 
 ## 6. What happens to your records
 

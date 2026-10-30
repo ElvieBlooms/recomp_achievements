@@ -51,6 +51,10 @@ on Discord" button.
   official totals (Red 745/93, Blue 678/90, Yellow 458/76). If the RA lists
   change, update `GAMES` in `tools/leaderboard_ingest.py`; `tests/run.lua`
   fails until the two agree.
+- The play time, if given, is H:MM. Cards from mod 1.1.0 have no TIME line
+  and use the older "v1" check code without it; both are accepted. Ranking
+  is by points, then the shorter play time (no time sorts after any time),
+  then who submitted first.
 - The check code matches the other fields. It is a checksum, not a
   signature, so it only catches typos.
 - One row per save ID per game. Only the account that first submitted a

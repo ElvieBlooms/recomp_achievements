@@ -75,7 +75,7 @@
   </section>
 
   <footer>
-    <p>To submit: in the game open <b>START &gt; ACHIEVEMENTS</b>, press <b>SELECT</b>, and copy the card into the form<span id="discord-note" hidden>, or send it to the Discord bot with <code>/score</code></span>. Only official list points count; bonus and mod achievements don't.</p>
+    <p>To submit: in the game open <b>START &gt; ACHIEVEMENTS</b>, press <b>SELECT</b>, and copy the card into the form<span id="discord-note" hidden>, or send it to the Discord bot with <code>/score</code></span>. Only official list points count; bonus and mod achievements don't. On equal points, the shorter play time (when the score was reached) ranks higher.</p>
     <p>Scores are self-reported (honor system). The check code only catches typos. See a name that shouldn't be here? Use <b>Report</b> on its row.</p>
     <p>Not affiliated with or connected to RetroAchievements. Achievement lists are by RetroAchievements and their authors.</p>
   </footer>
@@ -169,13 +169,14 @@
     }
     var table = el("table");
     var head = el("tr");
-    [["#", ""], ["Trainer", ""], ["Points", "num"], ["Earned", "num hide-s"], ["Date", "hide-s"], ["", ""]]
+    [["#", ""], ["Trainer", ""], ["Points", "num"], ["Time", "num"], ["Earned", "num hide-s"], ["Date", "hide-s"], ["", ""]]
       .forEach(function (h) { head.appendChild(el("th", h[1], h[0])); });
     var thead = el("thead"); thead.appendChild(head); table.appendChild(thead);
     var tbody = el("tbody");
     var place = 0, last = null;
     entries.forEach(function (e, i) {
-      if (last === null || e.points !== last) { place = i + 1; last = e.points; }
+      var tie = e.points + "|" + (e.time == null ? "-" : e.time);
+      if (last === null || tie !== last) { place = i + 1; last = tie; }
       var tr = el("tr", place <= 3 ? "top" : "");
       tr.appendChild(el("td", "rank", place));
       tr.appendChild(el("td", "name", e.name));
@@ -184,6 +185,10 @@
       fill.style.width = Math.min(100, 100 * e.points / (slot.maxPoints || 1)) + "%";
       meter.appendChild(fill); pts.appendChild(meter);
       tr.appendChild(pts);
+      var t = e.time == null ? "–" : Math.floor(e.time / 60) + ":" + String(e.time % 60).padStart(2, "0");
+      var tc = el("td", "num", t);
+      tc.title = "Play time when this score was reached";
+      tr.appendChild(tc);
       tr.appendChild(el("td", "num hide-s", e.earned + "/" + (slot.total || "?")));
       tr.appendChild(el("td", "hide-s", String(e.date || "").slice(0, 10)));
       var rep = el("td", "report"), link = el("a", null, "Report");

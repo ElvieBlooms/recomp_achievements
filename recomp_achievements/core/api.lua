@@ -25,7 +25,7 @@
 
 local Api = {}
 
-Api.VERSION = "1.1.0"
+Api.VERSION = "1.2.0"
 Api.CAPABILITIES = {
   register = true, register_many = true, unlock = true,
   progress = true, query = true, events = true, games_filter = true,

@@ -46,6 +46,12 @@ body:
     validations:
       required: true
   - type: input
+    id: time
+    attributes:
+      label: Play time
+      description: As shown after TIME on the card (H:MM). It's the play time when you reached this score; on equal points the shorter time ranks higher. Leave empty if your card has no TIME line (mod 1.1.0).
+      placeholder: "12:34"
+  - type: input
     id: save_id
     attributes:
       label: Save ID

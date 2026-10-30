@@ -8,7 +8,7 @@
 // the bot's reply in Discord with the result.
 //
 // Commands (registered by tools/discord_register.py):
-//   /score game name points earned save_id code
+//   /score game name points earned save_id code [time]
 //   /leaderboard            link to the page
 //
 // Secrets (wrangler secret put ...):
@@ -51,8 +51,12 @@ function base32(n, digits) {
   return out;
 }
 
-export function checkCode(game, name, points, earned, saveId) {
-  const p = ["v1", game, normName(name), String(points), String(earned), saveId.toUpperCase()].join("|");
+// minutes: play time from the card (mod 1.2.0+), or null for a 1.1.0 card.
+export function checkCode(game, name, points, earned, saveId, minutes = null) {
+  const parts = [minutes === null ? "v1" : "v2", game, normName(name), String(points), String(earned),
+                 saveId.toUpperCase()];
+  if (minutes !== null) parts.push(String(minutes));
+  const p = parts.join("|");
   const bytes = new TextEncoder().encode(p);
   const s = base32(hash(bytes, 5381) % 1048576, 4) + base32(hash(bytes, 52711) % 1048576, 4);
   return s.slice(0, 4) + "-" + s.slice(4);
@@ -62,6 +66,20 @@ export function normalizeCode(code) {
   const c = String(code).toUpperCase().replace(/[\s-]/g, "")
     .replace(/O/g, "0").replace(/[IL]/g, "1");
   return c.length === 8 ? c.slice(0, 4) + "-" + c.slice(4) : c;
+}
+
+// Save IDs use the same alphabet as codes: read O as 0 and I/L as 1.
+export function normalizeSaveId(raw) {
+  return String(raw || "").replace(/\s/g, "").toUpperCase().replace(/O/g, "0").replace(/[IL]/g, "1");
+}
+
+// "12:34" -> 754 minutes; "" -> null; anything else -> undefined.
+export function parseTime(raw) {
+  const t = String(raw == null ? "" : raw).trim().toLowerCase();
+  if (!t) return null;
+  const m = t.match(/^(\d{1,3})\s*[:.h]\s*(\d{2})\s*m?$/);
+  if (!m || Number(m[2]) > 59) return undefined;
+  return Number(m[1]) * 60 + Number(m[2]);
 }
 
 // ---------------------------------------------------------- helpers
@@ -121,9 +139,11 @@ export function precheck(o) {
   if (!Number.isInteger(points) || points < 0 || !Number.isInteger(earned) || earned < 0) {
     return "Points and achievements earned must be whole numbers.";
   }
-  const saveId = String(o.save_id || "").trim().toUpperCase();
+  const saveId = normalizeSaveId(o.save_id);
   if (!/^[0-9A-Z]{6}$/.test(saveId)) return "The save ID is the 6 characters shown on the card.";
-  if (normalizeCode(o.code || "") !== checkCode(game, name, points, earned, saveId)) {
+  const minutes = parseTime(o.time);
+  if (minutes === undefined) return "Play time is the H:MM after TIME on the card, like 12:34.";
+  if (normalizeCode(o.code || "") !== checkCode(game, name, points, earned, saveId, minutes)) {
     return "The check code doesn't match the other values. Check each one against the card " +
       "(START > ACHIEVEMENTS > SELECT) and try again.";
   }
@@ -136,7 +156,8 @@ async function dispatch(env, interaction, o) {
     score: {
       game: String(o.game).toLowerCase(), name: String(o.name).trim(),
       points: String(o.points), earned: String(o.earned),
-      save_id: String(o.save_id).trim().toUpperCase(), code: normalizeCode(o.code),
+      save_id: normalizeSaveId(o.save_id), code: normalizeCode(o.code),
+      time: o.time == null ? "" : String(o.time).trim(),
     },
     owner: await ownerHash(env.OWNER_SALT, user.id),
     app_id: interaction.application_id,

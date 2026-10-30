@@ -20,7 +20,7 @@ affiliated with RetroAchievements. See [NOTICE.md](NOTICE.md).
 
 ## Install
 
-1. Download `recomp_achievements-1.1.0.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-1.2.0.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
 2. Start Red, Blue or Yellow (Gen1Recomp 0.3.97 or newer).
 3. Open the START menu and choose **ACHIEVEMENTS**.
@@ -70,13 +70,17 @@ online; you copy a short card into a form yourself:
 2. On the website, press **Submit a score**. It opens a GitHub issue form
    (you need a GitHub account). If the Discord bot is set up, you can
    instead send it `/score` with the same values.
-3. Copy the game, trainer name, points, achievements earned, save ID and
-   check code from the card. Submit.
+3. Copy the game, trainer name, points, achievements earned, play time,
+   save ID and check code from the card. Submit.
 
 A bot checks the entry within a minute or two, replies (on the issue, or
 by editing its Discord message) and updates the page. To update your
 score later, edit the same issue, or send `/score` again from the same
 Discord account.
+
+Players are ranked by points. On equal points, the shorter TIME ranks
+higher: that's your play time when you reached the score (your latest
+official unlock), so playing on afterwards doesn't count against you.
 
 Only the official RetroAchievements list counts; bonus achievements and
 achievements from other mods don't. The check code only catches typos, so

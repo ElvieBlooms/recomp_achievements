@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.2.0
+
+- The leaderboard card has a TIME line: your in-game play time when you
+  reached your current score (your latest official unlock), not the time
+  now, so playing on after maxing out doesn't cost you. On equal points
+  the leaderboard ranks the shorter time higher.
+- Each unlock now records the play time it happened at. Achievements
+  earned with 1.1.0 have no time, so the card uses your current play time
+  for them.
+- Check codes are now "v2" and include the time. 1.1.0 cards (no TIME line)
+  are still accepted; they rank after timed scores with the same points.
+- API 1.2.0: `leaderboardCard().time` (minutes) and
+  `officialTotals().reachedAt` (seconds).
+
 ## 1.1.0
 
 - Leaderboard card: press SELECT in the achievements browser to see your

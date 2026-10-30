@@ -4,7 +4,7 @@ Lets players submit their leaderboard card from Discord instead of opening
 a GitHub issue. They DM the bot (or use it in a server):
 
 ```
-/score game:Red name:ASH points:245 earned:32 save_id:43FJKR code:QGF3-VG65
+/score game:Red name:ASH points:245 earned:32 save_id:43FJKR code:QGF3-VG65 time:12:34
 ```
 
 The bot answers right away if the check code doesn't match (a typo).
@@ -44,7 +44,8 @@ computer.
 
 1. **Create the Discord app.** At <https://discord.com/developers/applications>,
    choose *New Application* and name it (e.g. "Recomp Achievements").
-   On *General Information*, copy the **Application ID** and **Public Key**.
+   On *General Information*, upload `discord/assets/bot_icon.png` as the
+   **App Icon**, then copy the **Application ID** and **Public Key**.
    On *Bot*, press *Reset Token* and copy the **bot token** (only needed in
    step 5).
 2. **Make a GitHub token for the bot.** GitHub > Settings > Developer
@@ -79,13 +80,16 @@ computer.
    can use `/score` in a DM with the bot without sharing a server with it.
    You can also add it to your mod's Discord server.
 
+`time` is optional so cards from mod 1.1.0 (no TIME line) still work.
+
 ## Keeping it running
 
 - **Token expiry:** when the GitHub token expires, `/score` replies "Couldn't
   reach the leaderboard". Make a new token and run
   `npx wrangler secret put GITHUB_TOKEN` again.
 - **Changing commands:** edit `COMMANDS` in `tools/discord_register.py`
-  and run it again.
+  and run it again. (Updating from 1.1.0: run it once to add the `time`
+  option, and `npx wrangler deploy` once for the new worker.js.)
 - **Turning it off:** clear the Interactions Endpoint URL, or delete the
   Worker with `npx wrangler delete`. Issue submissions keep working.
 - **Logs:** `npx wrangler tail` shows live requests. The GitHub side shows

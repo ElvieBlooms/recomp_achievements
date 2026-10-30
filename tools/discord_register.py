@@ -37,6 +37,8 @@ COMMANDS = [
               "required": True, "min_length": 6, "max_length": 6},
              {"type": 3, "name": "code", "description": "CHECK on the card (XXXX-XXXX)",
               "required": True, "min_length": 8, "max_length": 9},
+             {"type": 3, "name": "time", "description": "TIME on the card (H:MM); leave out if there's none",
+              "required": False, "max_length": 7},
          ]),
     dict(WHERE, name="leaderboard", type=1,
          description="Link to the Recomp Achievements leaderboard"),

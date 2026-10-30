@@ -15,7 +15,9 @@
 
 local Share = {}
 
-Share.VERSION = "v1"
+-- v2 adds the play time (whole minutes) when the score was reached.
+-- v1 codes (mod 1.1.0, no TIME line) are still accepted by the bot.
+Share.VERSION = "v2"
 
 -- Crockford base32: no I, L, O or U, so the code is easy to read off a
 -- Game Boy screen and type.
@@ -48,10 +50,18 @@ local function base32(n, digits)
   return table.concat(out)
 end
 
--- The canonical string the checksum covers.
+-- The canonical string the checksum covers.  `f.time` is in minutes.
 function Share.payload(f)
-  return table.concat({ Share.VERSION, f.game, Share.normName(f.name),
-    tostring(f.points), tostring(f.earned), tostring(f.saveId):upper() }, "|")
+  local parts = { f.time ~= nil and "v2" or "v1", f.game, Share.normName(f.name),
+    tostring(f.points), tostring(f.earned), tostring(f.saveId):upper() }
+  if f.time ~= nil then parts[#parts + 1] = tostring(math.floor(f.time)) end
+  return table.concat(parts, "|")
+end
+
+-- Minutes as H:MM, like the trainer card's TIME.
+function Share.clock(minutes)
+  minutes = math.floor(tonumber(minutes) or 0)
+  return ("%d:%02d"):format(math.floor(minutes / 60), minutes % 60)
 end
 
 -- 8 characters, shown as XXXX-XXXX: 20 bits from each of two hashes.
@@ -93,6 +103,8 @@ function Share.card(engine)
   local f = {
     game = engine.game, name = name, points = t.points, earned = t.earned,
     total = t.total, maxPoints = t.maxPoints, saveId = Share.saveId(save, data),
+    -- play time when this score was reached (the last official unlock)
+    time = engine:playTime() and math.floor((t.reachedAt or 0) / 60) or nil,
   }
   f.code = Share.code(f)
   return f

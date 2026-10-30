@@ -54,12 +54,15 @@ function Browser.cardLines(card, url)
     "TRAINER " .. tostring(card.name),
     ("POINTS  %d/%d"):format(card.points, card.maxPoints),
     ("EARNED  %d/%d"):format(card.earned, card.total),
-    "SAVE ID " .. card.saveId,
-    "CHECK   " .. card.code,
-    "",
-    "Official RA list",
-    "only. Enter at:",
   }
+  if card.time then
+    -- play time when this score was reached, H:MM like the trainer card
+    lines[#lines + 1] = ("TIME    %d:%02d"):format(math.floor(card.time / 60), card.time % 60)
+  end
+  for _, line in ipairs({ "SAVE ID " .. card.saveId, "CHECK   " .. card.code, "",
+                          "Official RA list", "only. Enter at:" }) do
+    lines[#lines + 1] = line
+  end
   url = url or Browser.BOARD_URL
   for i = 1, #url, 18 do lines[#lines + 1] = url:sub(i, i + 17) end
   return lines

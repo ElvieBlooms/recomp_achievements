@@ -149,6 +149,7 @@ function Engine:award(key, opts)
   local shown = self:display(def)
   local wrote = self.ledger:unlock(self.game, key, {
     how = opts.how, source = def.source, title = shown.title,
+    pt = self:playTime(),
   })
   if not wrote then return false, "already_unlocked" end
   self:log("unlocked %s (%s)", key, opts.how or "event")
@@ -611,8 +612,17 @@ function Engine:totals(filterSource)
   return t
 end
 
+-- In-game play time in seconds, or nil if the adapter can't tell.
+function Engine:playTime()
+  local a = self.adapter
+  if not (a and a.playTime) then return nil end
+  local ok, t = pcall(a.playTime, a)
+  return ok and t or nil
+end
+
 -- Official RetroAchievements entries only (no bonus, no other mods):
--- the numbers the public leaderboard compares.
+-- the numbers the public leaderboard compares.  `reachedAt` is the play
+-- time (seconds) of the latest official unlock, or nil with none.
 function Engine:officialTotals()
   local t = { earned = 0, total = 0, points = 0, maxPoints = 0 }
   for _, row in ipairs(self:rows()) do
@@ -622,6 +632,11 @@ function Engine:officialTotals()
       if row.unlocked then
         t.earned = t.earned + 1
         t.points = t.points + (row.points or 0)
+        -- the score was reached at the latest unlock's play time; records
+        -- from before 1.2.0 have none, so fall back to the time now
+        local record = self.ledger:record(row.key)
+        local pt = record and tonumber(record.pt) or self:playTime()
+        if pt and (t.reachedAt == nil or pt > t.reachedAt) then t.reachedAt = pt end
       end
     end
   end

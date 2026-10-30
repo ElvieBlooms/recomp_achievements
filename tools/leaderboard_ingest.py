@@ -33,7 +33,6 @@ import os
 import re
 import sys
 
-VERSION = "v1"
 ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
 # Official RetroAchievements totals per game, as counted by the mod (see
@@ -76,13 +75,17 @@ def _base32(n, digits):
     return "".join(reversed(out))
 
 
-def payload(game, name, points, earned, save_id):
-    return "|".join([VERSION, game, norm_name(name), str(points), str(earned),
-                     save_id.upper()])
+def payload(game, name, points, earned, save_id, minutes=None):
+    """v2 (mod 1.2.0+) includes the play time in minutes; v1 (1.1.0) doesn't."""
+    parts = ["v1" if minutes is None else "v2", game, norm_name(name), str(points),
+             str(earned), save_id.upper()]
+    if minutes is not None:
+        parts.append(str(minutes))
+    return "|".join(parts)
 
 
-def check_code(game, name, points, earned, save_id):
-    p = payload(game, name, points, earned, save_id).encode("utf-8")
+def check_code(game, name, points, earned, save_id, minutes=None):
+    p = payload(game, name, points, earned, save_id, minutes).encode("utf-8")
     a = _hash(p, 5381) % 1048576
     b = _hash(p, 52711) % 1048576
     s = _base32(a, 4) + _base32(b, 4)
@@ -154,7 +157,23 @@ FIELDS = {
     "earned": "Achievements earned",
     "save_id": "Save ID",
     "code": "Check code",
+    "time": "Play time",
 }
+
+
+def parse_time(raw):
+    """'12:34' (hours:minutes, as on the card) -> minutes; '' -> None."""
+    raw = raw.strip()
+    if not raw:
+        return None
+    m = re.fullmatch(r"(\d{1,3})\s*[:.h]\s*(\d{2})\s*m?", raw.lower())
+    if not m or int(m.group(2)) > 59:
+        raise Rejected("Play time is the H:MM after TIME on the card, like 12:34.")
+    return int(m.group(1)) * 60 + int(m.group(2))
+
+
+def clock(minutes):
+    return f"{minutes // 60}:{minutes % 60:02d}"
 
 
 def parse_issue(body):
@@ -211,18 +230,21 @@ def validate(fields):
     if (points == 0) != (earned == 0):
         raise Rejected("Points and achievements earned don't fit together.")
 
-    save_id = fields["save_id"].strip().upper()
+    # Same alphabet as the code: no O, I or L, so read those as 0 and 1
+    # (the Gen 1 font's 0 looks a lot like an O).
+    save_id = re.sub(r"\s", "", fields["save_id"]).upper().replace("O", "0").replace("I", "1").replace("L", "1")
     if not re.fullmatch(r"[0-9A-Z]{6}", save_id):
         raise Rejected("The save ID is the 6 characters shown on the card.")
 
+    minutes = parse_time(fields.get("time", ""))
     code = normalize_code(fields["code"])
-    expected = check_code(game, name, points, earned, save_id)
+    expected = check_code(game, name, points, earned, save_id, minutes)
     if code != expected:
         raise Rejected("The check code doesn't match the other fields. "
                        "Check each value against the card in the game "
                        "(START > ACHIEVEMENTS > SELECT) and edit the issue.")
     return {"game": game, "name": name, "points": points, "earned": earned,
-            "saveId": save_id}
+            "saveId": save_id, "time": minutes}
 
 
 # ---------------------------------------------------------------- board
@@ -245,7 +267,13 @@ def load_board(path):
 
 
 def rank(entries):
-    entries.sort(key=lambda e: (-e["points"], -e["earned"], e.get("first", "")))
+    """Most points first; on equal points the shorter play time wins (entries
+    without a time, from mod 1.1.0, go after timed ones), then the earlier
+    submission."""
+    def key(e):
+        t = e.get("time")
+        return (-e["points"], t is None, t if t is not None else 0, e.get("first", ""))
+    entries.sort(key=key)
 
 
 def owner_of(e):
@@ -265,13 +293,13 @@ def upsert(board, entry, sub, now):
             if owner_of(e) != sub.owner:
                 raise Rejected("That save ID is already on the board for another account.")
             e.update(name=entry["name"], points=entry["points"],
-                     earned=entry["earned"], date=now, via=sub.source)
+                     earned=entry["earned"], date=now, via=sub.source, time=entry["time"])
             if sub.issue:
                 e["issue"] = sub.issue
             rank(entries)
             return "updated"
     row = {"name": entry["name"], "points": entry["points"],
-           "earned": entry["earned"], "saveId": entry["saveId"],
+           "earned": entry["earned"], "saveId": entry["saveId"], "time": entry["time"],
            "owner": sub.owner, "via": sub.source, "date": now, "first": now}
     if sub.source == "github":
         row.update(github=sub.login, issue=sub.issue)
@@ -352,7 +380,9 @@ def main(argv=None):
     with open(args.reply, "w", encoding="utf-8") as f:
         f.write(f"{'Added' if how == 'added' else 'Updated'}: **{entry['name']}** on "
                 f"{info['title']} with {entry['points']}/{info['maxPoints']} points "
-                f"({entry['earned']}/{info['total']} achievements), "
+                f"({entry['earned']}/{info['total']} achievements"
+                + (f", reached at {clock(entry['time'])} play time" if entry["time"] is not None else "")
+                + "), "
                 f"currently #{place}. The page updates in a minute or two.\n\n")
         if sub.source == "discord":
             f.write("To update your score later, send `/score` again with the new card.\n")

@@ -45,6 +45,13 @@ function Gen1:save()
   return game and game.save
 end
 
+-- In-game play time in whole seconds (the TIME on the trainer card).
+function Gen1:playTime()
+  local save = self:save()
+  local t = save and tonumber(save.playTime)
+  return t and t >= 0 and math.floor(t) or nil
+end
+
 -- The exact running version, or nil if there is no usable save yet.
 function Gen1:version()
   local save = self:save()

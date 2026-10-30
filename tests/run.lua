@@ -46,7 +46,7 @@ test("both mods load in dependency order with no errors", function()
   check(env.ok, "loader:load returned false: " .. table.concat(env.loader.errors, "; "))
   eq(env.loader.order[1], "recomp_achievements", "framework loads first")
   eq(env.loader.order[2], "achievement_sandbox", "provider loads second")
-  eq(ach(env).apiVersion, "1.1.0", "api version")
+  eq(ach(env).apiVersion, "1.2.0", "api version")
   check(ach(env).supports("progress"), "supports progress")
   check(not ach(env).supports("leaderboards"), "unknown capability is false")
 end)
@@ -536,6 +536,47 @@ test("leaderboard card: official points only, stable save id, shown on SELECT", 
   check(H.screenHas("RetroAchievements"), "credits on RIGHT")
   env:press("left"); env:draw()
   check(H.screenHas("LEADERBOARD CARD"), "back on LEFT")
+end)
+
+test("v2 check code (with play time) matches Python", function()
+  local Share = loadShare()
+  eq(Share.code({ game = "red", name = "ASH", points = 745, earned = 93, saveId = "ABC123", time = 754 }), "K8ZM-8GYP", "red 12:34")
+  eq(Share.code({ game = "red", name = "ASH", points = 745, earned = 93, saveId = "ABC123", time = 0 }), "ESH4-99C6", "zero time is v2, not v1")
+  eq(Share.code({ game = "blue", name = "Gary\226\153\130", points = 678, earned = 90, saveId = "0K3M9Q", time = 59999 }), "0A0S-ZNDV", "long time")
+end)
+
+test("card TIME is the play time when the score was reached", function()
+  local env = H.boot({ "recomp_achievements" })
+  env:newGame()
+  env.game.save.playTime = 3600 + 125            -- 1:02 when the badge is earned
+  env.game.save.inventory.BOULDERBADGE = 1
+  env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+  local key = "core:off_boulderbadge"
+  eq(ach(env).isUnlocked(key), true, "badge earned")
+  env.game.save.playTime = 5 * 3600               -- playing on doesn't change it
+  local card = ach(env).leaderboardCard()
+  eq(card.time, 62, "minutes at the last official unlock")
+  eq(card.code, loadShare().code(card), "v2 code over the shown fields")
+  for _, item in ipairs(env:startMenu()) do
+    if item.label == "ACHIEVEMENTS" then item.onSelect() end
+  end
+  env:press("select"); env:draw()
+  check(H.screenHas("TIME    1:02"), "TIME line on the card")
+  check(H.screenHas(card.code:gsub("%-", "%%-")), "code shown")
+end)
+
+test("a new game's card has 0:00 and old records fall back to the current time", function()
+  local env = H.boot({ "recomp_achievements" })
+  env:newGame()
+  env.game.save.playTime = 600
+  eq(ach(env).leaderboardCard().time, 0, "nothing earned yet")
+  env.game.save.inventory.BOULDERBADGE = 1
+  env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+  -- simulate a record written by 1.1.0 (no play time)
+  local ledger = env.game.save.modData.recomp_achievements.ledger
+  for _, rec in pairs(ledger.unlocked) do rec.pt = nil end
+  env.game.save.playTime = 7200
+  eq(ach(env).leaderboardCard().time, 120, "falls back to the play time now")
 end)
 
 print(("\n%d passed, %d failed"):format(passed, failed))
