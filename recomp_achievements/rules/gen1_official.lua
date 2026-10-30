@@ -81,7 +81,8 @@ return function(L)
   end
 
   -- ======================================================= GYM CHALLENGES
-  -- Red: Set mode, no items in battle, level cap at the start of the fight.
+  -- Red: Challenge rules (RA's "Set mode", the SET battle style), no items
+  -- in battle, level cap at the start of the fight.
   local redCaps = {
     { 1, 108058, 14 }, { 2, 108059, 21 }, { 3, 108060, 24 }, { 4, 108061, 29 },
     { 5, 108062, 43 }, { 6, 108063, 43 }, { 7, 108065, 47 }, { 8, 108068, 50 },
@@ -89,7 +90,9 @@ return function(L)
   for _, c in ipairs(redCaps) do
     local gym = L.GYMS[c[1]]
     add(L.leaderChallenge("off_setcap_" .. gym.opp:lower(), { red = c[2] },
-      "Set mode challenge", gym.flag, gym.opp, L.setModeCap(c[3])))
+      "Challenge: " .. L.prettyName(gym.opp), gym.flag, gym.opp, L.setModeCap(c[3]),
+      { category = "CHALLENGE", note = L.CHALLENGE .. ", use no items in the battle, and start it with "
+        .. "no Pokemon above Lv." .. c[3] .. "." }))
   end
   -- Blue: beat the leader using only one type.
   local blueTypes = {
@@ -150,10 +153,11 @@ return function(L)
     function(party) return #party > 0 end,
     function(b) return b and b.playerFainted == 0 end,
     function(party) return maxLevel(party) <= 60 end))
-  add(L.leagueRun("off_league_smogon", { red = 108171 }, "Set mode League",
+  add(L.leagueRun("off_league_smogon", { red = 108171 }, "Challenge League",
     function(party) return #party > 0 end,
     function(b) return b and b.style == "set" and not b.itemsUsed end,
-    function(party) return maxLevel(party) <= 50 end))
+    function(party) return maxLevel(party) <= 50 end,
+    { category = "CHALLENGE", note = L.CHALLENGE .. ", use no items in battle, and keep every Pokemon at Lv.50 or under." }))
   add(L.leagueRun("off_league_blue_excl", { blue = 540293 }, "Blue exclusives League",
     L.partyAll(function(m) return blueSet[m.species] end)))
   add(L.leagueRun("off_league_fairy", { blue = 540295 }, "Fairy League",

@@ -44,11 +44,12 @@ on Discord" button.
 
 ## What the Action checks
 
-- The game is Red, Blue or Yellow.
+- The game is Red, Blue, Yellow, Gold, Silver or Crystal.
 - The trainer name is 1–12 characters with nothing the page can't show,
   and doesn't match `tools/name_blocklist.txt` (see "Name filter" below).
 - Points and achievements are whole numbers no higher than the game's
-  official totals (Red 745/93, Blue 678/90, Yellow 458/76). If the RA lists
+  RetroAchievements-list totals (Red 745/93, Blue 678/90, Yellow 458/76,
+  Gold 685/72, Silver 616/75, Crystal 864/113). If the RA lists
   change, update `GAMES` in `tools/leaderboard_ingest.py`; `tests/run.lua`
   fails until the two agree.
 - The play time, if given, is H:MM. Cards from mod 1.1.0 have no TIME line

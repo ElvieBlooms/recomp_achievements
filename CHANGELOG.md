@@ -1,5 +1,28 @@
 # Changelog
 
+## 2.0.1
+
+- What RetroAchievements calls "Set Mode" is now labelled **Challenge** in
+  the mod's own titles and notes, with what it means spelled out: set
+  OPTION > BATTLE STYLE to SET (plus the level cap and any other limits).
+  These achievements show a short reminder on their details page and the
+  full rules on the "How it's checked" page. They are in a new CHALLENGE
+  category. The checks themselves are unchanged.
+
+## 2.0.0
+
+- **Gold, Silver and Crystal.** All 260 entries of the RetroAchievements
+  lists for the three games are tracked (72 + 75 + 113), plus 16 Gen 2
+  bonus achievements. Existing saves are credited when they load, as in
+  Gen 1. See docs/COVERAGE.md for how each one is checked.
+- The menu, popups, unlock sound, themes and leaderboard card work the
+  same on Gen 2. The START menu entry is called AWARDS there, because
+  Gen 2's menu is narrower. CLASSIC MENU and the Classic GB popups stay
+  Gen 1 only.
+- The leaderboard, its issue form and the Discord bot accept Gold, Silver
+  and Crystal scores.
+- Gen 2 reports each battle twice; the mod counts it once.
+
 ## 1.7.0
 
 - The achievements menu now fills the whole window, landscape or portrait,

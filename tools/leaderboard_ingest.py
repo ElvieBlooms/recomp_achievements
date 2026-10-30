@@ -42,6 +42,9 @@ GAMES = {
     "red":    {"title": "Pokemon Red",    "maxPoints": 745, "total": 93},
     "blue":   {"title": "Pokemon Blue",   "maxPoints": 678, "total": 90},
     "yellow": {"title": "Pokemon Yellow", "maxPoints": 458, "total": 76},
+    "gold":    {"title": "Pokemon Gold",    "maxPoints": 685, "total": 72},
+    "silver":  {"title": "Pokemon Silver",  "maxPoints": 616, "total": 75},
+    "crystal": {"title": "Pokemon Crystal", "maxPoints": 864, "total": 113},
 }
 
 NAME_MAX = 12  # Gen 1 names are 7 characters; leave room for imports
@@ -204,7 +207,7 @@ def validate(fields):
     game = fields["game"].strip().lower()
     game = game.replace("pokemon", "").replace("pokémon", "").strip()
     if game not in GAMES:
-        raise Rejected("Pick Red, Blue or Yellow as the game.")
+        raise Rejected("Pick the game from the list (Red, Blue, Yellow, Gold, Silver or Crystal).")
     info = GAMES[game]
 
     name = fields["name"].strip()

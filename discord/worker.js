@@ -25,7 +25,8 @@
 // =====================================================================
 
 const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
-const GAMES = { red: "Pokemon Red", blue: "Pokemon Blue", yellow: "Pokemon Yellow" };
+const GAMES = { red: "Pokemon Red", blue: "Pokemon Blue", yellow: "Pokemon Yellow",
+                gold: "Pokemon Gold", silver: "Pokemon Silver", crystal: "Pokemon Crystal" };
 const EPHEMERAL = 64;
 
 // ---------------------------------------------------------- check code
@@ -132,7 +133,7 @@ function options(interaction) {
 // everything again (limits, name filter, ownership) before saving.
 export function precheck(o) {
   const game = String(o.game || "").toLowerCase();
-  if (!GAMES[game]) return "Pick red, blue or yellow as the game.";
+  if (!GAMES[game]) return "Pick the game from the list (red, blue, yellow, gold, silver or crystal).";
   const name = String(o.name || "").trim();
   if (!name || [...name].length > 12) return "The trainer name must be 1 to 12 characters.";
   const points = Number(o.points), earned = Number(o.earned);

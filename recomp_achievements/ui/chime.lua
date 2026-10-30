@@ -84,7 +84,8 @@ end
 -- 0..1 from the game's SFX VOL (0-7); full if the option isn't there.
 function Chime:gameVolume()
   local game = self.mod.game
-  local options = game and game.save and game.save.options
+  -- Gen 1 keeps options in the save; Gen 2 on the game (same table)
+  local options = game and ((game.save and game.save.options) or game.options)
   local level = options and tonumber(options.sfxVol)
   if not level then return 1 end
   return math.max(0, math.min(7, level)) / 7

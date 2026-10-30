@@ -391,6 +391,13 @@ function Engine:wire()
   events:on("battle.started", function(ev)
     ev = ev or {}
     local adapter = self.adapter
+    -- Gen 2 reports each battle twice; keep the first report and fill in
+    -- the trainer from whichever copy has it.
+    local info = adapter and adapter.battleInfo and adapter:battleInfo(ev) or {}
+    if info.key ~= nil and self.battle and self.battle.key == info.key then
+      self.battle.trainerId = self.battle.trainerId or info.trainerId
+      return
+    end
     local party = adapter and adapter.partySnapshot and adapter:partySnapshot() or {}
     local maxLevel = 0
     for _, m in ipairs(party) do if (m.level or 0) > maxLevel then maxLevel = m.level end end
@@ -400,7 +407,8 @@ function Engine:wire()
     local lead = raw and type(raw.player) == "table" and type(raw.player.mon) == "table"
       and raw.player.mon.species or nil
     self.battle = {
-      kind = ev.kind, trainerId = ev.trainerId, species = ev.species, level = ev.level,
+      key = info.key,
+      kind = ev.kind, trainerId = ev.trainerId or info.trainerId, species = ev.species, level = ev.level,
       style = facts and facts.battleStyle and facts.battleStyle() or nil,
       partyAtStart = party, partyMaxAtStart = maxLevel,
       bagAtStart = adapter and adapter.bagSnapshot and adapter:bagSnapshot() or nil,
@@ -445,6 +453,13 @@ function Engine:wire()
   end
   events:on("battle.ended", function(ev)
     local b = self.battle
+    local info = self.adapter and self.adapter.battleInfo and self.adapter:battleInfo(ev) or {}
+    if not b and info.key ~= nil and self.lastBattle and self.lastBattle.key == info.key then
+      -- the second report of a battle that already ended (Gen 2); a catch
+      -- only arrives here, so let it update the result
+      if ev and ev.result == "caught" then self.lastBattle.result = "caught" end
+      return
+    end
     if b and b.bagAtStart and self.adapter then
       -- Any bag item that went DOWN during the fight was used (balls
       -- included).  Rules that allow balls can check b.itemsUsedList.

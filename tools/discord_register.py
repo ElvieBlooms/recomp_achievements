@@ -26,7 +26,8 @@ COMMANDS = [
          options=[
              {"type": 3, "name": "game", "description": "GAME on the card", "required": True,
               "choices": [{"name": "Red", "value": "red"}, {"name": "Blue", "value": "blue"},
-                          {"name": "Yellow", "value": "yellow"}]},
+                          {"name": "Yellow", "value": "yellow"}, {"name": "Gold", "value": "gold"},
+                          {"name": "Silver", "value": "silver"}, {"name": "Crystal", "value": "crystal"}]},
              {"type": 3, "name": "name", "description": "TRAINER on the card",
               "required": True, "max_length": 12},
              {"type": 4, "name": "points", "description": "First number after POINTS",

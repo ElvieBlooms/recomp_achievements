@@ -27,6 +27,8 @@ local Browser = {}
 
 Browser.SCREEN_ID = "RecompAchievements"
 Browser.MENU_LABEL = "ACHIEVEMENTS"
+-- Gen 2's START menu fits about 8 characters
+Browser.SHORT_LABEL = "AWARDS"
 -- Where the START row goes.  insertBefore falls back to appending if the
 -- anchor label isn't there (another mod renamed it, a different gen).
 Browser.MENU_ANCHOR = "OPTION"
@@ -344,6 +346,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
       if row.note then say(row.note) end
     elseif row.official then
       say("Checked by this mod from your save and gameplay.")
+      if row.note then say(row.note) end
     else
       say("A bonus achievement made for this mod.")
       if row.note then say(row.note) end
@@ -411,7 +414,9 @@ end
 function Browser.install(mod, engine, util, Text, Share, Modern)
   mod.content.screens:register(Browser.SCREEN_ID, {
     new = function(game)
-      if Modern and not mod.options:get("classicMenu") then
+      -- the classic menu draws with Gen 1's tile font, so other
+      -- generations always get the modern one
+      if Modern and (mod.generation ~= 1 or not mod.options:get("classicMenu")) then
         return Modern.newScreen({ mod = mod, engine = engine, Browser = Browser, Share = Share,
                                   game = game, boardUrl = Browser.BOARD_URL })
       end
@@ -444,7 +449,8 @@ function Browser.install(mod, engine, util, Text, Share, Modern)
     items = nextFn(game, items)
     if type(items) ~= "table" then return items end
     mod.ui.insertBefore(items, Browser.MENU_ANCHOR, {
-      label = Browser.MENU_LABEL,
+      label = mod.generation == 1 and Browser.MENU_LABEL or Browser.SHORT_LABEL,
+      desc = { "Your achievements", "and leaderboard." }, -- Gen 2's menu help box
       onSelect = function()
         local live = mod.game or game
         local ok, err = pcall(mod.ui.push, live, Browser.SCREEN_ID)

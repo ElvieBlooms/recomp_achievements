@@ -104,7 +104,11 @@ end
 -- small card in the top-right corner) or "classic" (the Game Boy text box).
 function Toast:style()
   local s = self.mod.options:get("popupStyle")
-  if s == "classic" or not self.Modern then return "classic" end
+  if not self.Modern then return "classic" end
+  if s == "classic" then
+    -- the Game Boy box uses Gen 1's tile font
+    return self.mod.generation == 1 and "classic" or "modern"
+  end
   if s == "corner" then return "corner" end
   return "modern"
 end

@@ -86,29 +86,20 @@ return function(mod)
   toast.gameOf = function() return engine.game end -- popup accent colour
 
   -- ----------------------------------------------------------------
-  -- Built-in content for the running generation.  Phase 1 ships Gen 1
-  -- only; Gen 2/3 adapters slot in here later without touching the core.
+  -- Built-in content for the running generation.  Each generation has an
+  -- adapter (save -> facts), its RA-list detectors, its bonus rules and
+  -- the optional RA catalogs; rules/common.lua applies everywhere.
   -- ----------------------------------------------------------------
-  if mod.generation == 1 then
-    local adapter = import("adapters/gen1.lua").new(mod, util)
-    engine:setAdapter(adapter)
-    -- Official RA-linked rules first (shown with RA's text when the
-    -- catalog is installed), then this mod's own bonus achievements.
-    local lib = import("rules/gen1_lib.lua")
-    for _, rule in ipairs(import("rules/gen1_official.lua")(lib)) do
+  local function addRules(list, extra)
+    for _, rule in ipairs(list) do
+      if extra then rule.extra = true end
       engine:addRule(rule)
     end
-    for _, rule in ipairs(import("rules/gen1.lua")) do
-      rule.extra = true
-      engine:addRule(rule)
-    end
-    for _, rule in ipairs(import("rules/common.lua")) do
-      rule.extra = true
-      engine:addRule(rule)
-    end
+  end
+  local function loadCatalogs(games)
     -- Reference catalogs are optional files produced by
     -- tools/fetch_ra_catalog.py.  Missing files are normal.
-    for _, game in ipairs({ "red", "blue", "yellow" }) do
+    for _, game in ipairs(games) do
       if mod:info("catalog/" .. game .. ".lua") then
         local ok, catalog = pcall(import, "catalog/" .. game .. ".lua")
         if ok and type(catalog) == "table" then
@@ -118,6 +109,29 @@ return function(mod)
         end
       end
     end
+  end
+
+  local supported = true
+  if mod.generation == 1 then
+    engine:setAdapter(import("adapters/gen1.lua").new(mod, util))
+    -- Official RA-linked rules first (shown with RA's text when the
+    -- catalog is installed), then this mod's own bonus achievements.
+    addRules(import("rules/gen1_official.lua")(import("rules/gen1_lib.lua")))
+    addRules(import("rules/gen1.lua"), true)
+    loadCatalogs({ "red", "blue", "yellow" })
+  elseif mod.generation == 2 then
+    engine:setAdapter(import("adapters/gen2.lua").new(mod, util, function(v) return import("data/gen2_" .. v .. ".lua") end))
+    if mod:info("rules/gen2_official.lua") then
+      addRules(import("rules/gen2_official.lua")(import("rules/gen2_lib.lua")))
+    end
+    addRules(import("rules/gen2.lua"), true)
+    loadCatalogs({ "gold", "silver", "crystal" })
+  else
+    supported = false
+    mod.log:info("this generation isn't supported yet; achievements stay off")
+  end
+  if supported then
+    addRules(import("rules/common.lua"), true)
     if mod:info("catalog/links.lua") then
       local ok, links = pcall(import, "catalog/links.lua")
       if ok and type(links) == "table" then registry:addLinks(links) end

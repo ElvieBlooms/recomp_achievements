@@ -810,6 +810,119 @@ test("modern menu fills the window (landscape and portrait) or just the game are
   check(H.windowText():find("Achievements", 1, true), "game-area mode draws")
 end)
 
+-- ---------------------------------------------------------- gen 2 adapter
+test("Gen 2 adapter reads Gold/Silver/Crystal saves", function()
+  local Gen2 = assert(loadfile(H.PROJECT .. "/recomp_achievements/adapters/gen2.lua"))()
+  local save = {
+    version = "crystal",
+    player = { name = "KRIS", money = 3000, coins = 50,
+               badges = { ZEPHYR = true, HIVE = true }, kantoBadges = { [1] = true } },
+    inventory = { POTION = 2, BICYCLE = 1 }, pcItems = { POTION = 1 },
+    pokedex = { caught = { CHIKORITA = true, PIDGEY = true }, seen = { CHIKORITA = true, PIDGEY = true, HOOTHOOT = true } },
+    party = { { species = "BAYLEEF", level = 18 }, { species = "TOGEPI", isEgg = true, level = 5 } },
+    boxes = { { { species = "PIDGEY", level = 100, shiny = true } } },
+    unownDex = { "A", "B", "C" },
+    hallOfFame = { count = 1 },
+    playTime = { hours = 3, minutes = 4, seconds = 5 },
+    events = { [151] = 4 }, -- flag 1210 = byte 151, bit 2
+  }
+  local mod = { game = { save = save }, world = nil }
+  local a = Gen2.new(mod, {})
+  eq(a:version(), "crystal", "version")
+  eq(a:playTime(), 3 * 3600 + 4 * 60 + 5, "play time in seconds")
+  local f = a:facts()
+  eq(f.badgeCount(), 2, "johto badges by name")
+  eq(f.kantoBadgeCount(), 1, "kanto badges by index (old saves)")
+  eq(f.hasBadge("HIVE"), true, "hive badge")
+  eq(f.itemCount("POTION"), 3, "bag + PC")
+  eq(f.dexOwned(), 2, "caught"); eq(f.dexSeen(), 3, "seen")
+  eq(f.highestLevel(), 100, "boxes count, eggs don't")
+  eq(f.has("TOGEPI"), false, "eggs aren't owned yet")
+  eq(f.shinyCount(), 1, "shiny in a box")
+  eq(f.unownForms(), 3, "unown"); eq(f.hallOfFame(), 1, "hall of fame")
+  eq(f.flag(1210), true, "saved flag bit decoded without a live world")
+  eq(f.flag(1209), false, "neighbouring bit")
+  eq(Gen2.new({ game = { save = { version = "red" } } }, {}):version(), nil, "not a Gen 2 save")
+  -- battle de-duplication key: both copies of a battle report agree
+  local core = { trainer = { classId = "FALKNER" } }
+  local first, second = a:battleInfo({ battle = core }), a:battleInfo({ battle = { battle = core } })
+  check(first.key == second.key, "same key for both reports")
+  eq(first.trainerId, "FALKNER", "trainer from the battle")
+  eq(second.trainerId, "FALKNER", "trainer through the battle screen")
+end)
+
+test("Gen 2 bonus rules load and check against facts", function()
+  local rules = assert(loadfile(H.PROJECT .. "/recomp_achievements/rules/gen2.lua"))()
+  local ids = {}
+  for _, r in ipairs(rules) do
+    check(not ids[r.id], "unique id " .. r.id); ids[r.id] = true
+    check(r.id:match("^g2_"), r.id .. " is prefixed")
+    check(#r.title <= 32, r.title .. " fits")
+  end
+  local f = { partySize = function() return 1 end, dexOwned = function() return 0 end,
+              badgeCount = function() return 8 end, kantoBadgeCount = function() return 3 end }
+  for _, r in ipairs(rules) do
+    if r.id == "g2_first_partner" then eq(r.check(f), true, "partner") end
+    if r.id == "g2_johto_badges" then eq(r.check(f), 8, "johto progress") end
+    if r.id == "g2_sixteen_badges" then eq(r.check(f), 11, "sixteen progress") end
+  end
+end)
+
+test("Gen 2 RA rules: every list entry linked once, every flag name real", function()
+  local P = H.PROJECT .. "/recomp_achievements/"
+  local rules = dofile(P .. "rules/gen2_official.lua")(dofile(P .. "rules/gen2_lib.lua"))
+  local data, cats, linked = {}, {}, {}
+  for _, g in ipairs({ "gold", "silver", "crystal" }) do
+    data[g] = dofile(P .. "data/gen2_" .. g .. ".lua")
+    cats[g] = dofile(P .. "catalog/" .. g .. ".lua")
+    linked[g] = {}
+  end
+  local ids = {}
+  for _, r in ipairs(rules) do
+    check(not ids[r.id], "unique " .. r.id); ids[r.id] = true
+    check(#r.title <= 32, "title fits " .. r.title)
+    eq(r.official, true, r.id .. " is official")
+    for g, raId in pairs(r.ra) do
+      check(not linked[g][raId], g .. " " .. raId .. " linked once")
+      linked[g][raId] = true
+      if r.check then
+        local asked = {}
+        local f = setmetatable({}, { __index = function(_, k)
+          if k == "flag" then return function(n) if type(n) == "string" then asked[n] = true end return false end end
+          if k == "allFlags" or k == "countFlags" then
+            return function(list) for _, x in ipairs(list) do asked[x] = true end return k == "countFlags" and 0 or false end
+          end
+          if k == "sweep" then return function() return 0, 10 end end
+          if k == "party" then return function() return {} end end
+          local bools = { owns = true, ownsWhere = true, hasItem = true, rivalNamed = true, traded = true,
+                          hasBadge = true, engineFlag = true, hasType = true, isJohto = true, anyFlag = true }
+          if bools[k] then return function() return false end end
+          return function() return 0 end
+        end })
+        local ok, err = pcall(r.check, f)
+        check(ok, r.id .. " check runs: " .. tostring(err))
+        for n in pairs(asked) do check(data[g].flags[n] ~= nil, g .. " knows " .. n) end
+      end
+    end
+  end
+  for g, c in pairs(cats) do
+    for _, e in ipairs(c.entries) do check(linked[g][e.id], g .. " entry " .. e.id .. " " .. e.title .. " has a rule") end
+  end
+end)
+
+test("Gen 2 data: flag numbers match the engine's Gold table and New-Game flags are skipped", function()
+  local P = H.PROJECT .. "/recomp_achievements/"
+  local gold = dofile(P .. "data/gen2_gold.lua")
+  eq(gold.flags.EVENT_BEAT_FALKNER, 1213, "Falkner")
+  eq(gold.flags.EVENT_BEAT_WHITNEY, 1215, "Whitney")
+  local crystal = dofile(P .. "data/gen2_crystal.lua")
+  eq(crystal.flags.EVENT_BEAT_WHITNEY, 1215, "Crystal Whitney (from its generated scripts)")
+  for _, row in ipairs(crystal.hidden) do
+    check(row[2] ~= "EVENT_FOUND_MACHINE_PART_IN_CERULEAN_GYM", "machine part isn't a hidden-item row")
+  end
+  check(#crystal.trainers > 300 and #crystal.items > 150 and #crystal.hidden > 70, "lists are populated")
+end)
+
 print(("\n%d passed, %d failed"):format(passed, failed))
 H.cleanup()
 os.exit(failed == 0 and 0 or 1)

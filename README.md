@@ -2,8 +2,9 @@
 
 An achievements mod for **Gen1Recomp**, inspired by
 [RetroAchievements](https://retroachievements.org). It uses the achievement
-lists RetroAchievements publishes for **Pokémon Red, Blue and Yellow** (all
-259 entries: titles, descriptions and point values) and checks them with
+lists RetroAchievements publishes for **Pokémon Red, Blue, Yellow, Gold,
+Silver and Crystal** (all 519 entries: titles, descriptions and point
+values) and checks them with
 its own unlock logic, written from scratch for Gen1Recomp. Everything
 unlocks and is saved locally, in your game.
 
@@ -32,10 +33,12 @@ and each achievement's author, and are credited in the game. See
 
 ## Install
 
-1. Download `recomp_achievements-1.7.0.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-2.0.1.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
-2. Start Red, Blue or Yellow (Gen1Recomp 0.3.97 or newer).
-3. Open the START menu and choose **ACHIEVEMENTS**.
+2. Start Red, Blue, Yellow, Gold, Silver or Crystal (Gen1Recomp 0.3.97 or
+   newer).
+3. Open the START menu and choose **ACHIEVEMENTS** (**AWARDS** in Gold,
+   Silver and Crystal, whose menu is narrower).
 
 To keep achievements in step across devices, install the mod on each one.
 Save Sync carries your progress but doesn't install mods.
@@ -76,6 +79,11 @@ Options are in the Mods manager:
 - **DEBUG LOG**
 
 ### Good to know
+
+- Achievements RetroAchievements marks "Set Mode" are **Challenges** here:
+  they need OPTION > BATTLE STYLE set to SET (Gen1Recomp has this option in
+  both generations) plus the level cap or other limits listed on the
+  achievement's "How it's checked" page.
 
 - Challenges such as "on Set mode", "without resetting" or "in a single
   Safari hunt" are judged while you play. A save can't prove how something
@@ -142,9 +150,14 @@ recomp_achievements/   the mod (this folder is what ships)
   main.lua               wiring; start reading here
   core/                  ledger (save data), registry, engine, public API
   adapters/gen1.lua      Red/Blue/Yellow save + game data -> "facts"
-  rules/gen1_official.lua  one detector per RetroAchievements-list entry
-  rules/gen1_lib.lua     the building blocks those detectors use
-  rules/gen1.lua         bonus achievements
+  adapters/gen2.lua      Gold/Silver/Crystal save + game data -> "facts"
+  rules/gen1_official.lua, rules/gen2_official.lua
+                         one detector per RetroAchievements-list entry
+  rules/gen1_lib.lua, rules/gen2_lib.lua
+                         the building blocks those detectors use
+  rules/gen1.lua, rules/gen2.lua, rules/common.lua
+                         bonus achievements
+  data/gen2_*.lua        Gen 2 flag numbers, trainers and items (generated)
   catalog/               RA metadata (generated)
   ui/                    menu (modern + classic), popups, unlock sound, text helpers
 achievement_sandbox/   example provider mod (not part of the release)
@@ -153,6 +166,7 @@ docs/                  PROVIDER_API.md, COVERAGE.md (generated), and the
 .github/               leaderboard issue forms and the Action that reads them
 discord/               optional Discord bot (Cloudflare Worker) for submissions
 tools/                 fetch_ra_catalog.py, gen_coverage.lua, build_release.sh,
+                       gen2_data.py (+ gen2_flags.py),
                        leaderboard_ingest.py, discord_reply.py,
                        discord_register.py, name_blocklist.txt
 tests/                 headless tests in the real Gen1Recomp mod loader
@@ -185,6 +199,18 @@ and writes `dist/recomp_achievements-<version>.zip`.
 
 To refresh the RA lists (developers only; needs your own RA Web API key):
 `RA_API_KEY=... python3 tools/fetch_ra_catalog.py red blue yellow`.
+
+### Gen 2 data
+
+`recomp_achievements/data/gen2_*.lua` lists each game's event-flag numbers
+and every map trainer, item ball, hidden item and gift, read from the
+[pret](https://github.com/pret) disassemblies (pokegold and pokecrystal),
+which are the same numbering Gen1Recomp uses. To rebuild it:
+
+```
+git clone https://github.com/pret/pokegold && git clone https://github.com/pret/pokecrystal
+python3 tools/gen2_data.py pokegold pokecrystal
+```
 
 ## License
 

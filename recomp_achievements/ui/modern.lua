@@ -440,6 +440,16 @@ function Modern.newScreen(deps)
     end
   end
 
+  -- Gen 2 paints the window white behind an opaque screen unless the
+  -- screen draws the whole window itself; this is that, in our backdrop.
+  function self:drawsWidescreen() return true end
+  function self:drawWidescreen(w, h)
+    Modern.apply(mod.options:get("menuTheme"))
+    love.graphics.setColor(C.backdrop)
+    love.graphics.rectangle("fill", 0, 0, w or 4000, h or 4000)
+    love.graphics.setColor(1, 1, 1, 1)
+  end
+
   -- The game frame under the menu: plain dark, so nothing shows through
   -- if the window draw is late by a frame.
   function self:draw()
@@ -617,6 +627,10 @@ function Modern.newScreen(deps)
         para(fBody, shown.title, C.text, 1 * u)
         if (row.points or 0) > 0 then para(fSmall, row.points .. (row.points == 1 and " point" or " points"), accent, 3 * u) end
         para(fSmall, shown.description, C.muted, 3.5 * u)
+        if row.category == "CHALLENGE" then
+          -- RA's text says "Set Mode"; spell out what that means here
+          para(fTiny, "Challenge: needs OPTION > BATTLE STYLE set to SET. A shows the full rules.", accent, 3 * u)
+        end
         if not row.unlocked and row.goal then
           local labelP = ("%d / %d %s"):format(row.progress or 0, row.goal, (row.unit or ""):lower())
           if y + fTiny:getHeight() * 2 < limit then
@@ -633,7 +647,11 @@ function Modern.newScreen(deps)
         if row.source ~= "core" then how = "Checked by the " .. tostring(row.providerName or row.provider) .. " mod."
         elseif row.fidelity == "interpretation" then
           how = "A close local version of the RetroAchievements goal, adapted for Gen1Recomp." .. (row.note and ("\n\n" .. row.note) or "")
-        elseif row.official then how = "Checked by this mod from your save and gameplay, with its own logic written for Gen1Recomp."
+        elseif row.official and row.note then
+          -- the rules first (challenges): they're what the player needs
+          how = row.note .. "\n\nChecked by this mod with its own logic."
+        elseif row.official then
+          how = "Checked by this mod from your save and gameplay, with its own logic written for Gen1Recomp."
         else how = "A bonus achievement made for this mod." .. (row.note and ("\n\n" .. row.note) or "") end
         para(fSmall, how, C.muted, 3.5 * u)
         if row.official and row.raId then

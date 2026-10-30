@@ -141,7 +141,17 @@ function L.leaderChallenge(id, ra, title, leaderFlag, trainerId, cond, extra)
   }, nil, with({ category = "GYMS" }, extra))
 end
 
--- "Set mode, no items in battle, no Pokemon above level N at the start"
+-- Challenge rules (RA calls these "Set mode"): the SET battle style from
+-- OPTION > BATTLE STYLE, no items in battle, no Pokemon above level N at
+-- the start.
+-- "OPP_LT_SURGE" -> "Lt Surge"
+function L.prettyName(id)
+  local s = tostring(id):gsub("^OPP_", ""):lower():gsub("_", " ")
+  return (s:gsub("(%a)(%w*)", function(a, b) return a:upper() .. b end))
+end
+
+L.CHALLENGE = "Challenge: set OPTION > BATTLE STYLE to SET"
+
 function L.setModeCap(cap)
   return function(b)
     return b.style == "set" and not b.itemsUsed and (b.partyMaxAtStart or 999) <= cap

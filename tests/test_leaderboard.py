@@ -202,6 +202,22 @@ class Ingest(unittest.TestCase):
         self.assertEqual(self.run_ingest(body(points="300", earned="40"), author="ALICE")[0], 0)
         self.assertEqual(self.run_ingest(body(points="400", earned="50"), author="bob")[0], 1)
 
+    def test_game_limits_match_catalogs(self):
+        import re as _re
+        for game, info in L.GAMES.items():
+            path = os.path.join(ROOT, "recomp_achievements", "catalog", game + ".lua")
+            text = open(path, encoding="utf-8").read()
+            pts = [int(x) for x in _re.findall(r"points = (\d+),", text)]
+            self.assertEqual((sum(pts), len(pts)), (info["maxPoints"], info["total"]), game)
+
+    def test_gen2_submission(self):
+        rc, reply = self.run_ingest(body(game="Crystal", points="100", earned="12", time="20:00"))
+        self.assertEqual(rc, 0, reply)
+        self.assertIn("Pokemon Crystal", reply)
+        rc, reply = self.run_ingest(body(game="Gold", points="686", earned="72"), author="bob")
+        self.assertEqual(rc, 1)
+        self.assertIn("685", reply)
+
     def test_v2_vectors(self):
         self.assertEqual(L.check_code("red", "ASH", 745, 93, "ABC123", 754), "K8ZM-8GYP")
         self.assertEqual(L.check_code("red", "ASH", 745, 93, "ABC123", 0), "ESH4-99C6")

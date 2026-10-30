@@ -9,12 +9,14 @@
   :root {
     --bg: #e9efd8; --panel: #f7f9ef; --ink: #20281a; --muted: #5d6852;
     --line: #c5cfb0; --accent: #3d6b2a; --red: #c0392b; --blue: #2c5aa0; --yellow: #c79a00;
+    --gold: #a8801a; --silver: #6f7a86; --crystal: #2b8fa8;
     --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #151a12; --panel: #1e251a; --ink: #e3ead6; --muted: #9aa58c;
       --line: #34402c; --accent: #9ccc65; --red: #ef6b5b; --blue: #6f9be0; --yellow: #f2c94c;
+      --gold: #e0b44c; --silver: #b4bfcb; --crystal: #6fd0e6;
     }
   }
   * { box-sizing: border-box; }
@@ -24,7 +26,7 @@
   h1 { font: 700 1.6rem/1.2 var(--mono); letter-spacing: .02em; margin: 0 0 6px; }
   .sub { color: var(--muted); margin: 0 0 24px; }
   .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
-  .tabs { display: flex; gap: 6px; flex: 1; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
   .tab { font: 600 .95rem var(--mono); padding: 8px 14px; border-radius: 8px; cursor: pointer;
          border: 2px solid var(--line); background: var(--panel); color: var(--ink); }
   .tab[aria-selected="true"] { border-color: var(--game); color: var(--game); }
@@ -85,9 +87,12 @@
 (function () {
   "use strict";
   var GAMES = [
-    { id: "red", label: "Red", color: "var(--red)" },
-    { id: "blue", label: "Blue", color: "var(--blue)" },
-    { id: "yellow", label: "Yellow", color: "var(--yellow)" }
+    { id: "red", label: "Red", color: "var(--red)" , maxPoints: 745, total: 93 },
+    { id: "blue", label: "Blue", color: "var(--blue)" , maxPoints: 678, total: 90 },
+    { id: "yellow", label: "Yellow", color: "var(--yellow)" , maxPoints: 458, total: 76 },
+    { id: "gold", label: "Gold", color: "var(--gold)" , maxPoints: 685, total: 72 },
+    { id: "silver", label: "Silver", color: "var(--silver)" , maxPoints: 616, total: 75 },
+    { id: "crystal", label: "Crystal", color: "var(--crystal)" , maxPoints: 864, total: 113 }
   ];
   // The Discord bot's install link (discord/README.md, step 6).  Leave
   // empty to hide the Discord button.
@@ -155,6 +160,10 @@
     host.textContent = "";
     if (!board) { host.appendChild(el("div", "empty", "Couldn't load the leaderboard.")); return; }
     var slot = (board.games || {})[current] || { entries: [] };
+    // games added after the board file was made have no totals there yet
+    slot.maxPoints = slot.maxPoints || game.maxPoints;
+    slot.total = slot.total || game.total;
+    slot.title = slot.title || ("Pokemon " + game.label);
     var entries = (slot.entries || []).slice();
 
     var meta = el("div", "meta");
