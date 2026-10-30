@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.0.2
+
+- Wording only: the classic menu's "OFFICIAL" filter is now **RA LIST**,
+  entries from the RetroAchievements lists say "FROM THE RA LIST" instead
+  of "OFFICIAL RA SET", and the score card says "RA-list points only".
+  Nothing here is official or endorsed by RetroAchievements, and the
+  labels shouldn't suggest it. No changes to unlocks or saved progress.
+
 ## 2.0.1
 
 - What RetroAchievements calls "Set Mode" is now labelled **Challenge** in

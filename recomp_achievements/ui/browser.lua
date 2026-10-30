@@ -62,7 +62,7 @@ function Browser.cardLines(card, url)
     lines[#lines + 1] = ("TIME    %d:%02d"):format(math.floor(card.time / 60), card.time % 60)
   end
   for _, line in ipairs({ "SAVE ID " .. card.saveId, "CHECK   " .. card.code, "",
-                          "Official RA list", "only. Enter at:" }) do
+                          "RA-list points", "only. Enter at:" }) do
     lines[#lines + 1] = line
   end
   url = url or Browser.BOARD_URL
@@ -94,7 +94,7 @@ local FILTERS = {
   { id = "earned",   label = "EARNED" },
   { id = "missing",  label = "MISSING" },
   { id = "progress", label = "IN PROGRESS" },
-  { id = "official", label = "OFFICIAL" },
+  { id = "official", label = "RA LIST" },
   { id = "bonus",    label = "BONUS" },
   { id = "mods",     label = "FROM MODS" },
   { id = "archived", label = "ARCHIVED" },
@@ -315,7 +315,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     if row.reference then
       origin, credit = "RA REFERENCE", row.author ~= "" and ("BY " .. row.author) or nil
     elseif row.source == "core" and row.official then
-      origin, credit = "OFFICIAL RA SET", row.author and row.author ~= "" and ("BY " .. row.author) or nil
+      origin, credit = "FROM THE RA LIST", row.author and row.author ~= "" and ("BY " .. row.author) or nil
     elseif row.source == "core" then
       origin = "BONUS (NOT RA)"
     else

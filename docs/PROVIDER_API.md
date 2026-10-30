@@ -107,12 +107,12 @@ Anyone can read any achievement:
 
 Since 1.1.0 (check with `ach.supports("leaderboard_card")`):
 `ach.officialTotals()` returns `{ earned, total, points, maxPoints }` for
-the official RetroAchievements list only, and `ach.leaderboardCard()`
+the RetroAchievements lists only, and `ach.leaderboardCard()`
 returns what the SELECT page shows: `{ game, name, points, earned, total,
 maxPoints, saveId, code }`, or nil before a save is loaded.
 
 Since 1.2.0, `officialTotals()` also has `reachedAt`: the play time in
-seconds of the latest official unlock (nil with none), and the card has
+seconds of the latest RA-list unlock (nil with none), and the card has
 `time`: the same in whole minutes.
 
 ## 6. What happens to your records
