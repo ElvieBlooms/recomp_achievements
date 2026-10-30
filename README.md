@@ -32,7 +32,7 @@ and each achievement's author, and are credited in the game. See
 
 ## Install
 
-1. Download `recomp_achievements-1.6.0.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-1.7.0.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
 2. Start Red, Blue or Yellow (Gen1Recomp 0.3.97 or newer).
 3. Open the START menu and choose **ACHIEVEMENTS**.
@@ -42,8 +42,10 @@ Save Sync carries your progress but doesn't install mods.
 
 ## Using it
 
-The menu shows your achievements on the left and the selected one's
-details on the right, drawn sharply at your window's resolution.
+The menu fills the whole window and follows it as you resize: your
+achievements on the left and the selected one's details on the right, or
+stacked top and bottom on a phone held upright (where it stops above the
+on-screen pad).
 
 | In the menu | |
 |---|---|
@@ -67,6 +69,8 @@ Options are in the Mods manager:
 - **REVEAL HIDDEN**
 - **THEME**: colours for the menu and popups: Game Boy (default), Gruvbox
   Dark, Gruvbox Light, Nord or Midnight
+- **MENU SIZE**: Full Screen (default) or Game Area (only the game's own
+  screen, which keeps it clear of a phone's on-screen pad in landscape)
 - **CLASSIC MENU**: the Game Boy-style menu instead of the modern one
 - **SHOW RA REFERENCE**: adds a page listing every RA entry for the game
 - **DEBUG LOG**

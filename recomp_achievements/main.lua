@@ -70,6 +70,8 @@ return function(mod)
     { key = "menuTheme", type = "choice", label = "THEME", default = "gameboy",
       choices = { { "GAME BOY", "gameboy" }, { "GRUVBOX DARK", "gruvbox_dark" },
                   { "GRUVBOX LIGHT", "gruvbox_light" }, { "NORD", "nord" }, { "MIDNIGHT", "midnight" } } },
+    { key = "menuSize", type = "choice", label = "MENU SIZE", default = "full",
+      choices = { { "FULL SCREEN", "full" }, { "GAME AREA", "game" } } },
     { key = "classicMenu", type = "toggle", label = "CLASSIC MENU", default = false },
     { key = "debug", type = "toggle", label = "DEBUG LOG", default = false },
   })

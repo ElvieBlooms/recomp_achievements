@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.7.0
+
+- The achievements menu now fills the whole window, landscape or portrait,
+  and resizes with it. On a phone held upright the list and details stack
+  vertically and stop above the on-screen pad. It also respects notches
+  and rounded corners the system reports.
+- MENU SIZE option: Full Screen (default) or Game Area, the 1.6.0 size.
+
 ## 1.6.0
 
 - Unlock popups now come in three styles (POPUP STYLE option): Modern, a

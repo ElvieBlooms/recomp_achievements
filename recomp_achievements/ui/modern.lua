@@ -263,6 +263,43 @@ function Modern.status(row)
 end
 
 -- ------------------------------------------------------------------
+-- Where the menu goes: the whole window (landscape or portrait), minus
+-- any notch or rounded-corner insets the OS reports.  Falls back to the
+-- game's own rectangle if the engine didn't say how big the window is.
+-- ------------------------------------------------------------------
+function Modern.region(vp, size)
+  local W, H = tonumber(vp.width), tonumber(vp.height)
+  if size == "game" or not (W and H and W > 0 and H > 0) then
+    return vp.gameX or 0, vp.gameY or 0, vp.gameWidth or 160, vp.gameHeight or 144
+  end
+  local x, y = 0, 0
+  local win = love.window
+  if win and win.getSafeArea then
+    local ok, sx, sy, sw, sh = pcall(win.getSafeArea)
+    if ok and sw and sh and sw > 0 and sh > 0 and sw <= W and sh <= H then
+      x, y, W, H = sx, sy, sw, sh
+    end
+  end
+  return x, y, W, H
+end
+
+-- Height of the touch pad's deck in portrait, following the engine's own
+-- default layout (src/core/TouchControls.lua defaultLayout).
+function Modern.deckHeight(ww, wh)
+  local dpadW = math.min(180, math.min(ww, wh) * 0.34)
+  local lrH = dpadW * 0.56 * 0.5
+  return math.floor(dpadW * 0.12 + dpadW + lrH * 1.4 + wh * 0.09 + 6)
+end
+
+-- One "Game Boy pixel" of layout: the game's own scale, so text is the
+-- same size as in the game, but never so big the menu can't fit.
+function Modern.unit(vp, W, H)
+  local gw, gh = vp.gameWidth or W, vp.gameHeight or H
+  local u = math.min(gw / 160, gh / 144)
+  return math.max(0.5, math.min(u, W / 150, H / 128))
+end
+
+-- ------------------------------------------------------------------
 -- Unlock popups in the menu's style (ui/toast.lua decides when)
 -- ------------------------------------------------------------------
 -- c: { kind = "unlock" | "summary" | "more", title, points }
@@ -417,9 +454,10 @@ function Modern.newScreen(deps)
   -- ----------------------------------------------------------------
   function self:drawWindow(vp)
     G = love.graphics
-    local x0, y0 = vp.gameX or 0, vp.gameY or 0
-    local W, H = vp.gameWidth or 160, vp.gameHeight or 144
-    local u = math.min(W / 160, H / 144)
+    local size = mod.options:get("menuSize")
+    local x0, y0, W, H = Modern.region(vp, size)
+    local u = Modern.unit(vp, W, H)
+    local portrait = size ~= "game" and H > W * 1.2
     local p = 6 * u
     Modern.apply(mod.options:get("menuTheme"))
     local accent = Modern.accent(engine.game)
@@ -429,6 +467,9 @@ function Modern.newScreen(deps)
     G.push("all")
     G.setScissor(x0, y0, W, H)
     rrect("fill", x0, y0, W, H, 0, C.backdrop)
+    -- On a phone held upright the on-screen pad sits along the bottom, so
+    -- the content stops above it (the backdrop still fills the screen).
+    if portrait then H = H - Modern.deckHeight(vp.width or W, vp.height or H) end
     -- a thin accent line along the top edge
     rrect("fill", x0, y0, W, 1.2 * u, 0, accent)
 
@@ -483,7 +524,18 @@ function Modern.newScreen(deps)
     local footH = fTiny:getHeight() + 4 * u
     local top = cy + chipH + 3.5 * u
     local bottom = y0 + H - footH
-    local listW = math.floor((W - 3 * p) * 0.54)
+    -- landscape: list left, details right.  portrait: list above details.
+    local listW, px, py, pw, ph
+    if portrait then
+      listW = W - 2 * p
+      local split = top + math.floor((bottom - top) * 0.58)
+      px, py, pw, ph = hx, split + 2 * u, listW, bottom - split - 2 * u
+      bottom = split
+    else
+      listW = math.floor((W - 3 * p) * 0.54)
+      px, py = hx + listW + p, top
+      pw, ph = x0 + W - p - px, bottom - top
+    end
     local lx = hx
     local rowH = fBody:getHeight() + fTiny:getHeight() + 3.6 * u
     st.visible = math.max(1, math.floor((bottom - top) / rowH))
@@ -541,13 +593,11 @@ function Modern.newScreen(deps)
     end
 
     -- side panel ----------------------------------------------------
-    local px = lx + listW + p
-    local pw = x0 + W - p - px
-    rrect("fill", px, top, pw, bottom - top - 1.2 * u, 3 * u, C.panel)
+    rrect("fill", px, py, pw, ph - 1.2 * u, 3 * u, C.panel)
     local row = st.list[st.index]
     if row then
       local ip = 5 * u
-      local ix, iy, iw = px + ip, top + ip, pw - 2 * ip
+      local ix, iy, iw = px + ip, py + ip, pw - 2 * ip
       local shown = Browser.display(row, reveal)
       local bigR = 6 * u
       icon(ix + bigR, iy + bigR, bigR, row)
@@ -555,7 +605,7 @@ function Modern.newScreen(deps)
       local lx2 = ix + bigR * 2 + 4 * u
       text(fSmall, Modern.ellipsize(fSmall, label, ix + iw - lx2), lx2, iy + bigR - fSmall:getHeight() / 2, scolor)
       local y = iy + bigR * 2 + 4 * u
-      local limit = top + (bottom - top) - 1.2 * u - ip - fTiny:getHeight() - 2 * u
+      local limit = py + ph - 1.2 * u - ip - fTiny:getHeight() - 2 * u
       local function para(f, s, c, gap)
         for _, line in ipairs(wrap(f, s, iw)) do
           if y + f:getHeight() > limit then return end
@@ -592,7 +642,7 @@ function Modern.newScreen(deps)
         para(fTiny, "Unlocked locally. Nothing is sent to RetroAchievements.", C.faint, 1 * u)
       end
       if not row.reference then
-        local hintY = top + (bottom - top) - 1.2 * u - ip - fTiny:getHeight()
+        local hintY = py + ph - 1.2 * u - ip - fTiny:getHeight()
         local capH = fTiny:getHeight() + 1.2 * u
         local w = keycap(ix, hintY - 0.6 * u, capH, "A", fTiny)
         text(fTiny, st.page == 1 and "How it's checked" or "Back to details", ix + w + 2 * u, hintY, C.faint)

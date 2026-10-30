@@ -788,6 +788,28 @@ test("popup styles: modern banner, corner card and classic all draw", function()
   end
 end)
 
+test("modern menu fills the window (landscape and portrait) or just the game area", function()
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env:newGame()
+  openMenu(env)
+  local Modern = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/modern.lua"))()
+  local land = { width = 1280, height = 720, gameX = 240, gameY = 0, gameWidth = 800, gameHeight = 720 }
+  local x, y, w, h = Modern.region(land)
+  eq(w, 1280, "full window width"); eq(h, 720, "full window height"); eq(x, 0, "from the left edge")
+  x, y, w, h = Modern.region(land, "game")
+  eq(w, 800, "game area width"); eq(x, 240, "game area x")
+  local phone = { width = 540, height = 1170, gameX = 0, gameY = 0, gameWidth = 540, gameHeight = 486 }
+  check(Modern.deckHeight(540, 1170) > 200 and Modern.deckHeight(540, 1170) < 500, "pad deck reserved in portrait")
+  check(Modern.unit(phone, 540, 1170) <= 540 / 150, "text fits the narrow screen")
+  for _, vp in ipairs({ land, phone, { width = 3840, height = 2160, gameX = 720, gameY = 0, gameWidth = 2400, gameHeight = 2160 } }) do
+    env:hud(vp)
+    check(H.windowText():find("Achievements", 1, true), ("draws at %dx%d"):format(vp.width, vp.height))
+  end
+  env.loader.modOptions.recomp_achievements.menuSize = "game"
+  env:hud(land)
+  check(H.windowText():find("Achievements", 1, true), "game-area mode draws")
+end)
+
 print(("\n%d passed, %d failed"):format(passed, failed))
 H.cleanup()
 os.exit(failed == 0 and 0 or 1)
