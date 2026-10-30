@@ -163,6 +163,22 @@ function Engine:award(key, opts)
   return true
 end
 
+-- Whether a step forward deserves a progress note.  Not for the backfill
+-- when a save loads, not for hidden ones (the note would spoil them), and
+-- for big or percent goals only each tenth of the way, so a steps counter
+-- or an area sweep doesn't chatter.
+function Engine:showsProgress(def, before, value, opts)
+  opts = opts or {}
+  if opts.silent or opts.how == "backfill" or not self.toast.pushProgress then return false end
+  if def.hidden and not self.mod.options:get("showHidden") then return false end
+  if def.extra and self.mod.options:get("extras") == false then return false end
+  if def.unit == "PCT" or def.goal > 400 then
+    local step = def.goal / 10
+    return math.floor(value / step) > math.floor(before / step)
+  end
+  return true
+end
+
 -- Absolute progress.  Clamped to [0, goal]; reaching the goal awards.
 function Engine:setProgress(key, value, opts)
   local ok, def = self:canAward(key)
@@ -175,6 +191,9 @@ function Engine:setProgress(key, value, opts)
   if value >= def.goal then return self:award(key, opts) end
   if value == before then return true end
   self.ledger:setProgress(self.game, key, value)
+  if value > before and self:showsProgress(def, before, value, opts) then
+    self.toast:pushProgress(def, self:display(def), value, def.goal)
+  end
   self:broadcast("progress", {
     key = key, id = def.id, source = def.source, provider = def.provider,
     value = value, goal = def.goal,
@@ -328,7 +347,8 @@ function Engine:attach(how)
   self.battle = nil
   self.toast:clear()
   if not self.active then return end
-  self.ledger:get(self.game) -- create / migrate / repair now, not mid-award
+  local data = self.ledger:get(self.game) -- create / migrate / repair now, not mid-award
+  self:dropNewGameMisfires(data)
   local save = self.adapter and self.adapter:save()
   self.map = save and save.player and save.player.map or nil
   self.lastBattle = nil
@@ -338,6 +358,31 @@ function Engine:attach(how)
   -- already reflects what this save has done.
   if how ~= "created" then self:reconcile() end
   self:broadcast("ready", { game = self.game, how = how })
+end
+
+-- 2.0.0 to 2.1.0 unlocked these Gen 2 achievements at the start of a New
+-- Game: the game sets their flags during its opening script.  None can
+-- really be earned in the first half hour, so such records are moved to the
+-- ledger's quarantine (kept, not deleted) and the achievement can be
+-- earned again for real.
+Engine.NEW_GAME_MISFIRES = {
+  ["core:g2o_machine_part"] = true,
+  ["core:g2o_suicune_42"] = true,
+  ["core:g2o_suicune_36"] = true,
+}
+
+function Engine:dropNewGameMisfires(data)
+  if type(data) ~= "table" or type(data.unlocked) ~= "table" then return end
+  for key in pairs(Engine.NEW_GAME_MISFIRES) do
+    local rec = data.unlocked[key]
+    if type(rec) == "table" and rec.how == "event" and tonumber(rec.pt) and tonumber(rec.pt) < 1800 then
+      data.quarantine = type(data.quarantine) == "table" and data.quarantine or {}
+      rec.dropped = "unlocked at New Game by mistake"
+      data.quarantine[key] = rec
+      data.unlocked[key] = nil
+      self:log("removed %s: it fired at New Game", key)
+    end
+  end
 end
 
 function Engine:detach()
@@ -357,9 +402,16 @@ function Engine:wire()
   -- it; save.created after game.ready is a real NEW GAME.
   events:on("game.ready", function() self.booted = true end)
   events:on("save.loading", function() self:detach() end)
-  events:on("save.loaded", function() self:attach("loaded") end)
-  events:on("save.created", function()
-    if self.booted then self:attach("created") else self:detach() end
+  -- The event's own save is handed to the adapter too: on Gen 3,
+  -- mod.game.save can still be unset when save.loaded fires.
+  local function seen(ev)
+    if self.adapter and type(ev) == "table" and type(ev.save) == "table" then
+      self.adapter.eventSave = ev.save
+    end
+  end
+  events:on("save.loaded", function(ev) seen(ev); self:attach("loaded") end)
+  events:on("save.created", function(ev)
+    if self.booted then seen(ev); self:attach("created") else self:detach() end
   end)
   -- A checkpoint restore can rewind the save table, ledger included.  Drop
   -- any queued popups (they may describe a future that no longer exists)
@@ -408,7 +460,7 @@ function Engine:wire()
       and raw.player.mon.species or nil
     self.battle = {
       key = info.key,
-      kind = ev.kind, trainerId = ev.trainerId or info.trainerId, species = ev.species, level = ev.level,
+      kind = ev.kind, trainerId = info.trainerName or ev.trainerId or info.trainerId, species = ev.species, level = ev.level,
       style = facts and facts.battleStyle and facts.battleStyle() or nil,
       partyAtStart = party, partyMaxAtStart = maxLevel,
       bagAtStart = adapter and adapter.bagSnapshot and adapter:bagSnapshot() or nil,

@@ -3,8 +3,8 @@
 An achievements mod for **Gen1Recomp**, inspired by
 [RetroAchievements](https://retroachievements.org). It uses the achievement
 lists RetroAchievements publishes for **Pokémon Red, Blue, Yellow, Gold,
-Silver and Crystal** (all 519 entries: titles, descriptions and point
-values) and checks them with
+Silver, Crystal, FireRed and LeafGreen** (all 708 entries: titles,
+descriptions and point values) and checks them with
 its own unlock logic, written from scratch for Gen1Recomp. Everything
 unlocks and is saved locally, in your game.
 
@@ -33,12 +33,13 @@ and each achievement's author, and are credited in the game. See
 
 ## Install
 
-1. Download `recomp_achievements-2.0.2.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-2.2.0.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
-2. Start Red, Blue, Yellow, Gold, Silver or Crystal (Gen1Recomp 0.3.97 or
-   newer).
-3. Open the START menu and choose **ACHIEVEMENTS** (**AWARDS** in Gold,
-   Silver and Crystal, whose menu is narrower).
+2. Start Red, Blue, Yellow, Gold, Silver, Crystal, FireRed or LeafGreen
+   (Gen1Recomp 0.3.97 or newer). Ruby, Sapphire and Emerald are coming in
+   a later release.
+3. Open the START menu and choose **TROPHIES** (**TROPHY** in Gold, Silver
+   and Crystal, whose menu is narrower).
 
 To keep achievements in step across devices, install the mod on each one.
 Save Sync carries your progress but doesn't install mods.
@@ -67,6 +68,8 @@ Options are in the Mods manager:
 - **UNLOCK POPUPS**
 - **POPUP STYLE**: Modern (a banner in your theme, the default), Corner (a
   small card in the top-right corner) or Classic GB (the Game Boy text box)
+- **PROGRESS POPUPS**: a small see-through card in the top-left corner
+  when an achievement with a goal moves along ("3 / 50")
 - **UNLOCK SOUND**: a short jingle on each unlock, at the game's SFX VOL
 - **BONUS ACHIEVEMENTS**: this mod's extras, which aren't part of the RA lists
 - **REVEAL HIDDEN**
@@ -81,9 +84,12 @@ Options are in the Mods manager:
 ### Good to know
 
 - Achievements RetroAchievements marks "Set Mode" are **Challenges** here:
-  they need OPTION > BATTLE STYLE set to SET (Gen1Recomp has this option in
-  both generations) plus the level cap or other limits listed on the
-  achievement's "How it's checked" page.
+  they need OPTION > BATTLE STYLE set to SET (every game here has this
+  option) plus the level cap or other limits listed on the achievement's
+  "How it's checked" page.
+- In LeafGreen, "defeat every trainer in the gym" means before the Gym
+  Leader: once the leader falls, the game marks the remaining gym trainers
+  as beaten without a fight.
 
 - Challenges such as "on Set mode", "without resetting" or "in a single
   Safari hunt" are judged while you play. A save can't prove how something
@@ -101,7 +107,7 @@ There's an optional, community-run leaderboard at
 **https://elvieblooms.github.io/recomp_achievements**. The mod never goes
 online; you copy a short card into a form yourself:
 
-1. In the game, open **START > ACHIEVEMENTS** and press **SELECT**.
+1. In the game, open **START > TROPHIES** and press **SELECT**.
 2. On the website, press **Submit a score**. It opens a GitHub issue form
    (you need a GitHub account). If the Discord bot is set up, you can
    instead send it `/score` with the same values.
@@ -151,13 +157,15 @@ recomp_achievements/   the mod (this folder is what ships)
   core/                  ledger (save data), registry, engine, public API
   adapters/gen1.lua      Red/Blue/Yellow save + game data -> "facts"
   adapters/gen2.lua      Gold/Silver/Crystal save + game data -> "facts"
-  rules/gen1_official.lua, rules/gen2_official.lua
+  adapters/gen3.lua      FireRed/LeafGreen save -> "facts"
+  rules/gen1_official.lua, rules/gen2_official.lua, rules/gen3_official.lua
                          one detector per RetroAchievements-list entry
-  rules/gen1_lib.lua, rules/gen2_lib.lua
+  rules/gen1_lib.lua, rules/gen2_lib.lua, rules/gen3_lib.lua
                          the building blocks those detectors use
   rules/gen1.lua, rules/gen2.lua, rules/common.lua
                          bonus achievements
   data/gen2_*.lua        Gen 2 flag numbers, trainers and items (generated)
+  data/gen3_frlg.lua     FireRed/LeafGreen flags, trainers and items (generated)
   catalog/               RA metadata (generated)
   ui/                    menu (modern + classic), popups, unlock sound, text helpers
 achievement_sandbox/   example provider mod (not part of the release)
@@ -166,7 +174,7 @@ docs/                  PROVIDER_API.md, COVERAGE.md (generated), and the
 .github/               leaderboard issue forms and the Action that reads them
 discord/               optional Discord bot (Cloudflare Worker) for submissions
 tools/                 fetch_ra_catalog.py, gen_coverage.lua, build_release.sh,
-                       gen2_data.py (+ gen2_flags.py),
+                       gen2_data.py (+ gen2_flags.py), gen3_data.py,
                        leaderboard_ingest.py, discord_reply.py,
                        discord_register.py, name_blocklist.txt
 tests/                 headless tests in the real Gen1Recomp mod loader
@@ -210,6 +218,21 @@ which are the same numbering Gen1Recomp uses. To rebuild it:
 ```
 git clone https://github.com/pret/pokegold && git clone https://github.com/pret/pokecrystal
 python3 tools/gen2_data.py pokegold pokecrystal
+```
+
+### Gen 3 data
+
+`recomp_achievements/data/gen3_frlg.lua` is the same kind of table for
+FireRed and LeafGreen (they share one), from
+[pret/pokefirered](https://github.com/pret/pokefirered): flag, var,
+species and item numbers, every map trainer, item ball, hidden item and
+gift, the VS Seeker rematch table and the gym trainers the game marks
+beaten after each leader. Its flag numbers are checked against the
+engine's own FireRed flag table by `tests/run.lua`.
+
+```
+git clone https://github.com/pret/pokefirered
+python3 tools/gen3_data.py pokefirered
 ```
 
 ## License

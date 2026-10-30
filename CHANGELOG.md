@@ -1,5 +1,51 @@
 # Changelog
 
+## 2.2.0
+
+- **Progress popups.** When an achievement with a goal moves along (your
+  third Pokémon toward 50 in the Pokédex, a badge toward eight), a small
+  see-through card shows it in the top-left corner for a couple of seconds:
+  the name, "3 / 50" and a bar. It waits for any unlock popup to finish
+  first, and a quick run of steps updates one card instead of stacking
+  them. Big counters and "every trainer and item" areas only show each
+  tenth of the way, hidden achievements stay hidden, and loading a save
+  doesn't replay progress it already had. Turn it off with **PROGRESS
+  POPUPS** in the mod's options.
+
+## 2.1.1
+
+- The START menu row is now **TROPHIES** (it was ACHIEVEMENTS in Gen 1
+  and AWARDS in Gen 2). Gold, Silver and Crystal say **TROPHY**: their menu
+  has room for 7 letters. In Gen 2 its MENU ACCOUNT
+  help text is now short enough for the box ("Your trophies"); it used to
+  run past the box and leave stray letters.
+- Fixed: starting a New Game in Gold unlocked "Strong Very Much Be You!"
+  (the Machine Part), and in Crystal the two Suicune sightings ("Life, the
+  Universe, and Aurorae" and "Forest of Fate"). The game sets those flags in
+  its opening script. Saves that got them that way have them taken back on
+  load (moved to the save's quarantine list, not deleted), so they can be
+  earned for real.
+
+## 2.1.0
+
+- **FireRed and LeafGreen.** All 189 entries of the RetroAchievements
+  lists for the two games are tracked (61 + 128). Loading a save you've
+  been playing credits everything it can prove (badges, story, gifts,
+  trades, Trainer Tower records, Pokédex, cleared areas) in one WELCOME
+  BACK popup, as with the other games.
+- FireRed's eight "Set Mode" gym challenges are **Challenges** here, like
+  the other games: OPTION > BATTLE STYLE set to SET, a party-size limit and
+  a level cap. The two "solo" League runs count one Pokémon for every
+  battle from Lorelei to the Champion.
+- LeafGreen's "every trainer in the gym" achievements count wins before
+  the Gym Leader, since the game marks the rest beaten once the leader
+  falls. Its "every trainer and item" area achievements are read from the
+  game's map data; each one lists the maps it covers.
+- The leaderboard and the Discord bot accept FireRed and LeafGreen scores.
+  Bot owners: deploy the worker and run the register script again.
+- Ruby, Sapphire and Emerald aren't covered yet; the mod doesn't load
+  for them.
+
 ## 2.0.2
 
 - Wording only: the classic menu's "OFFICIAL" filter is now **RA LIST**,

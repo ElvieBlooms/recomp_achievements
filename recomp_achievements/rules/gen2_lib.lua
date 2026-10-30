@@ -105,9 +105,13 @@ end
 function L.flagRises(id, ra, title, flag, check, extra)
   local rule = L.tracker(id, ra, title, {
     tick = function(s, _, f)
+      -- A New Game runs InitializeEventsScript, which sets these flags
+      -- (and EVENT_INITIALIZED_EVENTS last).  A rise only counts once that
+      -- script had already finished, so starting a game doesn't unlock it.
       local v = f.flag(flag)
-      local rose = s.prev == false and v
-      s.prev = v
+      local init = f.flag("EVENT_INITIALIZED_EVENTS")
+      local rose = s.prev == false and s.prevInit == true and v
+      s.prev, s.prevInit = v, init
       return rose or nil
     end,
   }, nil, extra)

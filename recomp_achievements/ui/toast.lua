@@ -16,6 +16,9 @@ Toast.__index = Toast
 Toast.HOLD = 2.6      -- seconds fully shown
 Toast.SLIDE = 0.18    -- seconds to slide in/out
 Toast.MAX_QUEUE = 12  -- extra unlocks collapse into one "+N more" popup
+-- Progress notes ("3 / 50") are a lighter, separate lane in the top-left.
+Toast.PROGRESS_HOLD = 1.8
+Toast.PROGRESS_QUEUE = 3
 
 local function now()
   local timer = love and love.timer
@@ -27,7 +30,7 @@ end
 -- popup appears, or straight away when popups are switched off.
 function Toast.new(mod, util, Text, chime)
   return setmetatable({ mod = mod, util = util, Text = Text, chime = chime, queue = {},
-                        current = nil, overflow = 0 }, Toast)
+                        current = nil, overflow = 0, pqueue = {}, pcurrent = nil }, Toast)
 end
 
 function Toast:sound(kind)
@@ -66,8 +69,58 @@ function Toast:pushSummary(n)
   }
 end
 
+function Toast:progressEnabled()
+  return self.mod.options:get("progressPopups") ~= false
+end
+
+-- An achievement moved along (never the backfill on load).  A newer value
+-- for one already waiting or showing replaces it instead of queueing.
+function Toast:pushProgress(def, shown, value, goal)
+  if not self:progressEnabled() then return end
+  shown = shown or def
+  local note = { key = def.key, title = shown.title or def.title, value = value, goal = goal,
+                 unit = def.unit }
+  local c = self.pcurrent
+  if c and c.key == def.key then
+    c.value, c.goal = value, goal
+    c.started = math.max(c.started or 0, now() - Toast.SLIDE) -- keep it up a little longer
+    return
+  end
+  for _, q in ipairs(self.pqueue) do
+    if q.key == def.key then q.value, q.goal = value, goal return end
+  end
+  if #self.pqueue >= Toast.PROGRESS_QUEUE then table.remove(self.pqueue, 1) end
+  self.pqueue[#self.pqueue + 1] = note
+end
+
+-- Advance the progress lane.  It waits while an unlock popup is showing,
+-- so the two never stack up on the screen.
+function Toast:tickProgress()
+  local t = now()
+  if not self.pcurrent then
+    if self.current or #self.queue > 0 then return nil end
+    local nextOne = table.remove(self.pqueue, 1)
+    if not nextOne then return nil end
+    nextOne.started = t
+    self.pcurrent = nextOne
+  end
+  local c = self.pcurrent
+  local age = t - c.started
+  local total = Toast.SLIDE * 2 + Toast.PROGRESS_HOLD
+  if age >= total then
+    self.pcurrent = nil
+    return self:tickProgress()
+  end
+  local shown
+  if age < Toast.SLIDE then shown = age / Toast.SLIDE
+  elseif age > total - Toast.SLIDE then shown = (total - age) / Toast.SLIDE
+  else shown = 1 end
+  return c, shown
+end
+
 function Toast:clear()
   self.queue, self.current, self.overflow = {}, nil, 0
+  self.pqueue, self.pcurrent = {}, nil
 end
 
 -- Advance the queue; returns the popup to draw and its slide offset 0..1.
@@ -114,6 +167,12 @@ function Toast:style()
 end
 
 function Toast:draw(vp)
+  local pc, pshown = self:tickProgress()
+  if pc and vp and vp.gameWidth and vp.gameWidth > 0 and self.Modern and self.Modern.drawProgress then
+    self.Modern.drawProgress(pc, pshown, vp, {
+      theme = self.mod.options:get("menuTheme"), game = self.gameOf and self.gameOf() or nil,
+    })
+  end
   local c, shown = self:tick()
   if not c or not vp or not vp.gameWidth or vp.gameWidth <= 0 then return end
   local style = self:style()

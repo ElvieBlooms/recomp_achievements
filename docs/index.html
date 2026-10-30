@@ -9,14 +9,14 @@
   :root {
     --bg: #e9efd8; --panel: #f7f9ef; --ink: #20281a; --muted: #5d6852;
     --line: #c5cfb0; --accent: #3d6b2a; --red: #c0392b; --blue: #2c5aa0; --yellow: #c79a00;
-    --gold: #a8801a; --silver: #6f7a86; --crystal: #2b8fa8;
+    --gold: #a8801a; --silver: #6f7a86; --crystal: #2b8fa8; --firered: #d9622b; --leafgreen: #4f9a3a;
     --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   }
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #151a12; --panel: #1e251a; --ink: #e3ead6; --muted: #9aa58c;
       --line: #34402c; --accent: #9ccc65; --red: #ef6b5b; --blue: #6f9be0; --yellow: #f2c94c;
-      --gold: #e0b44c; --silver: #b4bfcb; --crystal: #6fd0e6;
+      --gold: #e0b44c; --silver: #b4bfcb; --crystal: #6fd0e6; --firered: #f08a55; --leafgreen: #86cf6a;
     }
   }
   * { box-sizing: border-box; }
@@ -77,7 +77,7 @@
   </section>
 
   <footer>
-    <p>To submit: in the game open <b>START &gt; ACHIEVEMENTS</b>, press <b>SELECT</b>, and copy the card into the form<span id="discord-note" hidden>, or send it to the Discord bot with <code>/score</code></span>. Only achievements from the RetroAchievements lists count; bonus and mod achievements don't. On equal points, the shorter play time (when the score was reached) ranks higher.</p>
+    <p>To submit: in the game open <b>START &gt; TROPHIES</b>, press <b>SELECT</b>, and copy the card into the form<span id="discord-note" hidden>, or send it to the Discord bot with <code>/score</code></span>. Only achievements from the RetroAchievements lists count; bonus and mod achievements don't. On equal points, the shorter play time (when the score was reached) ranks higher.</p>
     <p>Scores are self-reported (honor system). The check code only catches typos. See a name that shouldn't be here? Use <b>Report</b> on its row.</p>
     <p>An unofficial fan project, not affiliated with, endorsed by or connected to RetroAchievements. Scores here don't count on retroachievements.org. Achievement lists are by RetroAchievements and their authors.</p>
   </footer>
@@ -92,7 +92,9 @@
     { id: "yellow", label: "Yellow", color: "var(--yellow)" , maxPoints: 458, total: 76 },
     { id: "gold", label: "Gold", color: "var(--gold)" , maxPoints: 685, total: 72 },
     { id: "silver", label: "Silver", color: "var(--silver)" , maxPoints: 616, total: 75 },
-    { id: "crystal", label: "Crystal", color: "var(--crystal)" , maxPoints: 864, total: 113 }
+    { id: "crystal", label: "Crystal", color: "var(--crystal)" , maxPoints: 864, total: 113 },
+    { id: "firered", label: "FireRed", color: "var(--firered)" , maxPoints: 453, total: 61 },
+    { id: "leafgreen", label: "LeafGreen", color: "var(--leafgreen)" , maxPoints: 781, total: 128 }
   ];
   // The Discord bot's install link (discord/README.md, step 6).  Leave
   // empty to hide the Discord button.

@@ -51,11 +51,11 @@ test("both mods load in dependency order with no errors", function()
   check(not ach(env).supports("leaderboards"), "unknown capability is false")
 end)
 
-test("START menu gets ACHIEVEMENTS right before OPTION", function()
+test("START menu gets TROPHIES right before OPTION", function()
   local env = H.boot(BOTH)
   local items = env:startMenu()
   local at
-  for i, item in ipairs(items) do if item.label == "ACHIEVEMENTS" then at = i end end
+  for i, item in ipairs(items) do if (item.label == "TROPHIES" or item.label == "TROPHY") then at = i end end
   check(at ~= nil, "row present")
   eq(items[at + 1] and items[at + 1].label, "OPTION", "row sits before OPTION")
 end)
@@ -350,7 +350,7 @@ test("browser: open from START, filter, details, hidden, close", function()
   env:setFlag("EVENT_BEAT_BROCK"); env:frame()
   local function open()
     for _, item in ipairs(env:startMenu()) do
-      if item.label == "ACHIEVEMENTS" then item.onSelect() end
+      if (item.label == "TROPHIES" or item.label == "TROPHY") then item.onSelect() end
     end
   end
   open()
@@ -400,7 +400,7 @@ test("browser: long titles scroll on the selected row; SELECT then RIGHT shows c
   local env = H.boot(BOTH)
   env:newGame()
   for _, item in ipairs(env:startMenu()) do
-    if item.label == "ACHIEVEMENTS" then item.onSelect() end
+    if (item.label == "TROPHIES" or item.label == "TROPHY") then item.onSelect() end
   end
   env:press("select"); env:press("right"); env:draw()
   check(H.screenHas("RetroAchievements"), "credits page")
@@ -412,7 +412,7 @@ end)
 test("browser with no save shows a hint instead of crashing", function()
   local env = H.boot(BOTH)
   for _, item in ipairs(env:startMenu()) do
-    if item.label == "ACHIEVEMENTS" then item.onSelect() end
+    if (item.label == "TROPHIES" or item.label == "TROPHY") then item.onSelect() end
   end
   env:draw()
   check(#env:draw() > 0, "renders something sane")
@@ -439,7 +439,7 @@ test("reference view lists RA entries; only tracked ones count", function()
   local before = ach(env).totals().total
   env.loader.modOptions.recomp_achievements.showReference = true
   for _, item in ipairs(env:startMenu()) do
-    if item.label == "ACHIEVEMENTS" then item.onSelect() end
+    if (item.label == "TROPHIES" or item.label == "TROPHY") then item.onSelect() end
   end
   for _ = 1, 8 do env:press("right") end
   env:draw()
@@ -526,7 +526,7 @@ test("leaderboard card: official points only, stable save id, shown on SELECT", 
   eq(ach(env).leaderboardCard().saveId, card.saveId, "save id is stable")
   eq(card.code, loadShare().code(card), "code over the shown fields")
   for _, item in ipairs(env:startMenu()) do
-    if item.label == "ACHIEVEMENTS" then item.onSelect() end
+    if (item.label == "TROPHIES" or item.label == "TROPHY") then item.onSelect() end
   end
   env:press("select"); env:draw()
   check(H.screenHas("LEADERBOARD CARD"), "card page")
@@ -558,7 +558,7 @@ test("card TIME is the play time when the score was reached", function()
   eq(card.time, 62, "minutes at the last official unlock")
   eq(card.code, loadShare().code(card), "v2 code over the shown fields")
   for _, item in ipairs(env:startMenu()) do
-    if item.label == "ACHIEVEMENTS" then item.onSelect() end
+    if (item.label == "TROPHIES" or item.label == "TROPHY") then item.onSelect() end
   end
   env:press("select"); env:draw()
   check(H.screenHas("TIME    1:02"), "TIME line on the card")
@@ -639,7 +639,7 @@ end)
 -- ---------------------------------------------------------- modern menu
 local function openMenu(env)
   for _, item in ipairs(env:startMenu()) do
-    if item.label == "ACHIEVEMENTS" then item.onSelect() end
+    if (item.label == "TROPHIES" or item.label == "TROPHY") then item.onSelect() end
   end
   local states = env.game.stack.states
   return states[#states]
@@ -921,6 +921,260 @@ test("Gen 2 data: flag numbers match the engine's Gold table and New-Game flags 
     check(row[2] ~= "EVENT_FOUND_MACHINE_PART_IN_CERULEAN_GYM", "machine part isn't a hidden-item row")
   end
   check(#crystal.trainers > 300 and #crystal.items > 150 and #crystal.hidden > 70, "lists are populated")
+end)
+
+
+-- ---------------------------------------------------------------- Gen 3
+local function gen3Save(over)
+  local save = {
+    version = "leafgreen", name = "ELVIE",
+    flags = {}, vars = {},
+    dex = { caught = { [1] = true, [143] = true }, seen = { [1] = true, [143] = true, [16] = true } },
+    party = { { species = 2, speciesId = 2, level = 16 } },
+    storage = { boxes = { { wallpaper = 1, [1] = { species = 150, level = 70 } } }, items = { { id = 13, qty = 2 } } },
+    bag = { pockets = { ITEMS = { { id = 13, qty = 3 } }, KEY_ITEMS = { { id = 361, qty = 1 } } } },
+    gameStats = { [28] = 0 },
+    playTime = { hours = 1, minutes = 2, seconds = 3 },
+    engineOptions = { frlg = { battleStyle = 1 } },
+  }
+  for k, v in pairs(over or {}) do save[k] = v end
+  return save
+end
+
+local function gen3Adapter(save)
+  local P = H.PROJECT .. "/recomp_achievements/"
+  local Gen3 = assert(loadfile(P .. "adapters/gen3.lua"))()
+  return Gen3.new({ game = { save = save } }, {}, function(f) return dofile(P .. "data/gen3_" .. f .. ".lua") end)
+end
+
+test("Gen 3 adapter reads FireRed/LeafGreen saves", function()
+  local save = gen3Save()
+  local a = gen3Adapter(save)
+  eq(a:version(), "leafgreen", "version")
+  eq(a:playTime(), 3723, "play time")
+  local d = a:data()
+  save.flags[d.flags.FLAG_BADGE01_GET] = true
+  save.flags[d.flags.TRAINER_LEADER_BROCK] = true
+  local f = a:facts()
+  eq(f.flag("FLAG_BADGE01_GET"), true, "flag by name")
+  eq(f.flag(0x820), true, "flag by number (pret's FLAG_BADGE01_GET)")
+  eq(f.flag("TRAINER_LEADER_BROCK"), true, "trainer flag by name")
+  eq(f.badgeCount(), 1, "badges"); eq(f.hasBadge("BOULDER"), true, "boulder")
+  eq(f.owns("SNORLAX"), true, "dex by species name"); eq(f.owns("MEW"), false, "not caught")
+  eq(f.dexOwned(), 2, "caught"); eq(f.dexSeen(), 3, "seen")
+  eq(f.party()[1].species, "IVYSAUR", "party species named")
+  eq(f.has("MEWTWO"), true, "boxed mons count")
+  eq(f.itemCount("POTION"), 5, "bag + PC")
+  eq(f.hasItem("TEACHY_TV"), false, "no Teachy TV")
+  eq(f.hasItem(d.itemNames[361]), true, "key item by name")
+  eq(f.battleStyle(), "set", "battle style from the game's OPTION menu")
+  eq(a:battleInfo({ trainerId = 414 }).trainerName, d.trainerIds[414], "trainer number -> name")
+  eq(gen3Adapter({ version = "emerald" }):version(), nil, "Emerald waits for a later release")
+  eq(gen3Adapter({ version = "crystal" }):version(), nil, "not a Gen 3 save")
+end)
+
+test("Gen 3 data: flag numbers match the engine's own FireRed table", function()
+  local d = dofile(H.PROJECT .. "/recomp_achievements/data/gen3_frlg.lua")
+  eq(d.flags.FLAG_BADGE01_GET, 0x820, "badge 1")
+  eq(d.flags.TRAINER_LEADER_BROCK, d.trainerFlagsStart + 414, "trainer flags follow TRAINER_FLAGS_START")
+  local path = H.GAMEDATA .. "/firered/data/generated/gba/flags_table.lua"
+  local chunk = loadfile(path)
+  if chunk then
+    local ft, n = chunk(), 0
+    for name, id in pairs(d.flags) do
+      if name:match("^FLAG_") and ft.FLAGS[name] ~= nil then
+        n = n + 1
+        if ft.FLAGS[name] ~= id then check(false, name .. " " .. id .. " vs engine " .. ft.FLAGS[name]) end
+      end
+    end
+    check(n > 1000, "compared " .. n .. " flags")
+  end
+  check(#d.trainers > 400 and #d.items > 150 and #d.hidden > 150 and #d.rematches > 200, "lists are populated")
+  for i = 1, 8 do check(#d.gymTrainers[i] >= 1, "gym " .. i .. " trainers") end
+end)
+
+test("Gen 3 RA rules: every FireRed/LeafGreen entry linked once, every name real, checks run", function()
+  local P = H.PROJECT .. "/recomp_achievements/"
+  local rules = dofile(P .. "rules/gen3_official.lua")(dofile(P .. "rules/gen3_lib.lua"))
+  local d = dofile(P .. "data/gen3_frlg.lua")
+  local linked = { firered = {}, leafgreen = {} }
+  local ids = {}
+  local save = gen3Save({ dex = { caught = { [1] = true }, seen = {} },
+                         bag = { pockets = {} }, storage = { boxes = {}, items = {} } })
+  local f = gen3Adapter(save):facts()
+  -- every name a rule asks the adapter about must exist in the data
+  local asked = {}
+  local function spy(name) return function(x, ...)
+    if type(x) == "string" then asked[x] = name end
+    if type(x) == "table" then for _, n in ipairs(x) do asked[n] = name end end
+    return f[name](x, ...) end end
+  local probe = setmetatable({ flag = spy("flag"), allFlags = spy("allFlags"), countFlags = spy("countFlags"),
+    anyFlag = spy("anyFlag"), var = spy("var"), owns = spy("owns"), hasItem = spy("hasItem") }, { __index = f })
+  for _, r in ipairs(rules) do
+    check(not ids[r.id], "unique " .. r.id); ids[r.id] = true
+    check(#r.title <= 32, "title fits " .. r.title)
+    eq(r.official, true, r.id .. " is official")
+    for g, raId in pairs(r.ra) do
+      check(linked[g], r.id .. " links a FireRed/LeafGreen entry")
+      check(not linked[g][raId], g .. " " .. raId .. " linked once")
+      linked[g][raId] = true
+    end
+    if r.check then
+      local ok, v = pcall(r.check, probe)
+      check(ok, r.id .. " check runs: " .. tostring(v))
+      check(v ~= true, r.id .. " isn't done on a 1-badge save")
+    end
+  end
+  for n, how in pairs(asked) do
+    if how == "var" then check(d.vars[n] ~= nil, "var " .. n)
+    elseif how == "owns" then check(d.species[n] ~= nil, "species " .. n)
+    elseif how == "hasItem" then check(d.itemIds[n] ~= nil, "item " .. n)
+    else check(d.flags[n] ~= nil, "flag " .. n) end
+  end
+  local src = assert(io.open(H.PROJECT .. "/tools/leaderboard_ingest.py")):read("*a")
+  for _, g in ipairs({ "firered", "leafgreen" }) do
+    local c = dofile(P .. "catalog/" .. g .. ".lua")
+    local pts = 0
+    for _, e in ipairs(c.entries) do
+      check(linked[g][e.id], g .. " entry " .. e.id .. " " .. e.title .. " has a rule")
+      pts = pts + e.points
+    end
+    local mp, tot = src:match('"' .. g .. '":%s*{[^}]-"maxPoints":%s*(%d+),%s*"total":%s*(%d+)')
+    eq(tonumber(mp), pts, g .. " leaderboard max points")
+    eq(tonumber(tot), #c.entries, g .. " leaderboard total")
+  end
+end)
+
+test("Gen 3 rules: areas, gym trainers, challenges and solo league runs", function()
+  local P = H.PROJECT .. "/recomp_achievements/"
+  local L = dofile(P .. "rules/gen3_lib.lua")
+  local rules = {}
+  for _, r in ipairs(dofile(P .. "rules/gen3_official.lua")(L)) do rules[r.id] = r end
+  local save = gen3Save()
+  local a = gen3Adapter(save)
+  local d = a:data()
+  local function facts() return a:facts() end
+  -- an area: Viridian Forest trainers + item balls (not hidden items)
+  local forest = rules.g3o_area_forest
+  local pct = forest.check(facts())
+  eq(pct, 0, "nothing done yet")
+  for _, row in ipairs(d.trainers) do if row[3] == "ViridianForest" then save.flags[row[1]] = true end end
+  pct = forest.check(facts())
+  check(type(pct) == "number" and pct > 0 and pct < 100, "trainers alone are part of it: " .. tostring(pct))
+  for _, row in ipairs(d.items) do if row[4] == "ViridianForest" then save.flags[row[1]] = true end end
+  eq(forest.check(facts()), true, "trainers and item balls: done")
+  -- gym trainers count only while the leader stands
+  local pewter = rules.g3o_gymtrainers1
+  eq(pewter.check(facts()), false, "Liam not beaten")
+  save.flags[d.flags.TRAINER_CAMPER_LIAM] = true
+  eq(pewter.check(facts()), true, "Liam beaten, Brock not yet")
+  save.flags[d.flags.FLAG_DEFEATED_BROCK] = true
+  eq(pewter.check(facts()), false, "after Brock the flag proves nothing")
+  local ctx = { battle = { trainerId = "TRAINER_CAMPER_LIAM" } }
+  local s = {}
+  save.flags[d.flags.FLAG_DEFEATED_BROCK] = nil
+  eq(pewter.on["battle.ended"](s, { result = "win" }, facts(), ctx), true, "a live win counts")
+  -- FireRed challenge: SET style, two Pokemon at most, level 14 cap
+  local brock = rules.g3o_challenge1
+  local b = { trainerId = "TRAINER_LEADER_BROCK", style = "set", partyMaxAtStart = 12,
+              partyAtStart = { { species = "IVYSAUR", level = 12 }, { species = "PIDGEY", level = 9 } } }
+  save.party = { { species = 2, level = 13 } }
+  eq(brock.test({ result = "win" }, facts(), { battle = b }), true, "within the rules")
+  b.style = "shift"
+  eq(brock.test({ result = "win" }, facts(), { battle = b }), false, "SHIFT style doesn't count")
+  b.style = "set"; b.partyAtStart[3] = { species = "RATTATA", level = 5 }
+  eq(brock.test({ result = "win" }, facts(), { battle = b }), false, "three Pokemon is too many")
+  b.partyAtStart[3] = nil; save.party = { { species = 2, level = 15 } }
+  eq(brock.test({ result = "win" }, facts(), { battle = b }), false, "levelled past the cap mid-fight")
+  -- solo league: one Pokemon in the party for all five battles
+  local solo = rules.g3o_solo1
+  local st = {}
+  solo.init(st)
+  save.party = { { species = 6, level = 70 } }
+  local order = { "TRAINER_ELITE_FOUR_LORELEI", "TRAINER_ELITE_FOUR_BRUNO", "TRAINER_ELITE_FOUR_AGATHA",
+                  "TRAINER_ELITE_FOUR_LANCE", "TRAINER_CHAMPION_FIRST_SQUIRTLE" }
+  local result
+  for _, who in ipairs(order) do
+    local c = { battle = { trainerId = who } }
+    solo.on["battle.started"](st, {}, facts(), c)
+    result = solo.on["battle.ended"](st, { result = "win" }, facts(), c)
+  end
+  eq(result, true, "five wins with one Pokemon")
+  st = {}; solo.init(st)
+  for i, who in ipairs(order) do
+    save.party = i == 3 and { { species = 6, level = 70 }, { species = 3, level = 60 } } or { { species = 6, level = 70 } }
+    local c = { battle = { trainerId = who } }
+    solo.on["battle.started"](st, {}, facts(), c)
+    result = solo.on["battle.ended"](st, { result = "win" }, facts(), c)
+  end
+  check(result ~= true, "a second Pokemon at Agatha breaks the run")
+end)
+
+
+test("Gen 2: a New Game's opening script doesn't unlock the flag-rise achievements", function()
+  local P = H.PROJECT .. "/recomp_achievements/"
+  local rules = {}
+  for _, r in ipairs(dofile(P .. "rules/gen2_official.lua")(dofile(P .. "rules/gen2_lib.lua"))) do rules[r.id] = r end
+  local flags = {}
+  local f = { flag = function(n) return flags[n] == true end }
+  for _, id in ipairs({ "g2o_suicune_42", "g2o_suicune_36", "g2o_machine_part" }) do
+    local r, s = rules[id], {}
+    local flag = id == "g2o_machine_part" and "EVENT_FOUND_MACHINE_PART_IN_CERULEAN_GYM"
+      or (id == "g2o_suicune_42" and "EVENT_SAW_SUICUNE_ON_ROUTE_42" or "EVENT_SAW_SUICUNE_ON_ROUTE_36")
+    flags = {}
+    eq(r.on.tick(s, nil, f), nil, id .. ": new save, nothing set")
+    flags[flag] = true; flags.EVENT_INITIALIZED_EVENTS = true -- the opening script
+    eq(r.on.tick(s, nil, f), nil, id .. ": set by the opening script")
+    flags[flag] = nil -- the story clears it...
+    eq(r.on.tick(s, nil, f), nil, id .. ": cleared")
+    flags[flag] = true -- ...and the real moment sets it again
+    eq(r.on.tick(s, nil, f), true, id .. ": the real moment counts")
+  end
+end)
+
+test("Gen 2 New Game misfires from 2.0 are taken back on load", function()
+  local Engine = dofile(H.PROJECT .. "/recomp_achievements/core/engine.lua")
+  local data = { unlocked = {
+    ["core:g2o_suicune_42"] = { how = "event", pt = 95 },
+    ["core:g2o_suicune_36"] = { how = "event", pt = 40000 },
+    ["core:g2o_machine_part"] = { how = "backfill", pt = 10 },
+  } }
+  local fake = setmetatable({ log = function() end }, { __index = Engine })
+  Engine.dropNewGameMisfires(fake, data)
+  eq(data.unlocked["core:g2o_suicune_42"], nil, "fired at play time 1:35: removed")
+  check(data.quarantine["core:g2o_suicune_42"] ~= nil, "kept in quarantine")
+  check(data.unlocked["core:g2o_suicune_36"] ~= nil, "earned 11 hours in: kept")
+  check(data.unlocked["core:g2o_machine_part"] ~= nil, "credited from a real save: kept")
+end)
+
+
+test("progress notes: a small card for each step forward, none for a loaded save's backfill", function()
+  local env = H.boot({ "recomp_achievements" })
+  env:newGame()
+  env.game.save.inventory.BOULDERBADGE = 1
+  env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+  -- the badge unlock pops first; the note waits its turn
+  env:hud()
+  check(H.screenHas("ACHIEVEMENT!") or H.windowText():find("unlocked", 1, true), "unlock popup first")
+  check(not H.windowText():find("1 / 8", 1, true), "note waits for the unlock popup")
+  H.advance(4); env:hud(); H.advance(0.5); env:hud()
+  check(H.windowText():find("1 / 8", 1, true), "then the badge case note: " .. H.windowText())
+  H.advance(3); env:hud()
+  check(not H.windowText():find("1 / 8", 1, true), "and it goes away")
+  -- switched off
+  env.loader.modOptions.recomp_achievements.progressPopups = false
+  env.game.save.inventory.CASCADEBADGE = 1
+  env:setFlag("EVENT_BEAT_MISTY"); env:frame()
+  H.advance(4); env:hud(); H.advance(0.5); env:hud()
+  check(not H.windowText():find("2 / 8", 1, true), "PROGRESS POPUPS off")
+  -- a loaded save's progress arrives as backfill: no notes
+  local env2 = H.boot({ "recomp_achievements" })
+  local old = H.newSave("red")
+  old.modData = nil
+  for _, b in ipairs({ "BOULDERBADGE", "CASCADEBADGE", "THUNDERBADGE" }) do old.inventory[b] = 1 end
+  env2:loadBlob(require("src.core.SaveSerializer").encode(old))
+  for _ = 1, 4 do env2:frame(); H.advance(1.5); env2:hud() end
+  check(not H.windowText():find("3 / 8", 1, true), "no note for progress the save already had")
 end)
 
 print(("\n%d passed, %d failed"):format(passed, failed))

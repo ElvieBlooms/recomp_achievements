@@ -26,9 +26,10 @@
 local Browser = {}
 
 Browser.SCREEN_ID = "RecompAchievements"
-Browser.MENU_LABEL = "ACHIEVEMENTS"
--- Gen 2's START menu fits about 8 characters
-Browser.SHORT_LABEL = "AWARDS"
+-- The START menu row.  Gen 2's menu has room for 7 characters before the
+-- frame (POKéGEAR is 6 tiles), so it gets the singular there.
+Browser.MENU_LABEL = "TROPHIES"
+Browser.SHORT_LABEL = "TROPHY"
 -- Where the START row goes.  insertBefore falls back to appending if the
 -- anchor label isn't there (another mod renamed it, a different gen).
 Browser.MENU_ANCHOR = "OPTION"
@@ -432,8 +433,15 @@ function Browser.install(mod, engine, util, Text, Share, Modern)
     -- hooks were installed in.
     mod.hooks:wrap("render.hud", function(nextFn, game, vp, ...)
       local live = mod.game or game
-      local states = live and live.stack and live.stack.states
-      local top = states and states[#states]
+      -- Gen 1/2 keep a list of states; Gen 3's mod stack is a facade
+      -- with top() (src/ui/game3/mod_ui.lua)
+      local stack = live and live.stack
+      local top
+      if stack and type(stack.states) == "table" then top = stack.states[#stack.states]
+      elseif stack and type(stack.top) == "function" then
+        local ok, t = pcall(stack.top, stack)
+        top = ok and t or nil
+      end
       if top and top.modern and top.drawWindow and type(vp) == "table" then
         local ok, err = pcall(top.drawWindow, top, vp)
         if not ok and not Browser.warned then
@@ -449,8 +457,10 @@ function Browser.install(mod, engine, util, Text, Share, Modern)
     items = nextFn(game, items)
     if type(items) ~= "table" then return items end
     mod.ui.insertBefore(items, Browser.MENU_ANCHOR, {
-      label = mod.generation == 1 and Browser.MENU_LABEL or Browser.SHORT_LABEL,
-      desc = { "Your achievements", "and leaderboard." }, -- Gen 2's menu help box
+      label = mod.generation == 2 and Browser.SHORT_LABEL or Browser.MENU_LABEL,
+      -- Gen 2's MENU ACCOUNT help box: two lines, 9 characters at most
+      -- (like its own "Your own" / "status")
+      desc = { "Your", "trophies" },
       onSelect = function()
         local live = mod.game or game
         local ok, err = pcall(mod.ui.push, live, Browser.SCREEN_ID)

@@ -63,6 +63,7 @@ return function(mod)
     { key = "toasts", type = "toggle", label = "UNLOCK POPUPS", default = true },
     { key = "popupStyle", type = "choice", label = "POPUP STYLE", default = "modern",
       choices = { { "MODERN", "modern" }, { "CORNER", "corner" }, { "CLASSIC GB", "classic" } } },
+    { key = "progressPopups", type = "toggle", label = "PROGRESS POPUPS", default = true },
     { key = "unlockSound", type = "toggle", label = "UNLOCK SOUND", default = true },
     { key = "extras", type = "toggle", label = "BONUS ACHIEVEMENTS", default = true },
     { key = "showHidden", type = "toggle", label = "REVEAL HIDDEN", default = false },
@@ -126,6 +127,15 @@ return function(mod)
     end
     addRules(import("rules/gen2.lua"), true)
     loadCatalogs({ "gold", "silver", "crystal" })
+  elseif mod.generation == 3 then
+    -- FireRed and LeafGreen first; Ruby/Sapphire/Emerald come later (the
+    -- adapter reports no game for them, so their saves stay untouched).
+    engine:setAdapter(import("adapters/gen3.lua").new(mod, util, function(f) return import("data/gen3_" .. f .. ".lua") end))
+    if mod:info("rules/gen3_official.lua") then
+      addRules(import("rules/gen3_official.lua")(import("rules/gen3_lib.lua")))
+    end
+    if mod:info("rules/gen3.lua") then addRules(import("rules/gen3.lua"), true) end
+    loadCatalogs({ "firered", "leafgreen" })
   else
     supported = false
     mod.log:info("this generation isn't supported yet; achievements stay off")

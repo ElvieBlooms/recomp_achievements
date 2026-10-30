@@ -364,6 +364,42 @@ function Modern.drawToast(c, shown, vp, opts)
   G.pop()
 end
 
+-- A progress note: a small, see-through card in the top-left corner,
+-- "3 / 50" with a bar, for a moment after an achievement moves along.
+function Modern.drawProgress(c, shown, vp, opts)
+  G = love.graphics
+  Modern.apply(opts.theme)
+  local x0, y0 = vp.gameX or 0, vp.gameY or 0
+  local W, H = vp.gameWidth or 160, vp.gameHeight or 144
+  local u = math.min(W / 160, H / 144)
+  local accent = Modern.accent(opts.game)
+  local ease = 1 - (1 - shown) * (1 - shown)
+  local fTitle, fTiny = font(3.9 * u), font(3.3 * u)
+  local pad, r = 2.2 * u, 2.8 * u
+  local w = math.floor(W * 0.42)
+  local barH = math.max(2, 1.1 * u)
+  local h = pad * 2 + fTitle:getHeight() + barH + 1.4 * u
+  local x = x0 + 3 * u - (1 - ease) * (w + 4 * u)
+  local y = y0 + 3 * u
+  local count = c.unit == "PCT" and (("%d%%"):format(c.value)) or ("%d / %d"):format(c.value, c.goal)
+  G.push("all")
+  G.setScissor(x0, y0, W, H)
+  rrect("fill", x, y, w, h, 2.2 * u, C.panel, 0.72 * ease)
+  local frac = c.goal > 0 and math.min(1, c.value / c.goal) or 0
+  local cx, cy = x + pad + r, y + h / 2
+  G.setLineWidth(math.max(1, r * 0.3))
+  color(C.faint, 0.8); G.circle("line", cx, cy, r)
+  color(accent)
+  if frac > 0 then G.arc("line", "open", cx, cy, r, -math.pi / 2, -math.pi / 2 + frac * math.pi * 2, 24) end
+  local tx = x + pad * 2 + r * 2
+  local right = x + w - pad
+  local cw = fTiny:getWidth(count)
+  text(fTiny, count, right - cw, y + pad + (fTitle:getHeight() - fTiny:getHeight()) / 2, accent)
+  text(fTitle, Modern.ellipsize(fTitle, c.title or "", right - cw - 2 * u - tx), tx, y + pad, C.text, 0.95)
+  bar(tx, y + pad + fTitle:getHeight() + 0.8 * u, right - tx, barH, frac, accent)
+  G.pop()
+end
+
 -- ------------------------------------------------------------------
 -- Screen
 -- ------------------------------------------------------------------

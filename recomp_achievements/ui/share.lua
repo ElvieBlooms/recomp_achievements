@@ -98,7 +98,9 @@ function Share.card(engine)
   if not (engine.active and engine.game) then return nil end
   local data = engine.ledger:get(engine.game)
   local save = engine.adapter and engine.adapter:save() or {}
-  local name = type(save.player) == "table" and save.player.name or "?"
+  -- Gen 1/2 keep the name under save.player; Gen 3 at save.name
+  local name = type(save.player) == "table" and save.player.name
+    or (type(save.name) == "string" and save.name ~= "" and save.name) or "?"
   local t = engine:officialTotals()
   local f = {
     game = engine.game, name = name, points = t.points, earned = t.earned,

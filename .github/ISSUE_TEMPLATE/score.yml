@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        In the game, open **START > ACHIEVEMENTS** (called **AWARDS** in Gold, Silver and Crystal) and press **SELECT** to see your leaderboard card. Copy each value exactly as shown.
+        In the game, open **START > TROPHIES** (**TROPHY** in Gold, Silver and Crystal) and press **SELECT** to see your leaderboard card. Copy each value exactly as shown.
 
         Only achievements from the RetroAchievements lists count (no bonus or mod achievements). The board is an unofficial, honor-system fan project; it isn't affiliated with or connected to RetroAchievements.
 
@@ -22,6 +22,8 @@ body:
         - Gold
         - Silver
         - Crystal
+        - FireRed
+        - LeafGreen
     validations:
       required: true
   - type: input

@@ -26,7 +26,8 @@
 
 const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const GAMES = { red: "Pokemon Red", blue: "Pokemon Blue", yellow: "Pokemon Yellow",
-                gold: "Pokemon Gold", silver: "Pokemon Silver", crystal: "Pokemon Crystal" };
+                gold: "Pokemon Gold", silver: "Pokemon Silver", crystal: "Pokemon Crystal",
+                firered: "Pokemon FireRed", leafgreen: "Pokemon LeafGreen" };
 const EPHEMERAL = 64;
 
 // ---------------------------------------------------------- check code
@@ -133,7 +134,7 @@ function options(interaction) {
 // everything again (limits, name filter, ownership) before saving.
 export function precheck(o) {
   const game = String(o.game || "").toLowerCase();
-  if (!GAMES[game]) return "Pick the game from the list (red, blue, yellow, gold, silver or crystal).";
+  if (!GAMES[game]) return "Pick the game from the list (red, blue, yellow, gold, silver, crystal, firered or leafgreen).";
   const name = String(o.name || "").trim();
   if (!name || [...name].length > 12) return "The trainer name must be 1 to 12 characters.";
   const points = Number(o.points), earned = Number(o.earned);
@@ -146,7 +147,7 @@ export function precheck(o) {
   if (minutes === undefined) return "Play time is the H:MM after TIME on the card, like 12:34.";
   if (normalizeCode(o.code || "") !== checkCode(game, name, points, earned, saveId, minutes)) {
     return "The check code doesn't match the other values. Check each one against the card " +
-      "(START > ACHIEVEMENTS > SELECT) and try again." +
+      "(START > TROPHIES > SELECT) and try again." +
       (minutes === null ? " If your card has a TIME line, add it too: time:H:MM (the time is part of the code)." : "");
   }
   return null;
@@ -203,7 +204,7 @@ export default {
     if (interaction.type === 2) {
       const name = interaction.data && interaction.data.name;
       if (name === "leaderboard") {
-        return say(`The leaderboard: ${env.BOARD_URL}\nSubmit with \`/score\` and the card from START > ACHIEVEMENTS > SELECT.`);
+        return say(`The leaderboard: ${env.BOARD_URL}\nSubmit with \`/score\` and the card from START > TROPHIES > SELECT.`);
       }
       if (name === "score") {
         const o = options(interaction);

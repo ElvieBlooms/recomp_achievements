@@ -45,6 +45,8 @@ GAMES = {
     "gold":    {"title": "Pokemon Gold",    "maxPoints": 685, "total": 72},
     "silver":  {"title": "Pokemon Silver",  "maxPoints": 616, "total": 75},
     "crystal": {"title": "Pokemon Crystal", "maxPoints": 864, "total": 113},
+    "firered":   {"title": "Pokemon FireRed",   "maxPoints": 453, "total": 61},
+    "leafgreen": {"title": "Pokemon LeafGreen", "maxPoints": 781, "total": 128},
 }
 
 NAME_MAX = 12  # Gen 1 names are 7 characters; leave room for imports
@@ -245,7 +247,7 @@ def validate(fields):
     if code != expected:
         raise Rejected("The check code doesn't match the other fields. "
                        "Check each value against the card in the game "
-                       "(START > ACHIEVEMENTS > SELECT) and edit the issue."
+                       "(START > TROPHIES > SELECT) and edit the issue."
                        + (" If your card has a TIME line, fill in Play time too; "
                           "the time is part of the code." if minutes is None else ""))
     return {"game": game, "name": name, "points": points, "earned": earned,

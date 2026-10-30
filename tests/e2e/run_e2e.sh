@@ -18,6 +18,6 @@ for m in ${MODS:-recomp_achievements achievement_sandbox}; do cp -r "$PROJECT/$m
 cp -r "$HERE/e2e_driver" "$SAVE/mods/"
 cp "$PLAN" "$SAVE/mods/e2e_driver/plan.lua"
 echo "run dir: $RUN"
-XDG_DATA_HOME="$RUN" timeout "$SECS" xvfb-run -a -s "-screen 0 800x720x24" \
+XDG_DATA_HOME="$RUN" timeout "$SECS" stdbuf -oL xvfb-run -a -s "-screen 0 800x720x24" \
   love "$ENGINE" --game="$GAME" ${SLOT:+--slot=$SLOT} 2>&1 | grep -v "^ALSA\|^AL lib" | tee "$RUN/stdout.log" | grep -E "E2E|rror|recomp|sandbox|warn" | head -${LINES_MAX:-80}
 echo "exit: ${PIPESTATUS[0]}"
