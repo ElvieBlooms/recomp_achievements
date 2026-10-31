@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-10-31T13:24:27Z",
+ "updated": "2026-10-31T18:28:25Z",
  "banned": [],
  "games": {
   "red": {
@@ -97,6 +97,35 @@
   },
   "emerald": {
    "entries": [
+    {
+     "name": "Elvie",
+     "points": 106,
+     "earned": 9,
+     "sources": {
+      "bonus": {
+       "earned": 1,
+       "total": 1,
+       "points": 1
+      },
+      "facets": {
+       "earned": 8,
+       "total": 9,
+       "points": 105
+      },
+      "play_nav": {
+       "earned": 0,
+       "total": 63,
+       "points": 0
+      }
+     },
+     "saveId": "6F4FB8",
+     "owner": "gh:elvieblooms",
+     "via": "github",
+     "date": "2026-10-31T18:28:25Z",
+     "first": "2026-10-31T18:28:25Z",
+     "github": "ElvieBlooms",
+     "issue": 3
+    },
     {
      "name": "Elvie",
      "points": 26,
