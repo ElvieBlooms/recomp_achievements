@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-10-31T02:48:04Z",
+ "updated": "2026-10-31T13:24:27Z",
  "banned": [],
  "games": {
   "red": {
@@ -68,6 +68,64 @@
    "title": "Pokemon Sapphire",
    "maxPoints": 485,
    "total": 49
+  }
+ },
+ "extra": {
+  "red": {
+   "entries": []
+  },
+  "blue": {
+   "entries": []
+  },
+  "yellow": {
+   "entries": []
+  },
+  "gold": {
+   "entries": []
+  },
+  "silver": {
+   "entries": []
+  },
+  "crystal": {
+   "entries": []
+  },
+  "firered": {
+   "entries": []
+  },
+  "leafgreen": {
+   "entries": []
+  },
+  "emerald": {
+   "entries": [
+    {
+     "name": "Elvie",
+     "points": 26,
+     "earned": 5,
+     "sources": {
+      "bonus": {
+       "earned": 1,
+       "total": 1,
+       "points": 1
+      },
+      "play_nav": {
+       "earned": 4,
+       "total": 63,
+       "points": 25
+      }
+     },
+     "saveId": "0YSPM2",
+     "owner": "discord:19f7e31d3cc343740b10454a66371bc1",
+     "via": "discord",
+     "date": "2026-10-31T13:24:27Z",
+     "first": "2026-10-31T13:24:27Z"
+    }
+   ]
+  },
+  "ruby": {
+   "entries": []
+  },
+  "sapphire": {
+   "entries": []
   }
  }
 }
