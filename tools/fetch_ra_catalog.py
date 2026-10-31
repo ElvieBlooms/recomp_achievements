@@ -41,7 +41,7 @@ import urllib.request
 ENDPOINT = "https://retroachievements.org/API/API_GetGameExtended.php"
 USER_AGENT = "RecompAchievementsCatalogTool/1.0 (offline Gen1Recomp mod; metadata only)"
 
-# RA game ids for the base (core) sets.  Phase 1 uses the first three.
+# RA game ids for the base (core) sets.
 GAMES = {
     "red": 724, "blue": 586, "yellow": 723,
     "gold": 576, "silver": 722, "crystal": 810,
@@ -202,7 +202,7 @@ def report(game, old, cat):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("games", nargs="*", default=["red", "blue", "yellow"])
+    ap.add_argument("games", nargs="*", default=list(GAMES))
     ap.add_argument("--key-file")
     ap.add_argument("--from-json", metavar="DIR",
                     help="read <DIR>/<game>.json instead of calling the API")

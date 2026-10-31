@@ -96,7 +96,7 @@ Options are in the Mods manager:
   was done in the past, so those only count from when the mod is installed.
 - "Without resetting" means within one play session. Loading a save starts
   the attempt over.
-- About a fifth of the entries are a **local reading** of the RetroAchievements
+- About a quarter of the entries are a **local reading** of the RetroAchievements
   description, because Gen1Recomp can't check the original wording exactly
   (for example "unmissable" items). Each one says on its in-game ABOUT page
   exactly what counts. The full list is in [docs/COVERAGE.md](docs/COVERAGE.md).
@@ -209,7 +209,7 @@ the leaderboard up on a fork is described in
 and writes `dist/recomp_achievements-<version>.zip`.
 
 To refresh the RA lists (developers only; needs your own RA Web API key):
-`RA_API_KEY=... python3 tools/fetch_ra_catalog.py red blue yellow`.
+`RA_API_KEY=... python3 tools/fetch_ra_catalog.py` (all games, or name some).
 
 ### Gen 2 data
 

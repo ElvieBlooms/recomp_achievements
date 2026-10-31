@@ -50,6 +50,11 @@ return function(mod)
   })
 ```
 
+`games` takes version ids: `red`, `blue`, `yellow`, `gold`, `silver`,
+`crystal`, `ruby`, `sapphire`, `emerald`, `firered` and `leafgreen`. If your
+mod only runs on some of them, your manifest's own `games` list (`gen1`,
+`gen2`, or Gen 3 version ids) still decides where it loads.
+
 Register on every boot. Definitions aren't saved; only the player's
 records are. Your achievements are saved under the key
 `mod:<your_mod_id>:<id>`. The handle only ever writes inside that
