@@ -1,4 +1,4 @@
-# Recomp Achievements — Provider API (v1.2.0)
+# Recomp Achievements — Provider API (v1.3.0)
 
 How another Gen1Recomp mod adds its own achievements, reports progress,
 and listens for unlocks. `achievement_sandbox/main.lua` is a complete,
@@ -31,12 +31,14 @@ return function(mod)
 
 `ach.supports(name)` answers for these capabilities: `register`,
 `register_many`, `unlock`, `progress`, `query`, `events`, `games_filter`,
-`hidden`, and since 1.1.0 `official_totals` and `leaderboard_card`.
+`hidden`, since 1.1.0 `official_totals` and `leaderboard_card`, and since
+1.3.0 `provider_tabs`.
 
 ## 3. Connect and register
 
 ```lua
-  local handle = ach.connect(mod)   -- or ach.connect("your_mod_id", { name = "..." })
+  local handle = ach.connect(mod, { tab = "NAVIPLAY" })  -- tab is optional
+  -- or ach.connect("your_mod_id", { name = "...", tab = "..." })
   handle:register({
     id = "chatterbox",              -- a-z 0-9 _ -, max 48; never change it
     title = "Chatterbox",           -- max 32 chars
@@ -49,6 +51,12 @@ return function(mod)
     revision = 1,                   -- optional
   })
 ```
+
+**Your own tab.** Every mod with achievements in the running game gets
+its own filter tab in the TROPHIES menu, next to FROM MODS. It's labelled
+with `tab` from `connect` (max 12 characters, since 1.3.0) or else your
+mod's name. When yours is the only mod with achievements, your tab takes
+FROM MODS' place.
 
 `games` takes version ids: `red`, `blue`, `yellow`, `gold`, `silver`,
 `crystal`, `ruby`, `sapphire`, `emerald`, `firered` and `leafgreen`. If your

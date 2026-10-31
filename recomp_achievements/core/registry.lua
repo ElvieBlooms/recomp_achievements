@@ -26,6 +26,7 @@ Registry.LIMITS = {
   description = 160,
   category = 16,
   providerName = 24,
+  tabLabel = 12,       -- a provider's own filter tab (Browser.filtersFor)
   maxPerProvider = 200, -- keeps a runaway provider from flooding the UI
   maxPoints = 100,
   maxGoal = 1000000,
@@ -160,6 +161,9 @@ function Registry:addProvider(id, info)
     id = id,
     name = self.util.text(info.name or id, Registry.LIMITS.providerName),
     version = self.util.text(info.version or "?", 16),
+    -- optional label for the provider's own filter tab; its name otherwise
+    tab = type(info.tab) == "string" and info.tab ~= ""
+      and self.util.text(info.tab, Registry.LIMITS.tabLabel) or nil,
     count = 0,
   }
   return self.providers[id]

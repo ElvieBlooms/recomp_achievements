@@ -409,10 +409,7 @@ function Modern.newScreen(deps)
   local mod, engine, Browser, Share, game = deps.mod, deps.engine, deps.Browser, deps.Share, deps.game
   local self = { isMenu = true, isOpaque = true, game = game, modern = true }
 
-  local filters = {}
-  for _, f in ipairs(Browser.FILTERS) do
-    if not f.optional or mod.options:get("showReference") then filters[#filters + 1] = f end
-  end
+  local filters = Browser.filtersFor(mod, engine)
   local reveal = mod.options:get("showHidden") == true
   local st = { filter = 1, index = 1, scroll = 0, rows = {}, list = {}, page = 1, modal = nil,
                held = nil, heldFor = 0, repeatAt = 0, visible = 6 }

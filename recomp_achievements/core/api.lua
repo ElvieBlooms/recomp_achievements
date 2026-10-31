@@ -25,11 +25,11 @@
 
 local Api = {}
 
-Api.VERSION = "1.2.0"
+Api.VERSION = "1.3.0"
 Api.CAPABILITIES = {
   register = true, register_many = true, unlock = true,
   progress = true, query = true, events = true, games_filter = true,
-  hidden = true, official_totals = true, leaderboard_card = true,
+  hidden = true, official_totals = true, leaderboard_card = true, provider_tabs = true,
 }
 
 -- Writes per provider per second before calls start returning
@@ -171,14 +171,20 @@ function Api.install(mod, engine, util, Share)
     return Api.CAPABILITIES[capability] == true
   end)
 
-  -- connect(providerId, { name = "...", version = "..." })
+  -- connect(providerId, { name = "...", version = "...", tab = "..." })
+  -- tab (since 1.3.0): a short label for your own filter tab in the menu.
   -- providerId should be your own mod.id.  Returns a handle.
   -- Calling twice with the same id returns the same handle.
   exports.connect = method(exports, function(providerId, info)
     if type(providerId) == "table" and providerId.id then
       -- convenience: ach.connect(mod) passes the whole mod object
-      info = info or { name = providerId.manifest and providerId.manifest.name,
-                       version = providerId.version }
+      local defaults = { name = providerId.manifest and providerId.manifest.name,
+                         version = providerId.version }
+      if type(info) == "table" then
+        for k, v in pairs(defaults) do if info[k] == nil then info[k] = v end end
+      else
+        info = defaults
+      end
       providerId = providerId.id
     end
     if not util.validId(providerId) then

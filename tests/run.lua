@@ -46,7 +46,7 @@ test("both mods load in dependency order with no errors", function()
   check(env.ok, "loader:load returned false: " .. table.concat(env.loader.errors, "; "))
   eq(env.loader.order[1], "recomp_achievements", "framework loads first")
   eq(env.loader.order[2], "achievement_sandbox", "provider loads second")
-  eq(ach(env).apiVersion, "1.2.0", "api version")
+  eq(ach(env).apiVersion, "1.3.0", "api version")
   check(ach(env).supports("progress"), "supports progress")
   check(not ach(env).supports("leaderboards"), "unknown capability is false")
 end)
@@ -1419,6 +1419,44 @@ test("native Gen 3 menu: text never reads as font tokens; Gen 1 harness falls ba
   local top = env.game.stack:top()
   check(top ~= nil and not top.native3 and not top.modern, "Gen 1 CLASSIC MENU is the text-box one")
   env:press("b")
+end)
+
+
+test("each mod with achievements gets its own filter tab", function()
+  local env = H.boot(BOTH)
+  env:newGame(); env:frame()
+  local Browser = dofile(H.PROJECT .. "/recomp_achievements/ui/browser.lua")
+  -- step through every filter of the real (classic) menu and note labels
+  local function tabsShown(want)
+    for _, item in ipairs(env:startMenu()) do
+      if item.label == "TROPHY" then item.onSelect() end
+    end
+    local found = {}
+    for _ = 1, 16 do
+      env:draw()
+      for _, w in ipairs(want) do if H.screenHas(w) then found[w] = true end end
+      env:press("right")
+    end
+    env:press("b")
+    return found
+  end
+  local before = tabsShown({ "FROM MODS", "Achievement API Sandbox", "NAVIPLAY" })
+  check(not before["FROM MODS"], "one mod: no separate FROM MODS tab")
+  -- a second provider, with its own tab label
+  local h = ach(env).connect("navi_test", { name = "NaviPlay Test", tab = "NAVIPLAY" })
+  h:register({ id = "first_punch", title = "First Punch", description = "Punch the bag." })
+  env:frame()
+  local after = tabsShown({ "FROM MODS", "NAVIPLAY" })
+  check(after["FROM MODS"], "two mods: FROM MODS lists them all")
+  check(after["NAVIPLAY"], "the mod's own tab label")
+  local rows = {
+    { source = "provider", provider = "navi_test", title = "a" },
+    { source = "provider", provider = "achievement_sandbox", title = "b" },
+    { source = "core", title = "c" },
+  }
+  eq(#Browser.filtered(rows, "mod:navi_test"), 1, "a mod's tab holds only that mod")
+  eq(#Browser.filtered(rows, "mods"), 2, "FROM MODS holds both")
+  check(ach(env).supports("provider_tabs"), "capability advertised")
 end)
 
 print(("\n%d passed, %d failed"):format(passed, failed))

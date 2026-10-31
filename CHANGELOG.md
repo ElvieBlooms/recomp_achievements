@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.6.0
+
+- **A tab for each mod.** Every mod that adds achievements gets its own
+  filter tab in the TROPHIES menu, next to FROM MODS. With only one such
+  mod, its tab replaces FROM MODS.
+- The manifest names this repo (`"github"`), so the Gen1Recomp launcher
+  can offer updates from the Releases page.
+- Mod API 1.3.0: `connect(mod, { tab = "NAVIPLAY" })` sets that tab's
+  label (12 characters at most); without it the tab uses the mod's name.
+  `ach.supports("provider_tabs")` checks for it.
+
 ## 2.5.0
 
 - **CLASSIC MENU now works in every game.** Gold, Silver and Crystal get

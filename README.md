@@ -33,7 +33,7 @@ and each achievement's author, and are credited in the game. See
 
 ## Install
 
-1. Download `recomp_achievements-2.5.0.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-2.6.0.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
 2. Start Red, Blue, Yellow, Gold, Silver, Crystal, Ruby, Sapphire, Emerald,
    FireRed or LeafGreen (Gen1Recomp 0.3.97 or newer).
@@ -53,7 +53,7 @@ on-screen pad).
 | In the menu | |
 |---|---|
 | UP / DOWN | move (hold to scroll) |
-| LEFT / RIGHT | change filter: All, Earned, Missing, In progress, Missable, RA list, Bonus, From mods, Archived |
+| LEFT / RIGHT | change filter: All, Earned, Missing, In progress, Missable, RA list, Bonus, From mods (plus a tab for each mod that adds achievements), Archived |
 | A | switch the details between the description and how it's checked |
 | SELECT | leaderboard card (RIGHT for About) |
 | B / START | back |

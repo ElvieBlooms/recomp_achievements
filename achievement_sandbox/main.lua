@@ -32,8 +32,9 @@ return function(mod)
   end
 
   -- connect() hands back a handle bound to OUR namespace
-  -- ("mod:achievement_sandbox:<id>").  Passing `mod` fills in name/version.
-  local handle, code, message = ach.connect(mod)
+  -- ("mod:achievement_sandbox:<id>").  Passing `mod` fills in name/version;
+  -- `tab` (API 1.3.0+) labels our own filter tab in the menu.
+  local handle, code, message = ach.connect(mod, { tab = "SANDBOX" })
   if not handle then
     mod.log:warn("connect failed: %s %s", tostring(code), tostring(message))
     return

@@ -105,6 +105,36 @@ local FILTERS = {
 
 Browser.FILTERS = FILTERS
 
+-- The filter tabs for this game: the fixed ones, plus one per mod that
+-- has achievements here ("mod:<provider id>"), labelled with the mod's
+-- chosen tab label or its name.  One mod: its tab takes FROM MODS' place.
+-- Two or more: FROM MODS (all of them), then each mod's own.
+function Browser.filtersFor(mod, engine)
+  local providers, seen = {}, {}
+  local registry = engine and engine.registry
+  local ok, rows = pcall(function() return engine:rows() end)
+  for _, row in ipairs(ok and rows or {}) do
+    local id = row.provider
+    if row.source ~= "core" and not row.archived and id and not seen[id] then
+      seen[id] = true
+      local p = registry and registry.providers[id] or {}
+      providers[#providers + 1] = { id = "mod:" .. id, provider = id,
+                                    label = p.tab or p.name or id, providerTab = true }
+    end
+  end
+  table.sort(providers, function(a, b) return tostring(a.label):lower() < tostring(b.label):lower() end)
+  local out = {}
+  for _, f in ipairs(FILTERS) do
+    if f.id == "mods" and #providers > 0 then
+      if #providers > 1 then out[#out + 1] = f end
+      for _, p in ipairs(providers) do out[#out + 1] = p end
+    elseif not f.optional or mod.options:get("showReference") then
+      out[#out + 1] = f
+    end
+  end
+  return out
+end
+
 local function passes(filter, row)
   if filter == "reference" then return row.reference == true end
   if row.reference then return false end
@@ -119,6 +149,9 @@ local function passes(filter, row)
   if filter == "official" then return row.source == "core" and row.official == true end
   if filter == "bonus" then return row.source == "core" and not row.official end
   if filter == "mods" then return row.source ~= "core" and not row.archived end
+  if filter:sub(1, 4) == "mod:" then
+    return row.source ~= "core" and not row.archived and row.provider == filter:sub(5)
+  end
   if filter == "archived" then return row.archived end
   return true
 end
@@ -177,10 +210,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
   -- (src/core/StateStack.lua), like the Pokedex and Diploma screens.
   local self = { isMenu = true, isOpaque = true, game = game }
 
-  local filters = {}
-  for _, f in ipairs(FILTERS) do
-    if not f.optional or mod.options:get("showReference") then filters[#filters + 1] = f end
-  end
+  local filters = Browser.filtersFor(mod, engine)
   local filterIndex, index, scroll = 1, 1, 0
   local rows, list = {}, {}
   local detail = nil -- the row being inspected, or nil for the list
@@ -254,7 +284,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     Font.drawBox(0, 0, 20, 4)
     Text.draw(Font, ("%d/%d"):format(t.earned, t.total), 1, 1)
     Text.drawRight(Font, ("PTS %d/%d"):format(t.points, t.maxPoints), 19, 1)
-    local label = filters[filterIndex].label
+    local label = Text.fit(filters[filterIndex].label, 16)
     Text.arrow("left", 1, 2)
     Text.draw(Font, label, 10 - math.floor(Text.len(label) / 2), 2)
     Text.arrow("right", 18, 2)

@@ -83,10 +83,7 @@ function Native3.newScreen(o)
   }
   local self = { isMenu = true, isOpaque = true, gbaCanvas = true, game = game, native3 = true }
 
-  local filters = {}
-  for _, f in ipairs(Browser.FILTERS) do
-    if not f.optional or mod.options:get("showReference") then filters[#filters + 1] = f end
-  end
+  local filters = Browser.filtersFor(mod, engine)
   local filterIndex, index, scroll = 1, 1, 0
   local rows, list = {}, {}
   local detail, page = nil, 1
