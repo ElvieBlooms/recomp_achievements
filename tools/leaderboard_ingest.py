@@ -100,6 +100,55 @@ def check_code(game, name, points, earned, save_id, minutes=None):
     return s[:4] + "-" + s[4:]
 
 
+# Extra Credit: bonus and mod achievements, one line per source.
+EXTRA_MAX_SOURCES = 20
+EXTRA_MAX_TOTAL = 200      # Registry.LIMITS.maxPerProvider
+EXTRA_MAX_POINTS = 100     # per achievement (Registry.LIMITS.maxPoints)
+
+
+def extra_payload(game, name, save_id, sources):
+    """sources: [(id, earned, total, points)]; sorted by id like the mod."""
+    parts = sorted(f"{i}:{e}:{t}:{p}" for i, e, t, p in sources)
+    return "|".join(["x1", game, norm_name(name), save_id.upper(), ",".join(parts)])
+
+
+def extra_check_code(game, name, save_id, sources):
+    p = extra_payload(game, name, save_id, sources).encode("utf-8")
+    a = _hash(p, 5381) % 1048576
+    b = _hash(p, 52711) % 1048576
+    s = _base32(a, 4) + _base32(b, 4)
+    return s[:4] + "-" + s[4:]
+
+
+def parse_extra_lines(raw):
+    """'bonus 3/9 20' per line (or separated by , or ;) -> [(id, e, t, p)]."""
+    out, seen = [], set()
+    for chunk in re.split(r"[\n,;]+", raw or ""):
+        chunk = chunk.strip().strip("`").strip()
+        if not chunk:
+            continue
+        m = re.fullmatch(r"([A-Za-z0-9_\-]{1,48})\s+(\d{1,3})\s*/\s*(\d{1,3})\s+(\d{1,5})(?:\s*p(?:ts|oints)?)?",
+                         chunk, re.I)
+        if not m:
+            raise Rejected(f"'{chunk[:40]}' isn't a line from the card. Each line looks like "
+                           "'bonus 3/9 20': the name, earned/total, then points.")
+        sid = m.group(1).lower()
+        e, t, p = int(m.group(2)), int(m.group(3)), int(m.group(4))
+        if sid in seen:
+            raise Rejected(f"'{sid}' is listed twice.")
+        seen.add(sid)
+        if t == 0 or t > EXTRA_MAX_TOTAL or e > t:
+            raise Rejected(f"'{sid}': achievements earned and total don't fit together.")
+        if p > e * EXTRA_MAX_POINTS or (p > 0 and e == 0):
+            raise Rejected(f"'{sid}': {p} points can't come from {e} achievements.")
+        out.append((sid, e, t, p))
+    if not out:
+        raise Rejected("Add the lines from the Extra Credit page, like 'bonus 3/9 20'.")
+    if len(out) > EXTRA_MAX_SOURCES:
+        raise Rejected(f"At most {EXTRA_MAX_SOURCES} lines.")
+    return out
+
+
 def normalize_code(code):
     """Accept lower case, missing dash, and the usual Crockford look-alikes."""
     c = re.sub(r"[\s\-]", "", code.upper())
@@ -169,6 +218,15 @@ FIELDS = {
 }
 
 
+EXTRA_FIELDS = {
+    "game": "Game",
+    "name": "Trainer name",
+    "save_id": "Save ID",
+    "extra": "Extra credit lines",
+    "code": "Extra code",
+}
+
+
 def parse_time(raw):
     """'12:34' (hours:minutes, as on the card) -> minutes; '' -> None."""
     raw = raw.strip()
@@ -184,8 +242,7 @@ def clock(minutes):
     return f"{minutes // 60}:{minutes % 60:02d}"
 
 
-def parse_issue(body):
-    """GitHub issue forms render as '### Label\\n\\nvalue' blocks."""
+def issue_sections(body):
     sections = {}
     current = None
     for line in (body or "").replace("\r\n", "\n").split("\n"):
@@ -195,8 +252,14 @@ def parse_issue(body):
             sections[current] = []
         elif current is not None:
             sections[current].append(line)
+    return sections
+
+
+def parse_issue(body, fields=None):
+    """GitHub issue forms render as '### Label\\n\\nvalue' blocks."""
+    sections = issue_sections(body)
     out = {}
-    for key, label in FIELDS.items():
+    for key, label in (fields or FIELDS).items():
         value = "\n".join(sections.get(label, [])).strip()
         if value == "_No response_":
             value = ""
@@ -204,18 +267,25 @@ def parse_issue(body):
     return out
 
 
+def is_extra_issue(body):
+    return EXTRA_FIELDS["extra"] in issue_sections(body)
+
+
 class Rejected(Exception):
     pass
 
 
-def validate(fields):
-    game = fields["game"].strip().lower()
+def check_game(raw):
+    game = raw.strip().lower()
     game = game.replace("pokemon", "").replace("pokémon", "").strip()
     if game not in GAMES:
-        raise Rejected("Pick the game from the list (Red, Blue, Yellow, Gold, Silver or Crystal).")
-    info = GAMES[game]
+        raise Rejected("Pick the game from the list (Red, Blue, Yellow, Gold, Silver, Crystal, "
+                       "Ruby, Sapphire, Emerald, FireRed or LeafGreen).")
+    return game
 
-    name = fields["name"].strip()
+
+def check_name(raw):
+    name = raw.strip()
     if not name or len(name) > NAME_MAX:
         raise Rejected(f"The trainer name must be 1 to {NAME_MAX} characters.")
     if any(ord(ch) < 32 or ch in "<>`\\" or 0x7f <= ord(ch) < 0xa0 for ch in name):
@@ -223,6 +293,36 @@ def validate(fields):
     if name_blocked(name):
         raise Rejected("That trainer name can't be shown on the board. "
                        "Scores from a save with a different name are welcome.")
+    return name
+
+
+def check_save_id(raw):
+    # Same alphabet as the code: no O, I or L, so read those as 0 and 1
+    # (the Gen 1 font's 0 looks a lot like an O).
+    save_id = re.sub(r"\s", "", raw).upper().replace("O", "0").replace("I", "1").replace("L", "1")
+    if not re.fullmatch(r"[0-9A-Z]{6}", save_id):
+        raise Rejected("The save ID is the 6 characters shown on the card.")
+    return save_id
+
+
+def validate_extra(fields):
+    game = check_game(fields["game"])
+    name = check_name(fields["name"])
+    save_id = check_save_id(fields["save_id"])
+    sources = parse_extra_lines(fields["extra"])
+    if normalize_code(fields["code"]) != extra_check_code(game, name, save_id, sources):
+        raise Rejected("The extra code doesn't match the lines. Check each line, the name and "
+                       "the save ID against the Extra Credit page (START > TROPHIES > SELECT, "
+                       "then RIGHT) and try again.")
+    return {"game": game, "name": name, "saveId": save_id,
+            "points": sum(p for _, _, _, p in sources), "earned": sum(e for _, e, _, _ in sources),
+            "sources": {i: {"earned": e, "total": t, "points": p} for i, e, t, p in sources}}
+
+
+def validate(fields):
+    game = check_game(fields["game"])
+    info = GAMES[game]
+    name = check_name(fields["name"])
 
     def whole(key, label, top):
         raw = fields[key].replace(",", "").strip()
@@ -238,11 +338,7 @@ def validate(fields):
     if (points == 0) != (earned == 0):
         raise Rejected("Points and achievements earned don't fit together.")
 
-    # Same alphabet as the code: no O, I or L, so read those as 0 and 1
-    # (the Gen 1 font's 0 looks a lot like an O).
-    save_id = re.sub(r"\s", "", fields["save_id"]).upper().replace("O", "0").replace("I", "1").replace("L", "1")
-    if not re.fullmatch(r"[0-9A-Z]{6}", save_id):
-        raise Rejected("The save ID is the 6 characters shown on the card.")
+    save_id = check_save_id(fields["save_id"])
 
     minutes = parse_time(fields.get("time", ""))
     code = normalize_code(fields["code"])
@@ -260,7 +356,8 @@ def validate(fields):
 # ---------------------------------------------------------------- board
 def empty_board():
     return {"version": 1, "updated": None, "banned": [],
-            "games": {g: dict(info, entries=[]) for g, info in GAMES.items()}}
+            "games": {g: dict(info, entries=[]) for g, info in GAMES.items()},
+            "extra": {g: {"entries": []} for g in GAMES}}
 
 
 def load_board(path):
@@ -273,6 +370,7 @@ def load_board(path):
         slot = board.setdefault("games", {}).setdefault(g, {"entries": []})
         slot.update({k: v for k, v in info.items()})
         slot.setdefault("entries", [])
+        board.setdefault("extra", {}).setdefault(g, {}).setdefault("entries", [])
     return board
 
 
@@ -284,6 +382,36 @@ def rank(entries):
         t = e.get("time")
         return (-e["points"], t is None, t if t is not None else 0, e.get("first", ""))
     entries.sort(key=key)
+
+
+def rank_extra(entries):
+    """Extra Credit: most points, then most achievements, then earliest."""
+    entries.sort(key=lambda e: (-e["points"], -e["earned"], e.get("first", "")))
+
+
+def upsert_extra(board, entry, sub, now):
+    banned = {str(b).lower() for b in board.get("banned", [])}
+    if f"{entry['game']}:{entry['saveId']}".lower() in banned:
+        raise Rejected("This save has been removed from the board by the maintainer.")
+    entries = board["extra"][entry["game"]]["entries"]
+    for e in entries:
+        if e["saveId"] == entry["saveId"]:
+            if owner_of(e) != sub.owner:
+                raise Rejected("That save ID is already on the board for another account.")
+            e.update(name=entry["name"], points=entry["points"], earned=entry["earned"],
+                     sources=entry["sources"], date=now, via=sub.source)
+            if sub.issue:
+                e["issue"] = sub.issue
+            rank_extra(entries)
+            return "updated"
+    row = {"name": entry["name"], "points": entry["points"], "earned": entry["earned"],
+           "sources": entry["sources"], "saveId": entry["saveId"], "owner": sub.owner,
+           "via": sub.source, "date": now, "first": now}
+    if sub.source == "github":
+        row.update(github=sub.login, issue=sub.issue)
+    entries.append(row)
+    rank_extra(entries)
+    return "added"
 
 
 def owner_of(e):
@@ -322,9 +450,9 @@ def upsert(board, entry, sub, now):
 class Submission:
     """Where a score came from: fields to validate plus who sent it."""
 
-    def __init__(self, source, fields, owner, login=None, issue=None):
+    def __init__(self, source, fields, owner, login=None, issue=None, kind="score"):
         self.source, self.fields, self.owner = source, fields, owner
-        self.login, self.issue = login, issue
+        self.login, self.issue, self.kind = login, issue, kind
 
 
 def read_submission(event_path=None):
@@ -336,17 +464,21 @@ def read_submission(event_path=None):
     if "issue" not in event and isinstance(payload, dict):
         # repository_dispatch from the Discord bot.  The bot has already
         # replaced the Discord user id with a keyed hash.
-        score = payload.get("score") if isinstance(payload.get("score"), dict) else {}
-        fields = {k: str(score.get(k, "")) for k in FIELDS}
+        kind = "extra" if isinstance(payload.get("extra"), dict) else "score"
+        data = payload.get(kind) if isinstance(payload.get(kind), dict) else {}
+        fields = {k: str(data.get(k, "")) for k in (EXTRA_FIELDS if kind == "extra" else FIELDS)}
         owner = str(payload.get("owner", ""))
         if not re.fullmatch(r"[0-9a-f]{16,64}", owner):
             raise Rejected("The Discord bot sent no sender id.")
-        return Submission("discord", fields, "discord:" + owner)
+        return Submission("discord", fields, "discord:" + owner, kind=kind)
     issue = event.get("issue") or {}
     body = issue.get("body") if issue else os.environ.get("ISSUE_BODY", "")
     login = ((issue.get("user") or {}).get("login") if issue
              else os.environ.get("ISSUE_AUTHOR", "")) or ""
     number = issue.get("number") if issue else int(os.environ.get("ISSUE_NUMBER", "0") or 0)
+    if is_extra_issue(body or ""):
+        return Submission("github", parse_issue(body or "", EXTRA_FIELDS), "gh:" + login.lower(),
+                          login=login, issue=number, kind="extra")
     return Submission("github", parse_issue(body or ""), "gh:" + login.lower(),
                       login=login, issue=number)
 
@@ -364,9 +496,14 @@ def main(argv=None):
 
     try:
         sub = read_submission(args.event)
-        entry = validate(sub.fields)
-        board = load_board(args.board)
-        how = upsert(board, entry, sub, now)
+        if sub.kind == "extra":
+            entry = validate_extra(sub.fields)
+            board = load_board(args.board)
+            how = upsert_extra(board, entry, sub, now)
+        else:
+            entry = validate(sub.fields)
+            board = load_board(args.board)
+            how = upsert(board, entry, sub, now)
     except Rejected as err:
         with open(args.reply, "w", encoding="utf-8") as f:
             f.write(f"Couldn't add this score: {err}\n")
@@ -384,6 +521,18 @@ def main(argv=None):
     with open(args.board, "w", encoding="utf-8") as f:
         json.dump(board, f, indent=1, ensure_ascii=False)
         f.write("\n")
+    if sub.kind == "extra":
+        entries = board["extra"][entry["game"]]["entries"]
+        place = next(i for i, e in enumerate(entries) if e["saveId"] == entry["saveId"]) + 1
+        info = GAMES[entry["game"]]
+        with open(args.reply, "w", encoding="utf-8") as f:
+            f.write(f"{'Added' if how == 'added' else 'Updated'} Extra Credit: **{entry['name']}** on "
+                    f"{info['title']} with {entry['points']} points from {entry['earned']} bonus and "
+                    f"mod achievements, currently #{place} overall. The page updates in a minute or two.\n\n")
+            f.write("To update it later, send `/extra` again with the new page.\n" if sub.source == "discord"
+                    else "To update it later, edit this issue with the new page.\n")
+        print(f"{how} extra: {entry}")
+        return 0
     entries = board["games"][entry["game"]]["entries"]
     place = next(i for i, e in enumerate(entries) if e["saveId"] == entry["saveId"]) + 1
     info = GAMES[entry["game"]]

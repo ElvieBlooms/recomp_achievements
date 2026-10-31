@@ -18,6 +18,11 @@ linking to that game's tab on the page. It reads the public
 `leaderboard.json`, so it needs no extra secrets. GitHub Pages can take a
 few minutes to serve a new score.
 
+`/extra game name save_id lines code` submits an Extra Credit score (bonus
+and mod achievements) from the card's Extra Credit page; `lines` is every
+line from the page separated by commas. `/check game:ruby extra:all` shows
+the Extra Credit top 3, and `extra:bonus` or `extra:<mod>` one source's.
+
 ## How it works
 
 ```
@@ -78,7 +83,7 @@ computer.
    ```
    DISCORD_APP_ID=<application id> DISCORD_BOT_TOKEN=<bot token> python3 tools/discord_register.py
    ```
-   It prints `registered: /score, /leaderboard, /check`. Commands can take a few
+   It prints `registered: /score, /leaderboard, /check, /extra`. Commands can take a few
    minutes to appear in Discord.
 6. **Let people use it.** On *Installation*, tick **User Install** and
    **Guild Install**, with the `applications.commands` scope (add `bot`

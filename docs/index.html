@@ -34,6 +34,12 @@
             padding: 9px 14px; border-radius: 8px; white-space: nowrap; }
   .submit.alt { background: var(--panel); color: var(--accent); border: 2px solid var(--accent); padding: 7px 12px; }
   [hidden] { display: none !important; }
+  .modes { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: -4px 0 12px; }
+  .mode { font: 600 .8rem var(--mono); padding: 5px 11px; border-radius: 999px; cursor: pointer;
+          border: 2px solid var(--line); background: var(--panel); color: var(--muted); }
+  .mode[aria-pressed="true"] { border-color: var(--game); color: var(--ink); }
+  .modes .sep { width: 2px; height: 20px; background: var(--line); margin: 0 4px; }
+  .note { padding: 10px 16px; color: var(--muted); font-size: .85rem; border-bottom: 2px solid var(--line); }
   .panel { background: var(--panel); border: 2px solid var(--line); border-radius: 12px; overflow: hidden; }
   .meta { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px;
           border-bottom: 2px solid var(--line); color: var(--muted); font-size: .9rem; }
@@ -72,11 +78,14 @@
     <a class="submit" id="submit" href="#">Submit a score</a>
   </div>
 
+  <div class="modes" id="modes"></div>
+
   <section class="panel" id="board" aria-live="polite">
     <div class="empty">Loading…</div>
   </section>
 
   <footer>
+    <p><b>Extra Credit</b> is a second, just-for-fun board for this mod's bonus achievements and achievements added by other mods. It has a combined total and a board for each mod. Submit it from the Extra Credit page (<b>SELECT</b>, then <b>RIGHT</b>)<span id="discord-note-extra" hidden> or with <code>/extra</code> on Discord</span>.</p>
     <p>To submit: in the game open <b>START &gt; TROPHIES</b>, press <b>SELECT</b>, and copy the card into the form<span id="discord-note" hidden>, or send it to the Discord bot with <code>/score</code></span>. Only achievements from the RetroAchievements lists count; bonus and mod achievements don't. On equal points, the shorter play time (when the score was reached) ranks higher.</p>
     <p>Scores are self-reported (honor system). The check code only catches typos. See a name that shouldn't be here? Use <b>Report</b> on its row.</p>
     <p>An unofficial fan project, not affiliated with, endorsed by or connected to RetroAchievements. Scores here don't count on retroachievements.org. Achievement lists are by RetroAchievements and their authors.</p>
@@ -106,6 +115,7 @@
     var d = document.getElementById("discord");
     d.href = DISCORD_INSTALL; d.hidden = false;
     document.getElementById("discord-note").hidden = false;
+    document.getElementById("discord-note-extra").hidden = false;
   }
   // Fallback when the page isn't served from <owner>.github.io/<repo>/.
   var DEFAULT_REPO = "ElvieBlooms/recomp_achievements";
@@ -117,7 +127,11 @@
     return DEFAULT_REPO;
   }
   var ISSUES = "https://github.com/" + repo() + "/issues/new";
-  document.getElementById("submit").href = ISSUES + "?template=score.yml";
+  function setSubmit() {
+    var a = document.getElementById("submit");
+    a.href = ISSUES + (view.extra ? "?template=extra.yml" : "?template=score.yml");
+    a.textContent = view.extra ? "Submit Extra Credit" : "Submit a score";
+  }
 
   function reportUrl(game, entry) {
     return ISSUES + "?template=report.yml" +
@@ -128,9 +142,18 @@
 
   var board = null;
   var current = "red";
+  // view.extra: the Extra Credit board; view.source: one mod's line ("bonus", "naviplay")
+  var view = { extra: false, source: null };
   try { current = localStorage.getItem("ra-board-game") || current; } catch (e) {}
-  var wanted = (location.hash || "").slice(1);
-  if (GAMES.some(function (g) { return g.id === wanted; })) current = wanted;
+  var parts = (location.hash || "").slice(1).split("/");
+  if (GAMES.some(function (g) { return g.id === parts[0]; })) current = parts[0];
+  if (parts[1] === "extra") {
+    view.extra = true;
+    if (parts[2] && /^[a-z0-9_-]{1,48}$/.test(parts[2])) view.source = parts[2];
+  }
+  function setHash() {
+    history.replaceState(null, "", "#" + current + (view.extra ? "/extra" + (view.source ? "/" + view.source : "") : ""));
+  }
 
   function el(tag, cls, text) {
     var n = document.createElement(tag);
@@ -150,12 +173,106 @@
       b.style.setProperty("--game", g.color);
       b.onclick = function () {
         current = g.id;
+        view.source = null;
         try { localStorage.setItem("ra-board-game", current); } catch (e) {}
-        history.replaceState(null, "", "#" + current);
+        setHash();
         drawTabs(); drawBoard();
       };
       tabs.appendChild(b);
     });
+  }
+
+  // Main board / Extra Credit, and in Extra Credit: All plus one chip per source.
+  function extraSources(entries) {
+    var seen = {}, list = [];
+    entries.forEach(function (e) {
+      Object.keys(e.sources || {}).forEach(function (id) { if (!seen[id]) { seen[id] = true; list.push(id); } });
+    });
+    list.sort(function (a, b) { return a === "bonus" ? -1 : b === "bonus" ? 1 : a < b ? -1 : 1; });
+    return list;
+  }
+  function sourceLabel(id) { return id === "bonus" ? "Bonus" : id; }
+
+  function drawModes(entries) {
+    var host = document.getElementById("modes");
+    host.textContent = "";
+    var game = GAMES.filter(function (g) { return g.id === current; })[0];
+    host.style.setProperty("--game", game.color);
+    function chip(label, pressed, onclick, title) {
+      var b = el("button", "mode", label);
+      b.type = "button";
+      b.setAttribute("aria-pressed", pressed ? "true" : "false");
+      if (title) b.title = title;
+      b.onclick = onclick;
+      host.appendChild(b);
+    }
+    chip("Main board", !view.extra, function () { view.extra = false; view.source = null; setHash(); drawBoard(); },
+         "RetroAchievements-list points");
+    chip("Extra Credit", view.extra, function () { view.extra = true; view.source = null; setHash(); drawBoard(); },
+         "Bonus and mod achievements");
+    if (view.extra && entries) {
+      host.appendChild(el("span", "sep"));
+      chip("All", !view.source, function () { view.source = null; setHash(); drawBoard(); }, "Combined total");
+      extraSources(entries).forEach(function (id) {
+        chip(sourceLabel(id), view.source === id, function () { view.source = id; setHash(); drawBoard(); });
+      });
+    }
+  }
+
+  function drawExtra(host, game) {
+    var slot = ((board.extra || {})[current]) || { entries: [] };
+    var all = (slot.entries || []).slice();
+    drawModes(all);
+    var rows = [];
+    all.forEach(function (e) {
+      if (view.source) {
+        var s = (e.sources || {})[view.source];
+        if (s) rows.push({ e: e, points: s.points, earned: s.earned, total: s.total });
+      } else {
+        rows.push({ e: e, points: e.points, earned: e.earned, total: null });
+      }
+    });
+    rows.sort(function (a, b) {
+      return (b.points - a.points) || (b.earned - a.earned) || String(a.e.first || "").localeCompare(String(b.e.first || ""));
+    });
+    var meta = el("div", "meta");
+    meta.appendChild(el("span", null, "Pokemon " + game.label + " · Extra Credit" +
+      (view.source ? " · " + sourceLabel(view.source) : "") + " · " + rows.length + (rows.length === 1 ? " trainer" : " trainers")));
+    host.appendChild(meta);
+    host.appendChild(el("div", "note", view.source
+      ? (view.source === "bonus" ? "This mod's own bonus achievements." : "Achievements added by the " + view.source + " mod.")
+      : "Bonus and mod achievements added up. Players run different mods, so the per-mod boards are the fairest comparison."));
+    if (!rows.length) { host.appendChild(el("div", "empty", "No Extra Credit scores yet. Be the first!")); return; }
+    var best = rows[0].points || 1;
+    var table = el("table");
+    var head = el("tr");
+    [["#", ""], ["Trainer", ""], ["Points", "num"], ["Earned", "num"], ["Date", "hide-s"], ["", ""]]
+      .forEach(function (h) { head.appendChild(el("th", h[1], h[0])); });
+    var thead = el("thead"); thead.appendChild(head); table.appendChild(thead);
+    var tbody = el("tbody");
+    var place = 0, last = null;
+    rows.forEach(function (r, i) {
+      var tie = r.points + "|" + r.earned;
+      if (last === null || tie !== last) { place = i + 1; last = tie; }
+      var tr = el("tr", place <= 3 ? "top" : "");
+      tr.appendChild(el("td", "rank", place));
+      tr.appendChild(el("td", "name", r.e.name));
+      var pts = el("td", "num", r.points);
+      var meter = el("div", "meter"), fill = el("i");
+      fill.style.width = Math.min(100, 100 * r.points / best) + "%";
+      meter.appendChild(fill); pts.appendChild(meter);
+      tr.appendChild(pts);
+      tr.appendChild(el("td", "num", r.total != null ? r.earned + "/" + r.total : r.earned));
+      tr.appendChild(el("td", "hide-s", String(r.e.date || "").slice(0, 10)));
+      var rep = el("td", "report"), link = el("a", null, "Report");
+      link.href = reportUrl(game, r.e);
+      link.target = "_blank"; link.rel = "noopener";
+      link.title = "Report this name to the maintainer";
+      rep.appendChild(link); tr.appendChild(rep);
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    host.appendChild(table);
   }
 
   function drawBoard() {
@@ -163,7 +280,10 @@
     var game = GAMES.filter(function (g) { return g.id === current; })[0];
     host.style.setProperty("--game", game.color);
     host.textContent = "";
-    if (!board) { host.appendChild(el("div", "empty", "Couldn't load the leaderboard.")); return; }
+    setSubmit();
+    if (!board) { drawModes(null); host.appendChild(el("div", "empty", "Couldn't load the leaderboard.")); return; }
+    if (view.extra) { drawExtra(host, game); return; }
+    drawModes(null);
     var slot = (board.games || {})[current] || { entries: [] };
     // games added after the board file was made have no totals there yet
     slot.maxPoints = slot.maxPoints || game.maxPoints;
@@ -218,6 +338,7 @@
   }
 
   drawTabs();
+  setSubmit();
   fetch("leaderboard.json", { cache: "no-store" })
     .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(function (data) { board = data; drawBoard(); })

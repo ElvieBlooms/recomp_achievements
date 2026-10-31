@@ -71,6 +71,22 @@ function Browser.cardLines(card, url)
   return lines
 end
 
+-- Lines of the Extra Credit page (pure, so tests can check it).
+function Browser.extraLines(card)
+  if not card then return { "EXTRA CREDIT", "", "Load a save first." } end
+  local lines = { "EXTRA CREDIT", "", "TRAINER " .. tostring(card.name), "SAVE ID " .. card.saveId, "" }
+  if #card.sources == 0 then lines[#lines + 1] = "Nothing here yet." end
+  local room = 15 - 3 - #lines
+  for i, src in ipairs(card.sources) do
+    if i > room then lines[#lines + 1] = ("...%d more"):format(#card.sources - i + 1) break end
+    lines[#lines + 1] = ("%s %d/%d %d"):format(src.id, src.earned, src.total, src.points)
+  end
+  lines[#lines + 1] = ""
+  lines[#lines + 1] = "CODE    " .. card.code
+  lines[#lines + 1] = "Enter with /extra"
+  return lines
+end
+
 -- Slide a long title left and back so the selected row can be read in
 -- full: hold one second, scroll at 4 chars/s, hold, return.
 function Browser.marquee(Text, title, width, t)
@@ -215,7 +231,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
   local rows, list = {}, {}
   local detail = nil -- the row being inspected, or nil for the list
   local page = 1     -- detail page: 1 = summary, 2 = about this rule
-  local about = false -- SELECT pages: 1 = leaderboard card, 2 = credits
+  local about = false -- SELECT pages: 1 = leaderboard card, 2 = extra credit, 3 = credits
   local clock = 0     -- drives the selected row's title scroll
   local reveal = mod.options:get("showHidden") == true
   local closing, settled = false, false -- see Modern's update
@@ -237,12 +253,12 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     if not settled then settled = true return end
     if about then
       if input:wasPressed("b") or input:wasPressed("a") or input:wasPressed("select") then about = false
-      elseif input:wasPressed("right") then about = 2
-      elseif input:wasPressed("left") then about = 1 end
+      elseif input:wasPressed("right") and Share then about = math.min(3, about + 1)
+      elseif input:wasPressed("left") and Share then about = math.max(1, about - 1) end
       return
     end
     if input:wasPressed("select") then
-      about = Share and 1 or 2
+      about = Share and 1 or 3
       if about == 1 then pcall(engine.dispatch, engine, "ui.card_opened", {}) end
       return
     end
@@ -427,6 +443,20 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     Text.arrow("right", 18, 16)
   end
 
+  -- SELECT page 2: the Extra Credit card (bonus and mod achievements).
+  local function drawExtra()
+    Font.drawBox(0, 0, 20, 18)
+    local ok, card = pcall(Share.extraCard, engine)
+    if not ok then card = nil end
+    for i, line in ipairs(Browser.extraLines(card)) do
+      if i > 15 then break end
+      Text.draw(Font, Text.fit(line, 18), 1, i)
+      if line:find("_", 1, true) then Text.underscores(Text.fit(line, 18), 1, i) end
+    end
+    Text.arrow("left", 1, 16)
+    Text.arrow("right", 18, 16)
+  end
+
   local function drawDetail(row)
     Font.drawBox(0, 0, 20, 18)
     if page == 2 and not row.reference then drawAbout(row) else drawSummary(row) end
@@ -435,6 +465,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
   function self:draw()
     clear()
     if about == 1 then drawCard()
+    elseif about == 2 then drawExtra()
     elseif about then drawCredits()
     elseif detail then drawDetail(detail)
     else drawList() end

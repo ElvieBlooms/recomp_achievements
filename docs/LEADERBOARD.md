@@ -33,10 +33,10 @@ a card + check code          │
 4. **Settings > Actions > General > Workflow permissions**: choose "Read
    and write permissions". The Action commits `docs/leaderboard.json` and
    comments on issues.
-5. **Issues > Labels**: create labels named `score` and `report`. The two
-   forms apply them. Submissions still work without the `score` label,
-   because the Action also matches titles starting with `[Score]`, but the
-   labels make both kinds easy to filter.
+5. **Issues > Labels**: create labels named `score`, `extra` and `report`.
+   The forms apply them. Submissions still work without the `score` and
+   `extra` labels, because the Action also matches titles starting with
+   `[Score]` and `[Extra]`, but the labels make each kind easy to filter.
 
 Optional: set up the Discord bot with `discord/README.md`, then put its
 install link in `DISCORD_INSTALL` in `docs/index.html` to show a "Submit
@@ -63,6 +63,15 @@ on Discord" button.
 - One row per save ID per game. Only the account that first submitted a
   save ID (the same GitHub account, or the same Discord account) can update
   it.
+
+Extra Credit submissions (`extra.yml`, or `/extra` on Discord) go through
+the same Action. It checks the game, name and save ID the same way, then
+each line (`<source> <earned>/<total> <points>`: at most 20 lines, 200
+achievements and 100 points per achievement per source) and the extra code
+("x1" checksum over all lines, sorted). They're stored under `extra` in
+`leaderboard.json`, ranked by points, then achievements, then who was
+first; the page and `/check game extra:...` rank each source the same way.
+The same save-ID ownership and `banned` list apply.
 
 The bot replies on the issue (or edits its Discord message) either way. Accepted entries are closed. A
 rejected one stays open so the player can edit it, and editing re-runs the

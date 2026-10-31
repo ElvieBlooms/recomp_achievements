@@ -134,11 +134,21 @@ unlock from the RetroAchievements list), so playing on afterwards doesn't
 count against you.
 
 Only achievements from the RetroAchievements lists count; bonus achievements and
-achievements from other mods don't. The check code only catches typos, so
+achievements from other mods go on **Extra Credit** instead (below). The check code only catches typos, so
 the board is an honor system. Trainer names are filtered for offensive
 words, and every row has a Report link. It has nothing to do with
 RetroAchievements or its leaderboards, and scores here mean nothing on
 retroachievements.org.
+
+### Extra Credit
+
+A second, just-for-fun board for this mod's bonus achievements and
+achievements added by other mods. On the card press **RIGHT** for the
+**Extra Credit** page: one line per source, like `bonus 3/9 20` (earned /
+total, then points) or `naviplay 12/25 85`, and an extra code. Submit it
+with the **Submit Extra Credit** form on the site or `/extra` on Discord.
+Each game has a combined total and a board for each source; since players
+run different mods, the per-mod boards are the fairest comparison.
 
 ## For mod authors
 

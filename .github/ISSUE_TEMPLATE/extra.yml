@@ -1,0 +1,65 @@
+name: Submit an Extra Credit score
+description: Put your bonus and mod achievements on the Extra Credit board.
+title: "[Extra] "
+labels: ["extra"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        In the game, open **START > TROPHIES** (**TROPHY** in Gen 1 and Gen 2), press **SELECT**, then **RIGHT** for the **Extra Credit** page. Copy each value exactly as shown.
+
+        Extra Credit counts this mod's bonus achievements and achievements added by other mods. Each line on the page gets its own board, plus a combined total. Like the main board, it's an unofficial honor-system fan project and isn't affiliated with or connected to RetroAchievements.
+
+        To update it later, edit this issue with the new values.
+  - type: dropdown
+    id: game
+    attributes:
+      label: Game
+      options:
+        - Red
+        - Blue
+        - Yellow
+        - Gold
+        - Silver
+        - Crystal
+        - Ruby
+        - Sapphire
+        - FireRed
+        - LeafGreen
+        - Emerald
+    validations:
+      required: true
+  - type: input
+    id: name
+    attributes:
+      label: Trainer name
+      description: As shown after TRAINER on the page.
+      placeholder: RED
+    validations:
+      required: true
+  - type: input
+    id: save_id
+    attributes:
+      label: Save ID
+      description: 6 characters after SAVE ID.
+      placeholder: 7KQ2MX
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Extra credit lines
+      description: Every line from the page, one per line, like `bonus 3/9 20` (name, earned/total, points).
+      placeholder: |
+        bonus 3/9 20
+        naviplay 12/25 85
+    validations:
+      required: true
+  - type: input
+    id: code
+    attributes:
+      label: Extra code
+      description: The XXXX-XXXX code after CODE on the Extra Credit page.
+      placeholder: ABCD-1234
+    validations:
+      required: true

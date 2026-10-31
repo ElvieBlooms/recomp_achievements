@@ -403,6 +403,8 @@ test("browser: long titles scroll on the selected row; SELECT then RIGHT shows c
     if (item.label == "TROPHIES" or item.label == "TROPHY") then item.onSelect() end
   end
   env:press("select"); env:press("right"); env:draw()
+  check(H.screenHas("EXTRA CREDIT"), "extra credit page")
+  env:press("right"); env:draw()
   check(H.screenHas("RetroAchievements"), "credits page")
   check(H.screenHas("Nothing"), "local-only statement")
   env:press("b"); env:draw()
@@ -533,8 +535,10 @@ test("leaderboard card: official points only, stable save id, shown on SELECT", 
   check(H.screenHas(card.code:gsub("%-", "%%-")), "code shown")
   check(H.screenHas("SAVE ID " .. card.saveId), "save id shown")
   env:press("right"); env:draw()
-  check(H.screenHas("RetroAchievements"), "credits on RIGHT")
-  env:press("left"); env:draw()
+  check(H.screenHas("EXTRA CREDIT"), "extra credit on RIGHT")
+  env:press("right"); env:draw()
+  check(H.screenHas("RetroAchievements"), "credits on RIGHT again")
+  env:press("left"); env:press("left"); env:draw()
   check(H.screenHas("LEADERBOARD CARD"), "back on LEFT")
 end)
 
@@ -681,6 +685,8 @@ test("modern menu: filters, A for how it's checked, SELECT for the card", functi
   check(txt:find("Leaderboard card", 1, true), "card tab")
   check(txt:find(card.code, 1, true), "check code shown")
   check(txt:find(card.saveId, 1, true), "save id shown")
+  env:press("right"); env:hud(BIG)
+  check(H.windowText():find("Extra code", 1, true), "Extra credit page")
   env:press("right"); env:hud(BIG)
   check(H.windowText():find("unofficial", 1, true), "About page")
   env:press("b"); env:hud(BIG)
@@ -1457,6 +1463,24 @@ test("each mod with achievements gets its own filter tab", function()
   eq(#Browser.filtered(rows, "mod:navi_test"), 1, "a mod's tab holds only that mod")
   eq(#Browser.filtered(rows, "mods"), 2, "FROM MODS holds both")
   check(ach(env).supports("provider_tabs"), "capability advertised")
+end)
+
+
+test("extra credit card: bonus and mod sources, check code vectors", function()
+  local Share = dofile(H.PROJECT .. "/recomp_achievements/ui/share.lua")
+  local f = { game = "red", name = "ash", saveId = "abc123",
+              sources = { { id = "naviplay", earned = 12, total = 25, points = 85 },
+                          { id = "bonus", earned = 3, total = 9, points = 20 } } }
+  eq(Share.extraPayload(f), "x1|red|ASH|ABC123|bonus:3:9:20,naviplay:12:25:85", "payload sorted by id")
+  eq(Share.extraCode(f), "G519-TP8B", "code vector (shared with Python and JS)")
+  eq(Share.extraLine(f.sources[2]), "bonus 3/9 20", "card line")
+  -- from a real engine: the sandbox's achievements and this mod's bonus ones
+  local env = H.boot(BOTH)
+  env:newGame(); env:frame()
+  local Browser = dofile(H.PROJECT .. "/recomp_achievements/ui/browser.lua")
+  local lines = Browser.extraLines({ name = "ASH", saveId = "ABC123", code = "G519-TP8B", sources = f.sources })
+  check(lines[1] == "EXTRA CREDIT" and lines[6] == "naviplay 12/25 85", "page lines")
+  check(#lines <= 15, "fits the classic box")
 end)
 
 print(("\n%d passed, %d failed"):format(passed, failed))

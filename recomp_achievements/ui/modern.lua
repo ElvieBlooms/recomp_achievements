@@ -446,14 +446,15 @@ function Modern.newScreen(deps)
     if not st.settled then st.settled = true return end
     local function pressed(b) return input:wasPressed(b) end
     if st.modal then
+      -- pages: 1 leaderboard card, 2 extra credit, 3 about
       if pressed("b") or pressed("a") or pressed("select") or pressed("start") then st.modal = nil
-      elseif pressed("right") then st.modal = 2
-      elseif pressed("left") then st.modal = 1 end
+      elseif pressed("right") and Share then st.modal = math.min(3, st.modal + 1)
+      elseif pressed("left") and Share then st.modal = math.max(1, st.modal - 1) end
       return
     end
     if pressed("b") or pressed("start") then st.closing = true return end
     if pressed("select") then
-      st.modal = Share and 1 or 2
+      st.modal = Share and 1 or 3
       if st.modal == 1 then pcall(engine.dispatch, engine, "ui.card_opened", {}) end
       return
     end
@@ -725,7 +726,7 @@ function Modern.newScreen(deps)
     G.pop()
   end
 
-  -- SELECT: the leaderboard card (page 1) and the credits (page 2).
+  -- SELECT: the leaderboard card (page 1), extra credit (2), credits (3).
   function self:drawModal(x0, y0, W, H, u, accent)
     local fBody, fSmall, fTiny = font(5.6 * u), font(4.6 * u), font(4 * u)
     rrect("fill", x0, y0, W, H, 0, C.backdrop, 0.78)
@@ -736,10 +737,10 @@ function Modern.newScreen(deps)
     local ip = 6 * u
     local x, y = mx + ip, my + ip
     -- tabs
-    local tabs = Share and { "Leaderboard card", "About" } or { "About" }
+    local tabs = Share and { "Leaderboard card", "Extra credit", "About" } or { "About" }
     local tx = x
     for i, label in ipairs(tabs) do
-      local active = (Share and i or 2) == st.modal
+      local active = (Share and i or 3) == st.modal
       text(fSmall, label, tx, y, active and C.text or C.faint)
       if active then rrect("fill", tx, y + fSmall:getHeight() + 0.8 * u, fSmall:getWidth(label), 0.8 * u, 0.4 * u, accent) end
       tx = tx + fSmall:getWidth(label) + 6 * u
@@ -769,6 +770,44 @@ function Modern.newScreen(deps)
         for _, line in ipairs(wrap(fTiny, "Only achievements from the RetroAchievements list count. Enter these at " ..
             (deps.boardUrl or "") .. " or with /score on Discord.", iw)) do
           if y + fTiny:getHeight() > stop then break end
+          text(fTiny, line, x, y, C.muted); y = y + fTiny:getHeight()
+        end
+      end
+    elseif st.modal == 2 and Share then
+      local ok, card = pcall(Share.extraCard, engine)
+      if not ok or not card then
+        text(fBody, "Load a save first.", x, y, C.muted)
+      else
+        local labelW = fSmall:getWidth("Extra code") + 6 * u
+        local function field(label, value, col)
+          text(fSmall, label, x, y + (fBody:getHeight() - fSmall:getHeight()) / 2, C.faint)
+          text(fBody, value, x + labelW, y, col or C.text)
+          y = y + fBody:getHeight() + 1.4 * u
+        end
+        field("Trainer", tostring(card.name))
+        field("Save ID", card.saveId)
+        y = y + 1.5 * u
+        local stop = my + mh - ip - fTiny:getHeight() * 5 - 3 * u
+        if #card.sources == 0 then
+          text(fSmall, "No bonus or mod achievements here yet.", x, y, C.muted)
+          y = y + fSmall:getHeight() + 1.4 * u
+        end
+        for i, src in ipairs(card.sources) do
+          if y + fBody:getHeight() > stop then
+            text(fTiny, ("…and %d more"):format(#card.sources - i + 1), x, y, C.muted)
+            y = y + fTiny:getHeight() + 1 * u
+            break
+          end
+          text(fBody, Share.extraLine(src), x, y, C.text)
+          if src.label and src.label:lower() ~= src.id then
+            textRight(fTiny, src.label, x + iw, y + (fBody:getHeight() - fTiny:getHeight()) / 2, C.faint)
+          end
+          y = y + fBody:getHeight() + 0.8 * u
+        end
+        y = y + 1.5 * u
+        field("Extra code", card.code, accent)
+        for _, line in ipairs(wrap(fTiny, ("%d point%s from %d achievement%s. For the Extra Credit board (bonus and mod achievements): enter each line above with /extra on Discord, or the Extra Credit form at %s."):format(card.points, card.points == 1 and "" or "s", card.earned, card.earned == 1 and "" or "s", deps.boardUrl or ""), iw)) do
+          if y + fTiny:getHeight() > my + mh - ip - fTiny:getHeight() * 2 - 3 * u then break end
           text(fTiny, line, x, y, C.muted); y = y + fTiny:getHeight()
         end
       end

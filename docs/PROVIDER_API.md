@@ -118,6 +118,12 @@ Anyone can read any achievement:
 `ach.list({ source = "core", unlocked = true })`, `ach.totals()` and
 `ach.currentGame()`.
 
+**Extra Credit.** Your achievements don't count on the main leaderboard,
+but they do on Extra Credit: the card's Extra Credit page has a line for
+your mod, keyed by your mod id (`naviplay 12/25 85`), and the site and
+Discord bot keep a board for it. Point values are yours to choose (0–100
+each); keep them sensible, since players compare them.
+
 Since 1.1.0 (check with `ach.supports("leaderboard_card")`):
 `ach.officialTotals()` returns `{ earned, total, points, maxPoints }` for
 the RetroAchievements lists only, and `ach.leaderboardCard()`

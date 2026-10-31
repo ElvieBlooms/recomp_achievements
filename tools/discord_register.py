@@ -51,7 +51,23 @@ COMMANDS = [
     dict(WHERE, name="check", type=1,
          description="Show the top 3 on the leaderboard for a game",
          options=[{"type": 3, "name": "game", "description": "Which game", "required": True,
-                   "choices": GAME_CHOICES}]),
+                   "choices": GAME_CHOICES},
+                  {"type": 3, "name": "extra", "required": False, "max_length": 48,
+                   "description": "Extra Credit board: all, bonus, or a mod's name from the page"}]),
+    dict(WHERE, name="extra", type=1,
+         description="Put your Extra Credit score (bonus and mod achievements) on the leaderboard",
+         options=[
+             {"type": 3, "name": "game", "description": "GAME on the card", "required": True,
+              "choices": GAME_CHOICES},
+             {"type": 3, "name": "name", "description": "TRAINER on the Extra Credit page",
+              "required": True, "max_length": 12},
+             {"type": 3, "name": "save_id", "description": "SAVE ID on the page",
+              "required": True, "min_length": 6, "max_length": 6},
+             {"type": 3, "name": "lines", "required": True, "max_length": 1000,
+              "description": "Every line from the page, separated by commas: bonus 3/9 20, naviplay 12/25 85"},
+             {"type": 3, "name": "code", "description": "CODE on the page (XXXX-XXXX)",
+              "required": True, "min_length": 8, "max_length": 9},
+         ]),
 ]
 
 

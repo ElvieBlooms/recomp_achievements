@@ -2,6 +2,14 @@
 
 ## 2.6.0
 
+- **Extra Credit**, a second leaderboard for bonus and mod achievements.
+  The leaderboard card has a new page (SELECT, then RIGHT) with one line
+  per source, like `bonus 3/9 20` or `naviplay 12/25 85`, and an extra
+  code. Each game gets a combined Extra Credit board plus one per mod.
+- Submit it with the new Extra Credit form on the site or `/extra` on
+  Discord. `/check game extra:all` (or `extra:bonus`, `extra:<mod>`) posts
+  the top 3. Bot owners: deploy the worker and run the register script.
+- The site has a Main board / Extra Credit switch, with a chip per mod.
 - **A tab for each mod.** Every mod that adds achievements gets its own
   filter tab in the TROPHIES menu, next to FROM MODS. With only one such
   mod, its tab replaces FROM MODS.

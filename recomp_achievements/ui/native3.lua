@@ -87,7 +87,7 @@ function Native3.newScreen(o)
   local filterIndex, index, scroll = 1, 1, 0
   local rows, list = {}, {}
   local detail, page = nil, 1
-  local card = false               -- false, 1 (leaderboard card) or 2 (credits)
+  local card = false               -- false, 1 (leaderboard card), 2 (extra credit), 3 (credits)
   local reveal = mod.options:get("showHidden") == true
   local closing, settled = false, false
   local blink = 0
@@ -114,12 +114,12 @@ function Native3.newScreen(o)
     local function pressed(b) return input:wasPressed(b) end
     if card then
       if pressed("b") or pressed("a") or pressed("select") then card = false
-      elseif pressed("right") then card = 2
-      elseif pressed("left") and Share then card = 1 end
+      elseif pressed("right") and Share then card = math.min(3, card + 1)
+      elseif pressed("left") and Share then card = math.max(1, card - 1) end
       return
     end
     if pressed("select") then
-      card = Share and 1 or 2
+      card = Share and 1 or 3
       if card == 1 then pcall(engine.dispatch, engine, "ui.card_opened", {}) end
       return
     end
@@ -317,8 +317,53 @@ function Native3.newScreen(o)
     print(fit(G, originOf(row), TEXT_W, { small = true }), LABEL_X - 4, footer + 14, C.DARK_GRAY, { small = true })
   end
 
+  -- Text with "_" in it: the font has none, so print spaces and draw the
+  -- underscores as lines (URLs and mod ids must be typed exactly).
+  local function printU(text, x, y, colors, rgb, small)
+    small = small == nil and true or small
+    local opts = { small = small }
+    print((text:gsub("_", " ")), x, y, colors, opts)
+    local at = 1
+    while true do
+      local i = text:find("_", at, true)
+      if not i then break end
+      local x0 = x + G.Font.measure((text:sub(1, i - 1):gsub("_", " ")), opts)
+      local w = G.Font.measure(" ", opts)
+      love.graphics.setColor(rgb[1], rgb[2], rgb[3], 1)
+      love.graphics.rectangle("fill", x0, y + 15, math.max(3, w), 1)
+      love.graphics.setColor(1, 1, 1, 1)
+      at = i + 1
+    end
+  end
+
+  local function drawExtra()
+    chrome("{DPAD_LEFTRIGHT}PAGE {B_BUTTON}BACK", "EXTRA CREDIT", nil)
+    local ok, c = pcall(Share.extraCard, engine)
+    if not ok or not c then
+      print("LOAD A SAVE FIRST.", LABEL_X, ROW_Y0, C.DARK_GRAY)
+      return
+    end
+    local small = { small = true }
+    local y = ROW_Y0
+    print("TRAINER", LABEL_X - 4, y, C.DARK_GRAY, small); print(c.name, LABEL_X + 52, y, C.NORMAL, small)
+    y = y + 11
+    print("SAVE ID", LABEL_X - 4, y, C.DARK_GRAY, small); print(c.saveId, LABEL_X + 52, y, C.NORMAL, small)
+    y = y + 13
+    local maxRows = 4
+    if #c.sources == 0 then print("NOTHING HERE YET.", LABEL_X - 4, y, C.DARK_GRAY, small); y = y + 11 end
+    for i, src in ipairs(c.sources) do
+      if i > maxRows then print(("…%d MORE"):format(#c.sources - maxRows), LABEL_X - 4, y, C.DARK_GRAY, small); y = y + 11 break end
+      local line = Share.extraLine(src)
+      printU(line, LABEL_X - 4, y, C.NORMAL, PAL[2])
+      y = y + 11
+    end
+    print("CODE", LABEL_X - 4, WIN_Y + WIN_H - 12, C.DARK_GRAY, small)
+    print(c.code, LABEL_X + 52, WIN_Y + WIN_H - 12, C.BLUE, small)
+  end
+
   local function drawCard()
-    if card == 2 then
+    if card == 2 then return drawExtra() end
+    if card == 3 then
       chrome("{DPAD_LEFTRIGHT}PAGE {B_BUTTON}BACK", "ABOUT", nil)
       local y = ROW_Y0
       for i = 2, #Browser.ABOUT do
@@ -347,20 +392,8 @@ function Native3.newScreen(o)
       print(l[1], LABEL_X - 4, y, C.DARK_GRAY, { small = true })
       print(l[2], LABEL_X + 52, y, C.NORMAL, { small = true })
     end
-    -- the font has no "_": draw the URL with spaces and underline those
-    local url, ux, uy = Browser.BOARD_URL, LABEL_X - 4, WIN_Y + WIN_H - 12
-    print(url:gsub("_", " "), ux, uy, C.BLUE, { small = true })
-    local at = 1
-    while true do
-      local i = url:find("_", at, true)
-      if not i then break end
-      local x0 = ux + G.Font.measure(url:sub(1, i - 1):gsub("_", " "), { small = true })
-      local w = G.Font.measure(" ", { small = true })
-      love.graphics.setColor(PAL[8][1], PAL[8][2], PAL[8][3], 1)
-      love.graphics.rectangle("fill", x0, uy + 12, math.max(3, w), 1)
-      love.graphics.setColor(1, 1, 1, 1)
-      at = i + 1
-    end
+    -- the font has no "_": printU draws it as a line (the URL needs it)
+    printU(Browser.BOARD_URL, LABEL_X - 4, WIN_Y + WIN_H - 12, C.BLUE, PAL[8])
   end
 
   function self:draw()

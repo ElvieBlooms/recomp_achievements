@@ -8,7 +8,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import worker, { boardEmbed, checkCode, normalizeCode, parseTime, precheck, topEntries } from "../discord/worker.js";
+import worker, { boardEmbed, checkCode, extraCheckCode, extraEmbed, normalizeCode, parseExtraLines, parseTime, precheck, precheckExtra, topEntries, topExtra } from "../discord/worker.js";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 let passed = 0;
@@ -96,6 +96,62 @@ await test("/check: unknown game, and the board unreachable", async () => {
   assert.equal((await r.json()).type, 5);
   await Promise.all(c.jobs);
   assert.match(JSON.parse(calls[1].init.body).content, /Couldn't load the leaderboard/);
+});
+
+await test("Extra Credit: code matches Lua/Python, lines parse, precheck", () => {
+  assert.equal(extraCheckCode("red", "ash", "abc123", [["naviplay", 12, 25, 85], ["bonus", 3, 9, 20]]), "G519-TP8B");
+  assert.deepEqual(parseExtraLines("bonus 3/9 20; NaviPlay 12 / 25 85pts"), [["bonus", 3, 9, 20], ["naviplay", 12, 25, 85]]);
+  assert.match(parseExtraLines("bonus 3/9 999"), /can't come from/);
+  assert.match(parseExtraLines("hi"), /isn't a line/);
+  const ok = { game: "ruby", name: "MAY", save_id: "abc123", lines: "bonus 3/9 20, naviplay 12/25 85",
+               code: extraCheckCode("ruby", "MAY", "ABC123", [["bonus", 3, 9, 20], ["naviplay", 12, 25, 85]]) };
+  assert.equal(precheckExtra(ok), null);
+  assert.match(precheckExtra({ ...ok, lines: "bonus 3/9 21, naviplay 12/25 85" }), /extra code/);
+});
+
+await test("/extra dispatches discord-extra; Python accepts it", async () => {
+  const lines = "bonus 3/9 20, naviplay 12/25 85";
+  const code = extraCheckCode("ruby", "MAY", "ABC123", [["bonus", 3, 9, 20], ["naviplay", 12, 25, 85]]);
+  const calls = stubFetch(() => new Response(null, { status: 204 }));
+  const c = ctx();
+  const r = await worker.fetch(await signed({ type: 2, application_id: "1", token: "tok", user: { id: "42" },
+    data: { name: "extra", options: [{ name: "game", value: "ruby" }, { name: "name", value: "MAY" },
+      { name: "save_id", value: "ABC123" }, { name: "lines", value: lines }, { name: "code", value: code }] } }), ENV, c);
+  assert.match((await r.json()).data.content, /Checking your Extra Credit/);
+  await Promise.all(c.jobs);
+  const sent = JSON.parse(calls[0].init.body);
+  assert.equal(sent.event_type, "discord-extra");
+  assert.equal(sent.client_payload.extra.extra, lines);
+  assert.equal(sent.client_payload.score, undefined);
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "extra-"));
+  const ev = path.join(dir, "ev.json");
+  fs.writeFileSync(ev, JSON.stringify({ action: "discord-extra", client_payload: sent.client_payload }));
+  const out = execFileSync("python3", [path.join(ROOT, "tools", "leaderboard_ingest.py"), "--event", ev,
+    "--board", path.join(dir, "board.json"), "--reply", path.join(dir, "reply.md")], { encoding: "utf8" });
+  assert.match(out, /added extra/);
+});
+
+await test("/check extra: combined and per-mod embeds", async () => {
+  const board = { games: {}, extra: { ruby: { entries: [
+    { name: "MAY", points: 105, earned: 15, first: "1", sources: { bonus: { earned: 3, total: 9, points: 20 }, naviplay: { earned: 12, total: 25, points: 85 } } },
+    { name: "BRENDAN", points: 50, earned: 9, first: "2", sources: { bonus: { earned: 9, total: 9, points: 50 } } } ] } } };
+  const all = extraEmbed("ruby", board.extra.ruby, null, ENV.BOARD_URL);
+  assert.match(all.title, /Extra Credit: top 2/);
+  assert.match(all.description.split("\n")[0], /MAY\*\*  105 pts · 15 achievements/);
+  const bonus = extraEmbed("ruby", board.extra.ruby, "bonus", ENV.BOARD_URL);
+  assert.match(bonus.description.split("\n")[0], /BRENDAN\*\*  50 pts · 9\/9/, "per-mod board ranks that mod's points");
+  assert.equal(bonus.url, "https://elvieblooms.github.io/recomp_achievements/#ruby/extra/bonus");
+  assert.equal(topExtra(board.extra.ruby.entries, "naviplay").count, 1);
+  const calls = stubFetch((url) => url.includes("leaderboard.json")
+    ? new Response(JSON.stringify(board), { status: 200 }) : new Response(null, { status: 200 }));
+  const c = ctx();
+  await worker.fetch(await signed({ type: 2, application_id: "1", token: "tok",
+    data: { name: "check", options: [{ name: "game", value: "ruby" }, { name: "extra", value: "NaviPlay" }] } }), ENV, c);
+  await Promise.all(c.jobs);
+  assert.match(JSON.parse(calls[1].init.body).embeds[0].title, /naviplay: top 1/);
+  const r = await worker.fetch(await signed({ type: 2, data: { name: "check",
+    options: [{ name: "game", value: "ruby" }, { name: "extra", value: "no spaces allowed" }] } }), ENV, ctx());
+  assert.match((await r.json()).data.content, /extra:/);
 });
 
 await test("check code matches the Python and Lua vectors", () => {

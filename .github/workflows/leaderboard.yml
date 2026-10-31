@@ -1,7 +1,9 @@
 # Adds leaderboard submissions to docs/leaderboard.json, which the GitHub
 # Pages site shows.  Submissions arrive two ways:
-#   * an issue made from the "Submit a leaderboard score" form
+#   * an issue made from the "Submit a leaderboard score" or "Submit an
+#     Extra Credit score" form
 #   * the Discord bot (discord/worker.js), as a repository_dispatch event
+#     (/score -> discord-score, /extra -> discord-extra)
 # Nothing here contacts RetroAchievements.
 name: Leaderboard
 
@@ -9,7 +11,7 @@ on:
   issues:
     types: [opened, edited, reopened]
   repository_dispatch:
-    types: [discord-score]
+    types: [discord-score, discord-extra]
 
 permissions:
   contents: write
@@ -25,7 +27,9 @@ jobs:
     if: >-
       github.event_name == 'repository_dispatch' ||
       contains(github.event.issue.labels.*.name, 'score') ||
-      startsWith(github.event.issue.title, '[Score]')
+      contains(github.event.issue.labels.*.name, 'extra') ||
+      startsWith(github.event.issue.title, '[Score]') ||
+      startsWith(github.event.issue.title, '[Extra]')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

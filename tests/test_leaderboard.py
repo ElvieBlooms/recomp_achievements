@@ -296,6 +296,92 @@ class Ingest(unittest.TestCase):
         self.assertIn("maintainer", reply)
 
 
+EXTRA = [("bonus", 3, 9, 20), ("naviplay", 12, 25, 85)]
+
+
+def extra_body(game="Ruby", name="MAY", save="ABC123", lines=None, code=None, sources=EXTRA):
+    if lines is None:
+        lines = "\n".join(f"{i} {e}/{t} {p}" for i, e, t, p in sources)
+    if code is None:
+        code = L.extra_check_code(game.lower(), name, save, sources)
+    return (f"### Game\n\n{game}\n\n### Trainer name\n\n{name}\n\n### Save ID\n\n{save}\n\n"
+            f"### Extra credit lines\n\n{lines}\n\n### Extra code\n\n{code}\n")
+
+
+class ExtraCredit(unittest.TestCase):
+    setUp, run_ingest, run_event, entries = Ingest.setUp, Ingest.run_ingest, Ingest.run_event, Ingest.entries
+
+    def extra(self, game="ruby"):
+        with open(self.board, encoding="utf-8") as f:
+            return json.load(f)["extra"][game]["entries"]
+
+    def test_vector_matches_lua_and_js(self):
+        self.assertEqual(L.extra_check_code("red", "ash", "abc123", [("naviplay", 12, 25, 85), ("bonus", 3, 9, 20)]),
+                         "G519-TP8B")
+
+    def test_issue_added_and_ranked(self):
+        rc, reply = self.run_ingest(extra_body())
+        self.assertEqual(rc, 0, reply)
+        self.assertIn("Extra Credit", reply)
+        e = self.extra()[0]
+        self.assertEqual((e["points"], e["earned"]), (105, 15))
+        self.assertEqual(e["sources"]["naviplay"], {"earned": 12, "total": 25, "points": 85})
+        # a second player with fewer points goes below; the main board is untouched
+        src = [("bonus", 9, 9, 50)]
+        rc, _ = self.run_ingest(extra_body(name="BRENDAN", save="ZZZ999", sources=src), author="bob", issue=2)
+        self.assertEqual(rc, 0)
+        self.assertEqual([x["name"] for x in self.extra()], ["MAY", "BRENDAN"])
+        self.assertEqual(self.entries("ruby"), [])
+
+    def test_lines_can_be_comma_separated_on_one_line(self):
+        rc, reply = self.run_ingest(extra_body(lines="bonus 3/9 20, NaviPlay 12 / 25 85pts"))
+        self.assertEqual(rc, 0, reply)
+
+    def test_typo_and_impossible_lines(self):
+        rc, reply = self.run_ingest(extra_body(lines="bonus 3/9 21"))
+        self.assertEqual(rc, 1)
+        self.assertIn("extra code", reply)
+        bad = [("bonus", 3, 9, 301)]
+        rc, reply = self.run_ingest(extra_body(sources=bad))
+        self.assertEqual(rc, 1)
+        self.assertIn("can't come from", reply)
+        rc, reply = self.run_ingest(extra_body(lines="hello there"))
+        self.assertEqual(rc, 1)
+        self.assertIn("isn't a line", reply)
+
+    def test_owner_and_update(self):
+        self.assertEqual(self.run_ingest(extra_body())[0], 0)
+        more = [("bonus", 9, 9, 50), ("naviplay", 12, 25, 85)]
+        self.assertEqual(self.run_ingest(extra_body(sources=more), issue=3)[0], 0)
+        self.assertEqual(self.extra()[0]["points"], 135)
+        rc, reply = self.run_ingest(extra_body(sources=more), author="mallory", issue=4)
+        self.assertEqual(rc, 1)
+        self.assertIn("another account", reply)
+
+    def test_discord_extra_event(self):
+        ev = os.path.join(self.dir, "ev.json")
+        lines = "bonus 3/9 20, naviplay 12/25 85"
+        with open(ev, "w", encoding="utf-8") as f:
+            json.dump({"action": "discord-extra", "client_payload": {
+                "extra": {"game": "ruby", "name": "MAY", "save_id": "ABC123", "extra": lines,
+                          "code": L.extra_check_code("ruby", "MAY", "ABC123", EXTRA)},
+                "owner": "ab" * 16, "app_id": "1", "token": "t" * 40}}, f)
+        rc, reply = self.run_event(ev)
+        self.assertEqual(rc, 0, reply)
+        self.assertIn("/extra", reply)
+        self.assertEqual(self.extra()[0]["via"], "discord")
+
+    def test_workflow_and_form(self):
+        with open(os.path.join(ROOT, ".github", "workflows", "leaderboard.yml")) as f:
+            wf = f.read()
+        self.assertIn("discord-extra", wf)
+        self.assertIn("'[Extra]'", wf)
+        with open(os.path.join(ROOT, ".github", "ISSUE_TEMPLATE", "extra.yml")) as f:
+            form = f.read()
+        for label in L.EXTRA_FIELDS.values():
+            self.assertIn(f"label: {label}", form)
+
+
 class DiscordReply(unittest.TestCase):
     """tools/discord_reply.py against a fake Discord API."""
 

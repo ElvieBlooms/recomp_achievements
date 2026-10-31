@@ -10,8 +10,11 @@
 // Commands (registered by tools/discord_register.py):
 //   /score game name points earned save_id code [time]
 //   /leaderboard            link to the page
-//   /check game             the top 3 for a game, posted as a small embed
-//                           (read from the public leaderboard.json)
+//   /check game [extra]     the top 3 for a game, posted as a small embed
+//                           (read from the public leaderboard.json);
+//                           extra:all for Extra Credit, extra:<mod> for one mod
+//   /extra game name save_id lines code
+//                           an Extra Credit score (bonus and mod achievements)
 //
 // Secrets (wrangler secret put ...):
 //   DISCORD_PUBLIC_KEY  from the Discord developer portal
@@ -69,6 +72,52 @@ export function checkCode(game, name, points, earned, saveId, minutes = null) {
   const bytes = new TextEncoder().encode(p);
   const s = base32(hash(bytes, 5381) % 1048576, 4) + base32(hash(bytes, 52711) % 1048576, 4);
   return s.slice(0, 4) + "-" + s.slice(4);
+}
+
+// Extra Credit: "bonus 3/9 20" lines from the card's Extra Credit page.
+export function extraCheckCode(game, name, saveId, sources) {
+  const parts = sources.map(([i, e, t, p]) => `${i}:${e}:${t}:${p}`).sort();
+  const p = ["x1", game, normName(name), String(saveId).toUpperCase(), parts.join(",")].join("|");
+  const bytes = new TextEncoder().encode(p);
+  const s = base32(hash(bytes, 5381) % 1048576, 4) + base32(hash(bytes, 52711) % 1048576, 4);
+  return s.slice(0, 4) + "-" + s.slice(4);
+}
+
+// -> [[id, earned, total, points], ...] or a string saying what's wrong.
+// Same rules as parse_extra_lines in tools/leaderboard_ingest.py.
+export function parseExtraLines(raw) {
+  const out = [], seen = new Set();
+  for (let chunk of String(raw || "").split(/[\n,;]+/)) {
+    chunk = chunk.trim().replace(/^`+|`+$/g, "").trim();
+    if (!chunk) continue;
+    const m = chunk.match(/^([A-Za-z0-9_-]{1,48})\s+(\d{1,3})\s*\/\s*(\d{1,3})\s+(\d{1,5})(?:\s*p(?:ts|oints)?)?$/i);
+    if (!m) return `'${chunk.slice(0, 40)}' isn't a line from the page. Each looks like 'bonus 3/9 20'.`;
+    const id = m[1].toLowerCase(), e = +m[2], t = +m[3], p = +m[4];
+    if (seen.has(id)) return `'${id}' is listed twice.`;
+    seen.add(id);
+    if (t === 0 || t > 200 || e > t) return `'${id}': achievements earned and total don't fit together.`;
+    if (p > e * 100 || (p > 0 && e === 0)) return `'${id}': ${p} points can't come from ${e} achievements.`;
+    out.push([id, e, t, p]);
+  }
+  if (!out.length) return "Add the lines from the Extra Credit page, like 'bonus 3/9 20'.";
+  if (out.length > 20) return "At most 20 lines.";
+  return out;
+}
+
+export function precheckExtra(o) {
+  const game = String(o.game || "").toLowerCase();
+  if (!GAMES[game]) return "Pick the game from the list.";
+  const name = String(o.name || "").trim();
+  if (!name || [...name].length > 12) return "The trainer name must be 1 to 12 characters.";
+  const saveId = normalizeSaveId(o.save_id);
+  if (!/^[0-9A-Z]{6}$/.test(saveId)) return "The save ID is the 6 characters shown on the page.";
+  const sources = parseExtraLines(o.lines);
+  if (typeof sources === "string") return sources;
+  if (normalizeCode(o.code || "") !== extraCheckCode(game, name, saveId, sources)) {
+    return "The extra code doesn't match the lines. Check each line, the name and the save ID " +
+      "against the Extra Credit page (START > TROPHIES > SELECT, then RIGHT) and try again.";
+  }
+  return null;
 }
 
 export function normalizeCode(code) {
@@ -160,19 +209,26 @@ export function precheck(o) {
   return null;
 }
 
-async function dispatch(env, interaction, o) {
+async function dispatch(env, interaction, o, kind = "score") {
   const user = interaction.user || (interaction.member && interaction.member.user) || {};
   const payload = {
-    score: {
-      game: String(o.game).toLowerCase(), name: String(o.name).trim(),
-      points: String(o.points), earned: String(o.earned),
-      save_id: normalizeSaveId(o.save_id), code: normalizeCode(o.code),
-      time: o.time == null ? "" : String(o.time).trim(),
-    },
     owner: await ownerHash(env.OWNER_SALT, user.id),
     app_id: interaction.application_id,
     token: interaction.token,
   };
+  if (kind === "extra") {
+    payload.extra = {
+      game: String(o.game).toLowerCase(), name: String(o.name).trim(),
+      save_id: normalizeSaveId(o.save_id), extra: String(o.lines || ""), code: normalizeCode(o.code),
+    };
+  } else {
+    payload.score = {
+      game: String(o.game).toLowerCase(), name: String(o.name).trim(),
+      points: String(o.points), earned: String(o.earned),
+      save_id: normalizeSaveId(o.save_id), code: normalizeCode(o.code),
+      time: o.time == null ? "" : String(o.time).trim(),
+    };
+  }
   const r = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/dispatches`, {
     method: "POST",
     headers: {
@@ -182,7 +238,7 @@ async function dispatch(env, interaction, o) {
       "User-Agent": "recomp-achievements-discord-bot",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ event_type: "discord-score", client_payload: payload }),
+    body: JSON.stringify({ event_type: kind === "extra" ? "discord-extra" : "discord-score", client_payload: payload }),
   });
   if (r.status !== 204) throw new Error("GitHub said " + r.status);
 }
@@ -236,6 +292,43 @@ export function boardEmbed(game, slot, boardUrl) {
   };
 }
 
+// Extra Credit ranking (rank_extra in tools/leaderboard_ingest.py): most
+// points, then most achievements, then the earliest.  `source` narrows
+// it to one mod's line ("bonus", "naviplay"), or null for the total.
+export function topExtra(entries, source = null, n = 3) {
+  const list = [];
+  for (const e of Array.isArray(entries) ? entries : []) {
+    if (!e || typeof e.name !== "string") continue;
+    if (source) {
+      const s = e.sources && e.sources[source];
+      if (!s) continue;
+      list.push({ name: e.name, points: s.points | 0, earned: s.earned | 0, total: s.total | 0, first: e.first });
+    } else {
+      list.push({ name: e.name, points: e.points | 0, earned: e.earned | 0, first: e.first });
+    }
+  }
+  list.sort((a, b) => (b.points - a.points) || (b.earned - a.earned)
+    || String(a.first || "").localeCompare(String(b.first || "")));
+  return { top: list.slice(0, n), count: list.length };
+}
+
+export function extraEmbed(game, slot, source, boardUrl) {
+  const { top, count } = topExtra(slot && slot.entries, source);
+  const medals = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
+  const lines = top.map((e, i) => `${medals[i]} **${plain(e.name)}**  ${e.points} pts \u00b7 `
+    + (source ? `${e.earned}/${e.total}` : `${e.earned} achievements`));
+  const base = String(boardUrl || "").replace(/#.*$/, "");
+  const what = source ? (source === "bonus" ? "Bonus" : source) : "Extra Credit";
+  return {
+    title: `${GAMES[game]} \u00b7 ${what}: top ${top.length || 3}`,
+    url: base ? `${base}#${game}/extra${source ? "/" + source : ""}` : undefined,
+    color: COLORS[game],
+    description: lines.length ? lines.join("\n")
+      : (source ? `No Extra Credit scores for ${what} yet.` : "No Extra Credit scores yet. Be the first with `/extra`!"),
+    footer: { text: count === 1 ? "1 trainer on this board" : `${count} trainers on this board` },
+  };
+}
+
 async function loadBoard(env) {
   const base = String(env.BOARD_URL || "").replace(/#.*$/, "").replace(/\/?$/, "/");
   const r = await fetch(`${base}leaderboard.json?t=${Date.now()}`, {
@@ -245,11 +338,16 @@ async function loadBoard(env) {
   return r.json();
 }
 
-async function postCheck(env, interaction, game) {
+async function postCheck(env, interaction, game, extra = null) {
   let body;
   try {
     const board = await loadBoard(env);
-    body = { embeds: [boardEmbed(game, board.games && board.games[game], env.BOARD_URL)] };
+    if (extra) {
+      const source = extra === "all" ? null : extra;
+      body = { embeds: [extraEmbed(game, board.extra && board.extra[game], source, env.BOARD_URL)] };
+    } else {
+      body = { embeds: [boardEmbed(game, board.games && board.games[game], env.BOARD_URL)] };
+    }
   } catch (e) {
     body = { content: "Couldn't load the leaderboard right now. Please try again in a few minutes." };
   }
@@ -287,11 +385,28 @@ export default {
         return say(`The leaderboard: ${env.BOARD_URL}\nSubmit with \`/score\` and the card from START > TROPHIES > SELECT.`);
       }
       if (name === "check") {
-        const game = String(options(interaction).game || "").toLowerCase();
+        const o = options(interaction);
+        const game = String(o.game || "").toLowerCase();
         if (!GAMES[game]) return say("Pick the game from the list.");
         if (!env.BOARD_URL) return say("The bot isn't set up yet. Please tell the maintainer.");
-        ctx.waitUntil(postCheck(env, interaction, game));
+        let extra = o.extra == null ? null : String(o.extra).trim().toLowerCase();
+        if (extra === "") extra = null;
+        if (extra && extra !== "all" && !/^[a-z0-9_-]{1,48}$/.test(extra)) {
+          return say("extra: is `all`, `bonus`, or a mod's name as it appears on the Extra Credit page.");
+        }
+        ctx.waitUntil(postCheck(env, interaction, game, extra));
         return json({ type: 5 }); // "thinking…", then the embed replaces it (public)
+      }
+      if (name === "extra") {
+        const o = options(interaction);
+        const problem = precheckExtra(o);
+        if (problem) return say("Couldn't add this Extra Credit score: " + problem);
+        if (!env.GITHUB_TOKEN || !env.GITHUB_REPO || !env.OWNER_SALT) {
+          return say("The bot isn't set up yet. Please tell the maintainer.");
+        }
+        ctx.waitUntil(dispatch(env, interaction, o, "extra").catch(() =>
+          editReply(interaction, "Couldn't reach the leaderboard right now. Please try again in a few minutes.")));
+        return say("Checking your Extra Credit score… this message will update in a minute or two.");
       }
       if (name === "score") {
         const o = options(interaction);
