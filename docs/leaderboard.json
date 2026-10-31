@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-10-30T23:26:23Z",
+ "updated": "2026-10-31T02:48:04Z",
  "banned": [],
  "games": {
   "red": {
@@ -64,7 +64,19 @@
    "total": 128
   },
   "emerald": {
-   "entries": [],
+   "entries": [
+    {
+     "name": "ELVIE",
+     "points": 1724,
+     "earned": 148,
+     "saveId": "0YSPM2",
+     "time": 59950,
+     "owner": "discord:19f7e31d3cc343740b10454a66371bc1",
+     "via": "discord",
+     "date": "2026-10-31T02:48:04Z",
+     "first": "2026-10-31T02:48:04Z"
+    }
+   ],
    "title": "Pokemon Emerald",
    "maxPoints": 2086,
    "total": 197
