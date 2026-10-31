@@ -376,7 +376,7 @@ test("browser: open from START, filter, details, hidden, close", function()
   check(H.screenHas("EARNED"), "back to list")
 
   -- BONUS filter holds this mod's own achievements, hidden ones masked
-  for _ = 1, 4 do env:press("right") end
+  for _ = 1, 5 do env:press("right") end
   env:draw()
   check(H.screenHas("BONUS"), "bonus filter")
   local hidden = false
@@ -441,7 +441,7 @@ test("reference view lists RA entries; only tracked ones count", function()
   for _, item in ipairs(env:startMenu()) do
     if (item.label == "TROPHIES" or item.label == "TROPHY") then item.onSelect() end
   end
-  for _ = 1, 8 do env:press("right") end
+  for _ = 1, 9 do env:press("right") end
   env:draw()
   check(H.screenHas("RA REFERENCE"), "reference filter")
   check(H.screenHas("Free Points"), "catalog entry listed")
@@ -1329,6 +1329,39 @@ test("Ruby/Sapphire: villain fights follow pokeruby's version.inc", function()
       dex = { caught = {}, seen = {} }, party = {}, storage = { boxes = {}, items = {} }, bag = { pockets = {} } }):facts()
     eq(byId[id].check(f), true, id .. " reads " .. name)
   end
+end)
+
+
+test("browser: MISSABLE filter holds RA's missable entries and says so", function()
+  local env = H.boot(BOTH)
+  env:newGame(); env:frame()
+  local Browser = dofile(H.PROJECT .. "/recomp_achievements/ui/browser.lua")
+  local Modern = dofile(H.PROJECT .. "/recomp_achievements/ui/modern.lua")
+  local ids = {}
+  for _, f in ipairs(Browser.FILTERS) do ids[#ids + 1] = f.id end
+  eq(table.concat(ids, ","), "all,earned,missing,progress,missable,official,bonus,mods,archived,reference", "filter order")
+  check(Modern.FILTER_LABELS.missable == "Missable", "modern label")
+  local rows = ach(env).list({})
+  local cat = dofile(H.PROJECT .. "/recomp_achievements/catalog/red.lua")
+  local want = 0
+  for _, e in ipairs(cat.entries) do if e.type == "missable" then want = want + 1 end end
+  check(want > 0, "Red has missables")
+  -- open the menu and step to MISSABLE
+  for _, item in ipairs(env:startMenu()) do
+    if item.label == "TROPHIES" or item.label == "TROPHY" then item.onSelect() end
+  end
+  for _ = 1, 4 do env:press("right") end
+  env:draw()
+  check(H.screenHas("MISSABLE"), "filter label")
+  env:press("a"); env:draw()
+  check(H.screenHas("RA LIST: MISSABLE"), "details say missable")
+  env:press("b"); env:press("b")
+  -- the view model: every missable rule row passes, nothing else
+  local n = 0
+  for _, r in ipairs(rows) do
+    if r.raType == "missable" then n = n + 1 end
+  end
+  eq(n, want, "every Red missable is a row with raType")
 end)
 
 print(("\n%d passed, %d failed"):format(passed, failed))

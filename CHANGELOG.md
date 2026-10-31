@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.4.1
+
+- New **Missable** filter in the TROPHIES menu: every achievement
+  RetroAchievements tags as missable (239 across the eleven games), so you
+  can see what to grab before it's gone. Locked ones also say "Missable"
+  in the list and on their details.
+
 ## 2.4.0
 
 - **Ruby and Sapphire.** All 49 entries of each version's RetroAchievements

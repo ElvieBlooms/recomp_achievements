@@ -129,7 +129,7 @@ Modern.GAME_NAMES = {
 
 -- Filter names for this menu (same ids as Browser's filters).
 Modern.FILTER_LABELS = {
-  all = "All", earned = "Earned", missing = "Missing", progress = "In progress",
+  all = "All", earned = "Earned", missing = "Missing", progress = "In progress", missable = "Missable",
   official = "RA list", bonus = "Bonus", mods = "From mods", archived = "Archived",
   reference = "RA reference",
 }
@@ -248,7 +248,8 @@ function Modern.origin(row)
   if row.reference then return "RetroAchievements list entry (reference)" end
   if row.source == "core" and row.official then
     local by = row.author and row.author ~= "" and (" · by " .. row.author) or ""
-    return "From the RetroAchievements list" .. by
+    local miss = row.raType == "missable" and " · Missable" or ""
+    return "From the RetroAchievements list" .. miss .. by
   end
   if row.source == "core" then return "Bonus achievement (not from RetroAchievements)" end
   return "Added by the " .. tostring(row.providerName or row.provider or "?") .. " mod"
@@ -625,6 +626,7 @@ function Modern.newScreen(deps)
         local sub
         if row.unlocked and row.at then sub = "Earned " .. (dateOf(row.at) or "")
         elseif row.archived then sub = "Archived · mod not loaded"
+        elseif row.raType == "missable" then sub = "Missable · " .. tostring(shown.description or "")
         else sub = shown.description end
         text(fTiny, Modern.ellipsize(fTiny, sub, subW), tx, sy, C.faint)
       end

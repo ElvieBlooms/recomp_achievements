@@ -33,7 +33,7 @@ and each achievement's author, and are credited in the game. See
 
 ## Install
 
-1. Download `recomp_achievements-2.4.0.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-2.4.1.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
 2. Start Red, Blue, Yellow, Gold, Silver, Crystal, Ruby, Sapphire, Emerald,
    FireRed or LeafGreen (Gen1Recomp 0.3.97 or newer).
@@ -53,14 +53,17 @@ on-screen pad).
 | In the menu | |
 |---|---|
 | UP / DOWN | move (hold to scroll) |
-| LEFT / RIGHT | change filter: All, Earned, Missing, In progress, RA list, Bonus, From mods, Archived |
+| LEFT / RIGHT | change filter: All, Earned, Missing, In progress, Missable, RA list, Bonus, From mods, Archived |
 | A | switch the details between the description and how it's checked |
 | SELECT | leaderboard card (RIGHT for About) |
 | B / START | back |
 
 A gold disc with a tick means earned, a ring means locked, a partly green
 ring shows progress, and a slashed ring means archived (earned with a mod
-that isn't loaded right now). Prefer the original Game Boy text-box look?
+that isn't loaded right now). **Missable** lists the achievements
+RetroAchievements tags as missable, the ones a playthrough can lock you
+out of; locked ones say "Missable" in the list too. Prefer the original
+Game Boy text-box look?
 Turn on **CLASSIC MENU**.
 
 Options are in the Mods manager:

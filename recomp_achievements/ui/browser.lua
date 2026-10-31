@@ -95,6 +95,7 @@ local FILTERS = {
   { id = "earned",   label = "EARNED" },
   { id = "missing",  label = "MISSING" },
   { id = "progress", label = "IN PROGRESS" },
+  { id = "missable", label = "MISSABLE" },
   { id = "official", label = "RA LIST" },
   { id = "bonus",    label = "BONUS" },
   { id = "mods",     label = "FROM MODS" },
@@ -113,6 +114,8 @@ local function passes(filter, row)
   if filter == "progress" then
     return not row.unlocked and row.goal ~= nil and (row.progress or 0) > 0
   end
+  -- RetroAchievements' own "missable" tag: can be lost for good in a playthrough.
+  if filter == "missable" then return row.raType == "missable" and not row.archived end
   if filter == "official" then return row.source == "core" and row.official == true end
   if filter == "bonus" then return row.source == "core" and not row.official end
   if filter == "mods" then return row.source ~= "core" and not row.archived end
@@ -139,7 +142,7 @@ function Browser.model(engine, opts)
       rows[#rows + 1] = {
         key = "ref:" .. e.id, reference = true, title = e.title,
         description = e.description, points = e.points, author = e.author,
-        tracked = linked[e.id] ~= nil, unlocked = false, raId = e.id,
+        tracked = linked[e.id] ~= nil, unlocked = false, raId = e.id, raType = e.type,
       }
     end
   end
@@ -316,7 +319,8 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     if row.reference then
       origin, credit = "RA REFERENCE", row.author ~= "" and ("BY " .. row.author) or nil
     elseif row.source == "core" and row.official then
-      origin, credit = "FROM THE RA LIST", row.author and row.author ~= "" and ("BY " .. row.author) or nil
+      origin = row.raType == "missable" and "RA LIST: MISSABLE" or "FROM THE RA LIST"
+      credit = row.author and row.author ~= "" and ("BY " .. row.author) or nil
     elseif row.source == "core" then
       origin = "BONUS (NOT RA)"
     else
