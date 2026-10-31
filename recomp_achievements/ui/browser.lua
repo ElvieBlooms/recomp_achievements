@@ -188,6 +188,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
   local about = false -- SELECT pages: 1 = leaderboard card, 2 = credits
   local clock = 0     -- drives the selected row's title scroll
   local reveal = mod.options:get("showHidden") == true
+  local closing, settled = false, false -- see Modern's update
 
   local function rebuild()
     rows = Browser.model(engine, { reference = mod.options:get("showReference") })
@@ -202,6 +203,8 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     clock = clock + (tonumber(dt) or 1 / 60)
     local input = game.input
     if not input then return end
+    if closing then game.stack:pop() return end
+    if not settled then settled = true return end
     if about then
       if input:wasPressed("b") or input:wasPressed("a") or input:wasPressed("select") then about = false
       elseif input:wasPressed("right") then about = 2
@@ -220,7 +223,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
       return
     end
     if input:wasPressed("b") or input:wasPressed("start") then
-      game.stack:pop()
+      closing = true
       return
     end
     local before = index
@@ -416,12 +419,17 @@ end
 -- ------------------------------------------------------------------
 -- Modern (ui/modern.lua) is the default menu; the CLASSIC MENU option
 -- brings back the Game Boy text-box version above.
-function Browser.install(mod, engine, util, Text, Share, Modern)
+function Browser.install(mod, engine, util, Text, Share, Modern, Native3)
   mod.content.screens:register(Browser.SCREEN_ID, {
     new = function(game)
-      -- the classic menu draws with Gen 1's tile font, so other
-      -- generations always get the modern one
-      if Modern and (mod.generation ~= 1 or not mod.options:get("classicMenu")) then
+      -- CLASSIC MENU: the game's own look.  Gen 1 and Gen 2 draw with
+      -- their tile font and text-box frame (below); Gen 3 with its GBA
+      -- windows and font (ui/native3.lua), when the engine has them.
+      local classic = mod.options:get("classicMenu")
+      if classic and mod.generation == 3 and Native3 and Native3.available() then
+        return Native3.newScreen({ mod = mod, engine = engine, Browser = Browser, Share = Share, game = game })
+      end
+      if Modern and not (classic and (mod.generation == 1 or mod.generation == 2)) then
         return Modern.newScreen({ mod = mod, engine = engine, Browser = Browser, Share = Share,
                                   game = game, boardUrl = Browser.BOARD_URL })
       end
@@ -457,19 +465,36 @@ function Browser.install(mod, engine, util, Text, Share, Modern)
     end)
   end
 
+  local function openMenu(game)
+    local live = mod.game or game
+    local ok, err = pcall(mod.ui.push, live, Browser.SCREEN_ID)
+    if not ok then mod.log:warn("could not open achievements: %s", tostring(err)) end
+    return ok
+  end
+  Browser.openMenu = openMenu
+
+  -- OPEN TROPHIES in the Mods manager: the menu opens on top of it, and
+  -- B goes back there.
+  mod.events:on("mod.options_changed", function(ev)
+    if type(ev) == "table" and ev.mod == mod.id and ev.key == "openMenu" then
+      if engine.game then openMenu(mod.game)
+      else mod.log:info("OPEN TROPHIES: no game loaded yet") end
+    end
+  end)
+
   mod.hooks:wrap("ui.start_menu.items", function(nextFn, game, items)
     items = nextFn(game, items)
     if type(items) ~= "table" then return items end
+    if mod.options:get("startMenuEntry") == false then return items end
     mod.ui.insertBefore(items, Browser.MENU_ANCHOR, {
-      label = mod.generation == 2 and Browser.SHORT_LABEL or Browser.MENU_LABEL,
+      -- Gen 1/2 START boxes are 10 tiles and grow to the widest label + 3,
+      -- so anything over 7 letters would widen them (and push other mods'
+      -- menus around): TROPHY there, TROPHIES on Gen 3.
+      label = mod.generation == 3 and Browser.MENU_LABEL or Browser.SHORT_LABEL,
       -- Gen 2's MENU ACCOUNT help box: two lines, 9 characters at most
       -- (like its own "Your own" / "status")
       desc = { "Your", "trophies" },
-      onSelect = function()
-        local live = mod.game or game
-        local ok, err = pcall(mod.ui.push, live, Browser.SCREEN_ID)
-        if not ok then mod.log:warn("could not open achievements: %s", tostring(err)) end
-      end,
+      onSelect = function() openMenu(game) end,
     })
     return items
   end)

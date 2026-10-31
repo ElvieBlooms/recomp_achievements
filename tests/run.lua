@@ -1364,6 +1364,63 @@ test("browser: MISSABLE filter holds RA's missable entries and says so", functio
   eq(n, want, "every Red missable is a row with raType")
 end)
 
+
+test("START MENU ENTRY off hides the row; OPEN TROPHIES opens the menu from the Mods manager", function()
+  local env = H.boot(BOTH)
+  env:newGame(); env:frame()
+  local function hasRow()
+    for _, item in ipairs(env:startMenu()) do
+      if item.label == "TROPHIES" or item.label == "TROPHY" then return true end
+    end
+    return false
+  end
+  check(hasRow(), "row there by default")
+  env.loader.modOptions.recomp_achievements.startMenuEntry = false
+  check(not hasRow(), "row gone when the option is off")
+  check(env.game.stack:top() == nil, "nothing open yet")
+  -- the manager emits this when the OPEN TROPHIES row is pressed
+  env.loader.events:emit("mod.options_changed", { mod = "recomp_achievements", key = "openMenu", value = "go" })
+  local top = env.game.stack:top()
+  check(top ~= nil and top.isMenu, "menu opened")
+  env:draw()
+  check(H.screenHas("ALL"), "menu draws")
+  env:press("b")
+  check(env.game.stack:top() == nil, "B closes it")
+  -- other keys and other mods don't open it
+  env.loader.events:emit("mod.options_changed", { mod = "recomp_achievements", key = "toasts", value = false })
+  env.loader.events:emit("mod.options_changed", { mod = "someone_else", key = "openMenu", value = "go" })
+  check(env.game.stack:top() == nil, "only our OPEN TROPHIES row opens it")
+  env.loader.modOptions.recomp_achievements.startMenuEntry = true
+  check(hasRow(), "row back when turned on again")
+end)
+
+
+test("Gen 1 START row is short enough to keep the menu 10 tiles wide", function()
+  local env = H.boot(BOTH)
+  env:newGame(); env:frame()
+  local label
+  for _, item in ipairs(env:startMenu()) do
+    if item.label == "TROPHIES" or item.label == "TROPHY" then label = item.label end
+  end
+  eq(label, "TROPHY", "Gen 1 uses the short label")
+  check(#label + 3 <= 10, "fits the original box (widest label + 3 <= 10)")
+end)
+
+
+test("native Gen 3 menu: text never reads as font tokens; Gen 1 harness falls back", function()
+  local N = dofile(H.PROJECT .. "/recomp_achievements/ui/native3.lua")
+  eq(N.clean("Catch {PLAYER}'s\nMon"), "Catch (PLAYER)'s Mon", "braces and newlines")
+  local env = H.boot(BOTH)
+  env:newGame(); env:frame()
+  env.loader.modOptions.recomp_achievements.classicMenu = true
+  for _, item in ipairs(env:startMenu()) do
+    if item.label == "TROPHY" then item.onSelect() end
+  end
+  local top = env.game.stack:top()
+  check(top ~= nil and not top.native3 and not top.modern, "Gen 1 CLASSIC MENU is the text-box one")
+  env:press("b")
+end)
+
 print(("\n%d passed, %d failed"):format(passed, failed))
 H.cleanup()
 os.exit(failed == 0 and 0 or 1)

@@ -33,12 +33,12 @@ and each achievement's author, and are credited in the game. See
 
 ## Install
 
-1. Download `recomp_achievements-2.4.1.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-2.5.0.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
 2. Start Red, Blue, Yellow, Gold, Silver, Crystal, Ruby, Sapphire, Emerald,
    FireRed or LeafGreen (Gen1Recomp 0.3.97 or newer).
-3. Open the START menu and choose **TROPHIES** (**TROPHY** in Gold, Silver
-   and Crystal, whose menu is narrower).
+3. Open the START menu and choose **TROPHIES** (**TROPHY** in Gen 1 and
+   Gen 2, so their START menus keep their original width).
 
 To keep achievements in step across devices, install the mod on each one.
 Save Sync carries your progress but doesn't install mods.
@@ -62,11 +62,16 @@ A gold disc with a tick means earned, a ring means locked, a partly green
 ring shows progress, and a slashed ring means archived (earned with a mod
 that isn't loaded right now). **Missable** lists the achievements
 RetroAchievements tags as missable, the ones a playthrough can lock you
-out of; locked ones say "Missable" in the list too. Prefer the original
-Game Boy text-box look?
-Turn on **CLASSIC MENU**.
+out of; locked ones say "Missable" in the list too. Prefer the
+game's own look? Turn on
+**CLASSIC MENU**: the text box in Gen 1 and Gen 2 (in Gen 2's own frame and
+font there), and the game's own windows, font and button help bar in Gen 3.
 
 Options are in the Mods manager:
+- **OPEN TROPHIES**: press A to open the menu right from the Mods manager
+  (B takes you back there)
+- **START MENU ENTRY**: turn off to leave the START menu alone, for
+  example when another mod replaces it; use OPEN TROPHIES instead
 - **UNLOCK POPUPS**
 - **POPUP STYLE**: Modern (a banner in your theme, the default), Corner (a
   small card in the top-right corner) or Classic GB (the Game Boy text box)
@@ -80,7 +85,8 @@ Options are in the Mods manager:
   Dark, Gruvbox Light, Nord or Midnight
 - **MENU SIZE**: Full Screen (default) or Game Area (only the game's own
   screen, which keeps it clear of a phone's on-screen pad in landscape)
-- **CLASSIC MENU**: the Game Boy-style menu instead of the modern one
+- **CLASSIC MENU**: the game's own menu style instead of the modern one
+  (Gen 1 and Gen 2 text box, Gen 3 windows)
 - **SHOW RA REFERENCE**: adds a page listing every RA entry for the game
 - **DEBUG LOG**
 

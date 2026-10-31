@@ -53,6 +53,7 @@ return function(mod)
   local Browser  = import("ui/browser.lua")
   local Chime    = import("ui/chime.lua")
   local Modern   = import("ui/modern.lua")
+  local Native3  = import("ui/native3.lua")
   local Share    = import("ui/share.lua")
 
   -- ----------------------------------------------------------------
@@ -60,6 +61,13 @@ return function(mod)
   -- the save, because they are preferences rather than progress.
   -- ----------------------------------------------------------------
   mod.options:define({
+    -- Pressing A here opens the menu from the Mods manager (the options
+    -- screen has no buttons, so it's a one-choice row; any press fires
+    -- mod.options_changed, see Browser.install).
+    { key = "openMenu", type = "choice", label = "OPEN TROPHIES", default = "go",
+      choices = { { "PRESS A", "go" } } },
+    -- Off for players whose START menu is replaced by another mod.
+    { key = "startMenuEntry", type = "toggle", label = "START MENU ENTRY", default = true },
     { key = "toasts", type = "toggle", label = "UNLOCK POPUPS", default = true },
     { key = "popupStyle", type = "choice", label = "POPUP STYLE", default = "modern",
       choices = { { "MODERN", "modern" }, { "CORNER", "corner" }, { "CLASSIC GB", "classic" } } },
@@ -167,6 +175,6 @@ return function(mod)
   -- ----------------------------------------------------------------
   -- UI: the START menu row, the browser screen and toasts.
   -- ----------------------------------------------------------------
-  Browser.install(mod, engine, util, Text, Share, Modern)
+  Browser.install(mod, engine, util, Text, Share, Modern, Native3)
   toast:install()
 end

@@ -1,5 +1,26 @@
 # Changelog
 
+## 2.5.0
+
+- **CLASSIC MENU now works in every game.** Gold, Silver and Crystal get
+  the text-box menu in their own frame and font. Ruby, Sapphire, Emerald,
+  FireRed and LeafGreen get a menu drawn like the game's own: the blue
+  help bar with button icons, the window frame you picked in OPTION, the
+  game's font and cursor, the leaderboard card and the "how it's checked"
+  page.
+- The START menu row is **TROPHY** in Gen 1 as well as Gen 2. Their START
+  boxes grow to fit the longest label, so TROPHIES made the Gen 1 menu a
+  tile wider, which could upset other mods that change the START menu.
+
+## 2.4.2
+
+- **OPEN TROPHIES** in the mod's options (Mods manager): press A and the
+  menu opens right there; B takes you back to the options.
+- **START MENU ENTRY** option: turn it off to keep the TROPHIES row out of
+  the START menu, for players whose START menu is replaced by another mod.
+- Closing the menu no longer lets the same B press go through to the
+  screen underneath.
+
 ## 2.4.1
 
 - New **Missable** filter in the TROPHIES menu: every achievement

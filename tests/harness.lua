@@ -339,11 +339,22 @@ function Env:battle(opts)
   return raw
 end
 
+-- One frame with nothing pressed, as the real game has between presses.
+function Env:idle()
+  self.game.input.pressed = {}
+  local top = self.game.stack:top()
+  if top and top.update then top:update(1 / 60) end
+end
+
+-- A press is a frame with the button down between idle frames (menus
+-- ignore the frame they open on and close the frame after B).
 function Env:press(button)
+  self:idle()
   self.game.input.pressed = { [button] = true }
   local top = self.game.stack:top()
   if top and top.update then top:update(1 / 60) end
   self.game.input.pressed = {}
+  self:idle()
 end
 
 function Env:draw()

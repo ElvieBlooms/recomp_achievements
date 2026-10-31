@@ -442,6 +442,11 @@ function Modern.newScreen(deps)
     dt = tonumber(dt) or 1 / 60
     local input = game.input
     if not input then return end
+    -- Close a frame after B/START and ignore the frame we opened on, so
+    -- the press never reaches the screen underneath (the Mods manager
+    -- when opened from OPEN TROPHIES).
+    if st.closing then game.stack:pop() return end
+    if not st.settled then st.settled = true return end
     local function pressed(b) return input:wasPressed(b) end
     if st.modal then
       if pressed("b") or pressed("a") or pressed("select") or pressed("start") then st.modal = nil
@@ -449,7 +454,7 @@ function Modern.newScreen(deps)
       elseif pressed("left") then st.modal = 1 end
       return
     end
-    if pressed("b") or pressed("start") then game.stack:pop() return end
+    if pressed("b") or pressed("start") then st.closing = true return end
     if pressed("select") then
       st.modal = Share and 1 or 2
       if st.modal == 1 then pcall(engine.dispatch, engine, "ui.card_opened", {}) end
