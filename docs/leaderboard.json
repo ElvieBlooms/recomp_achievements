@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-10-31T13:24:27Z",
+ "updated": "2026-10-31T18:28:25Z",
  "banned": [],
  "games": {
   "red": {
@@ -99,25 +99,32 @@
    "entries": [
     {
      "name": "Elvie",
-     "points": 26,
-     "earned": 5,
+     "points": 106,
+     "earned": 9,
      "sources": {
       "bonus": {
        "earned": 1,
        "total": 1,
        "points": 1
       },
+      "facets": {
+       "earned": 8,
+       "total": 9,
+       "points": 105
+      },
       "play_nav": {
-       "earned": 4,
+       "earned": 0,
        "total": 63,
-       "points": 25
+       "points": 0
       }
      },
-     "saveId": "0YSPM2",
-     "owner": "discord:19f7e31d3cc343740b10454a66371bc1",
-     "via": "discord",
-     "date": "2026-10-31T13:24:27Z",
-     "first": "2026-10-31T13:24:27Z"
+     "saveId": "6F4FB8",
+     "owner": "gh:elvieblooms",
+     "via": "github",
+     "date": "2026-10-31T18:28:25Z",
+     "first": "2026-10-31T18:28:25Z",
+     "github": "ElvieBlooms",
+     "issue": 3
     }
    ]
   },
