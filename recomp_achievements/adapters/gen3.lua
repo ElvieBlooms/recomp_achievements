@@ -42,7 +42,8 @@ function Gen3.new(mod, util, loadData)
       local id = type(ev) == "table" and tonumber(ev.id) or nil
       if id then self.live[id] = ev.value and true or false end
     end)
-    for _, name in ipairs({ "save.loading", "save.loaded", "save.created" }) do
+    -- (a checkpoint restore rewinds the save, so flags set since then go too)
+    for _, name in ipairs({ "save.loading", "save.loaded", "save.created", "checkpoint.restored" }) do
       mod.events:on(name, function() self.live = {} end)
     end
   end

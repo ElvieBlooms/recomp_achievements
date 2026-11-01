@@ -273,9 +273,22 @@ function Native3.newScreen(o)
   -- wrapped lines in the content window; returns the next y
   local function para(text, y, maxY, colors, opts)
     local wrapped = G.Font.wrap(Native3.clean(text), TEXT_W, opts)
-    local lines = {}
-    if type(wrapped) == "table" then lines = wrapped
-    else for l in (tostring(wrapped) .. "\n"):gmatch("(.-)\n") do lines[#lines + 1] = l end end
+    local raw, lines = {}, {}
+    if type(wrapped) == "table" then raw = wrapped
+    else for l in (tostring(wrapped) .. "\n"):gmatch("(.-)\n") do raw[#raw + 1] = l end end
+    -- the font's wrap keeps a word longer than the line whole (a URL in a
+    -- mod's description); cut those a character at a time
+    for _, l in ipairs(raw) do
+      if G.Font.measure(l, opts) <= TEXT_W then lines[#lines + 1] = l
+      else
+        local cur = ""
+        for ch in l:gmatch("[%z\1-\127\194-\244][\128-\191]*") do
+          if cur ~= "" and G.Font.measure(cur .. ch, opts) > TEXT_W then lines[#lines + 1] = cur; cur = ch
+          else cur = cur .. ch end
+        end
+        if cur ~= "" then lines[#lines + 1] = cur end
+      end
+    end
     local pitch = (opts and opts.small) and 12 or 14
     for _, line in ipairs(lines) do
       if y + pitch > maxY then break end

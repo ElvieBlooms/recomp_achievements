@@ -1483,6 +1483,54 @@ test("extra credit card: bonus and mod sources, check code vectors", function()
   check(#lines <= 15, "fits the classic box")
 end)
 
+
+test("provider text: cut on a character boundary, bad bytes replaced", function()
+  local util = dofile(H.PROJECT .. "/recomp_achievements/core/util.lua")
+  eq(util.text("Pokémon", 4), "Poké", "limits count characters, é is one")
+  eq(util.text("éééé", 3), "ééé", "never half a character")
+  eq(util.len("Pokémon"), 7, "length in characters")
+  eq(util.text("caf\233 au lait", 32), "caf? au lait", "Latin-1 byte replaced")
+  eq(util.text("ok\226\130", 32), "ok??", "truncated sequence replaced")
+  eq(util.text("emoji \240\159\142\174!", 32), "emoji \240\159\142\174!", "4-byte characters kept")
+  eq(util.text(123, 8), nil, "non-text stays nil")
+  -- a provider registering a title with a cut multibyte char still draws
+  local env = H.boot(BOTH)
+  env:newGame(); env:frame()
+  local h = ach(env).connect("utf_test", { name = "UTF \255 Test" })
+  check(h:register({ id = "accents", title = string.rep("é", 30), description = "Café" }), "30 accented letters fit 32")
+  check(not h:register({ id = "toolong", title = string.rep("é", 33) }), "33 characters don't")
+  local row = ach(env).get("mod:utf_test:accents")
+  check(row and row.title == string.rep("é", 30), "title kept whole: " .. tostring(row and row.title))
+end)
+
+
+test("odd field types from a provider are refused or ignored, never thrown", function()
+  local env = H.boot(BOTH)
+  env:newGame(); env:frame()
+  local cases = {
+    { id = "cat_num", title = "T", category = 5 },
+    { id = "cat_tbl", title = "T", category = {} },
+    { id = "desc_num", title = "T", description = 12 },
+    { id = "unit_num", title = "T", goal = 5, unit = 3 },
+    { id = "title_num", title = 42 },
+    { id = "hidden_str", title = "T", hidden = "yes" },
+    { id = "rev_str", title = "T", revision = "two" },
+    { id = "games_str", title = "T", games = "red" },
+  }
+  local h = ach(env).connect("odd_types", { name = 7, version = {}, tab = 99 })
+  check(h ~= nil, "connect with odd info")
+  for _, def in ipairs(cases) do
+    local ok, res, code = pcall(h.register, h, def)
+    check(ok, def.id .. " doesn't throw: " .. tostring(res))
+  end
+  local Browser = dofile(H.PROJECT .. "/recomp_achievements/ui/browser.lua")
+  for _, item in ipairs(env:startMenu()) do
+    if item.label == "TROPHY" then item.onSelect() end
+  end
+  for _ = 1, 12 do local ok, err = pcall(env.draw, env); check(ok, "menu draws: " .. tostring(err)); env:press("right") end
+  env:press("b")
+end)
+
 print(("\n%d passed, %d failed"):format(passed, failed))
 H.cleanup()
 os.exit(failed == 0 and 0 or 1)

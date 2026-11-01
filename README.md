@@ -33,7 +33,7 @@ and each achievement's author, and are credited in the game. See
 
 ## Install
 
-1. Download `recomp_achievements-2.6.0.zip` and unzip it into Gen1Recomp's
+1. Download `recomp_achievements-2.6.1.zip` and unzip it into Gen1Recomp's
    `mods/` folder, so you have `mods/recomp_achievements/`.
 2. Start Red, Blue, Yellow, Gold, Silver, Crystal, Ruby, Sapphire, Emerald,
    FireRed or LeafGreen (Gen1Recomp 0.3.97 or newer).

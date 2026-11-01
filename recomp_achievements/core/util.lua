@@ -54,12 +54,49 @@ function util.validId(s)
   return type(s) == "string" and #s >= 1 and #s <= 48 and s:match("^[a-z0-9_%-]+$") ~= nil
 end
 
--- Trim a display string to a byte budget (the GB font is fixed width, so
--- bytes ~ columns for the ASCII we allow).  Control chars are removed.
+-- Keep only well-formed UTF-8: a stray byte (a Latin-1 "é" from another
+-- mod, say) becomes "?".  LÖVE refuses to draw invalid UTF-8, so one bad
+-- title from a provider would otherwise break the menu.
+function util.utf8Clean(s)
+  local out, i, n = {}, 1, #s
+  while i <= n do
+    local c = s:byte(i)
+    local len = c < 0x80 and 1 or (c >= 0xC2 and c <= 0xDF) and 2 or (c >= 0xE0 and c <= 0xEF) and 3
+      or (c >= 0xF0 and c <= 0xF4) and 4 or 0
+    local ok = len > 0 and i + len - 1 <= n
+    for k = 1, len - 1 do
+      local b = ok and s:byte(i + k)
+      if not b or b < 0x80 or b > 0xBF then ok = false end
+    end
+    if ok then out[#out + 1] = s:sub(i, i + len - 1); i = i + len
+    else out[#out + 1] = "?"; i = i + 1 end
+  end
+  return table.concat(out)
+end
+
+-- Characters (not bytes) in a UTF-8 string.
+function util.len(s)
+  local _, n = tostring(s or ""):gsub("[^\128-\191]", "")
+  return n
+end
+
+-- Trim a display string to `max` characters (not bytes, so "é" counts
+-- once and is never cut in half).  Control chars are removed and bad
+-- UTF-8 is replaced.
 function util.text(s, max)
   if type(s) ~= "string" then return nil end
-  s = s:gsub("%c", " ")
-  if max and #s > max then s = s:sub(1, max) end
+  s = util.utf8Clean((s:gsub("%c", " ")))
+  if max and util.len(s) > max then
+    local n, cut = 0, #s
+    for i = 1, #s do
+      local b = s:byte(i)
+      if b < 0x80 or b >= 0xC0 then
+        n = n + 1
+        if n > max then cut = i - 1 break end
+      end
+    end
+    s = s:sub(1, cut)
+  end
   return s
 end
 

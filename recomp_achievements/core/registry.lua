@@ -63,7 +63,7 @@ function Registry:clean(input, source)
   end
   local title = util.text(input.title)
   if not title or title == "" then return nil, "invalid_title", "title is required" end
-  if #title > L.title then
+  if util.len(title) > L.title then
     return nil, "invalid_title", ("title is longer than %d characters"):format(L.title)
   end
   local description = util.text(input.description or "", L.description)
@@ -88,7 +88,10 @@ function Registry:clean(input, source)
       games[g] = true
     end
   end
-  local category = util.text(input.category or "GENERAL", L.category):upper()
+  -- not text (a number, a table) falls back rather than throwing in the
+  -- provider's register call
+  local category = (util.text(input.category, L.category) or "GENERAL"):upper()
+  if category == "" then category = "GENERAL" end
   -- Core rules only: which official RA entry each game's version of this
   -- rule tracks.  { red = 1234, blue = 5678 }.  With `official = true`
   -- and no explicit games list, the rule exists only on the linked games.

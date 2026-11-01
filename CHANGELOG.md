@@ -1,5 +1,21 @@
 # Changelog
 
+## 2.6.1
+
+Fixes found while checking Shane McGovern's Emerald Lens fixes for the
+same patterns here:
+
+- Text from other mods is cut on whole characters, so a title with "é"
+  near the limit can't end in half a character (LÖVE won't draw that),
+  and stray non-UTF-8 bytes show as "?" instead of breaking the menu.
+- Title, description and other limits count characters, not bytes, as
+  the API docs say: a 30-letter accented title no longer gets refused.
+- A `category` that isn't text (a number, say) falls back to GENERAL
+  instead of making `register` throw.
+- Gen 3 native menu: a word too long for a line (a URL in a mod's
+  description) is cut to fit instead of running past the window.
+- Gen 3: rewinding to a checkpoint also forgets flags set after it.
+
 ## 2.6.0
 
 - **Extra Credit**, a second leaderboard for bonus and mod achievements.
