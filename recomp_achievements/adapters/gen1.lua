@@ -1,28 +1,25 @@
 -- adapters/gen1.lua
--- ==================================================================
--- Turns Red/Blue/Yellow game state into plain "facts" the rules can ask
--- about.  Rules never touch the save table directly; if Gen1Recomp
--- changes how it stores something, only this file changes.
+-- Turns Red, Blue and Yellow game state into plain "facts" the rules can ask about.
+-- Rules never touch the save table, so if Gen1Recomp changes how it stores
+-- something, only this file changes. Everything goes through mod.game, so the
+-- mod needs no "engine_internals" permission, and nothing here writes to the save.
 --
--- Durable sources (engine 0.3.97, all read-only):
+-- Where the facts come from (engine 0.3.97, all read-only):
 --   save.flags[NAME] == true        pokered event flags (src/script/Flags.lua)
 --   save.inventory[ITEM] = count    bag, badges included (src/inventory/Badges.lua)
 --   save.pcItems[ITEM] = count      item PC
 --   save.pokedex.owned/seen[SPECIES]
---   save.party / save.box           Pokemon records ({ species, level, ... })
---   save.visited[MAP] = true        towns visited (fly list; towns only)
+--   save.party / save.box           Pokémon records ({ species, level, ... })
+--   save.visited[MAP] = true        towns visited (the Fly list, towns only)
 --   save.defeatedTrainers["<MAP>_obj_<n>"]   map trainers beaten
 --   save.itemsTaken["<MAP>_obj_<n>"]         item balls picked up
 --   save.hiddenTaken["<MAP>_<x>_<y>"]        hidden items found
 --   save.options.battleStyle        "shift" | "set"
---   save.version                    "red" | "blue" | "yellow" (untagged = red,
---                                   matching SaveData's own migration)
--- Static map data (what is on a map) comes from game.data.maps and
--- game.data.field.hiddenItems, so "every item in Viridian Forest" is
--- computed from the game's own data, not hard-coded.
---
--- Everything goes through mod.game, so no "engine_internals" permission.
--- ==================================================================
+--   save.version                    "red" | "blue" | "yellow" (untagged is red,
+--                                   like SaveData's own migration)
+-- What sits on each map comes from game.data.maps and game.data.field.hiddenItems,
+-- so "every item in Viridian Forest" is worked out from the game's data, not hard-coded.
+-- ------------------
 
 local Gen1 = {}
 Gen1.__index = Gen1
@@ -45,21 +42,21 @@ function Gen1:save()
   return game and game.save
 end
 
--- In-game play time in whole seconds (the TIME on the trainer card).
+-- Play time in whole seconds, the TIME on the trainer card.
 function Gen1:playTime()
   local save = self:save()
   local t = save and tonumber(save.playTime)
   return t and t >= 0 and math.floor(t) or nil
 end
 
--- The exact running version, or nil if there is no usable save yet.
+-- The running version, or nil until there's a usable save.
 function Gen1:version()
   local save = self:save()
   if type(save) ~= "table" then return nil end
   local v = save.version or "red"
   if not VERSIONS[v] then
-    -- Unknown cart (a ROM hack, a future version): refuse rather than
-    -- guess and hand out Red achievements on the wrong game.
+    -- Unknown cart, like a ROM hack. Pause rather than hand out Red achievements
+    -- on the wrong game.
     self.mod.log:warn("unknown Gen 1 version %s; achievements paused", tostring(v))
     return nil
   end
@@ -74,7 +71,7 @@ end
 
 local function tbl(v) return type(v) == "table" and v or {} end
 
--- Summarise one Pokemon record into a small plain table.
+-- Cuts a Pokémon record down to the fields rules use.
 local function monSummary(mon)
   if type(mon) ~= "table" then return nil end
   return {
@@ -85,22 +82,22 @@ local function monSummary(mon)
 end
 Gen1.monSummary = monSummary
 
--- A snapshot of the party right now (used by battle challenges).
+-- The party right now, for battle challenges.
 function Gen1:partySnapshot()
   local out = {}
   for i, mon in ipairs(tbl((self:save() or {}).party)) do out[i] = monSummary(mon) end
   return out
 end
 
--- A shallow copy of the bag, for "used an item during battle" checks.
+-- A copy of the bag, for "used an item during battle" checks.
 function Gen1:bagSnapshot()
   local out = {}
   for k, v in pairs(tbl((self:save() or {}).inventory)) do out[k] = v end
   return out
 end
 
--- A fresh facts object per evaluation pass.  Expensive answers (counting
--- the Pokedex, scanning a map) are memoised for that pass only.
+-- A fresh facts object for each evaluation pass. Slow answers, like counting
+-- the Pokédex, are memoised for that pass only.
 function Gen1:facts()
   local save = self:save() or {}
   local game = self:game() or {}
@@ -111,7 +108,7 @@ function Gen1:facts()
   -- -------------------------------------------------- flags & progress
   function facts.flag(name) return tbl(save.flags)[name] == true end
 
-  -- true when every flag in the list is set; or a count with asCount
+  -- True when every flag in the list is set, or how many are with asCount.
   function facts.flags(list, asCount)
     local n = 0
     for _, name in ipairs(list) do if facts.flag(name) then n = n + 1 end end
@@ -141,7 +138,7 @@ function Gen1:facts()
   function facts.money() return tonumber(save.money) or 0 end
   function facts.coins() return tonumber(save.coins) or 0 end
 
-  -- ----------------------------------------------------------- pokedex
+  -- ----------------------------------------------------------- Pokédex
   function facts.dexOwned()
     if memo.owned == nil then memo.owned = countTrue(tbl(save.pokedex).owned) end
     return memo.owned
@@ -152,14 +149,14 @@ function Gen1:facts()
   end
   function facts.owns(species) return tbl(tbl(save.pokedex).owned)[species] == true end
   function facts.seen(species) return tbl(tbl(save.pokedex).seen)[species] == true end
-  -- how many of `list` are owned (returns count, total)
+  -- How many of `list` are owned: count, total.
   function facts.ownsCount(list)
     local n = 0
     for _, s in ipairs(list) do if facts.owns(s) then n = n + 1 end end
     return n, #list
   end
 
-  -- ----------------------------------------------------------- pokemon
+  -- ----------------------------------------------------------- Pokémon
   function facts.party()
     if memo.party == nil then
       memo.party = {}
@@ -173,7 +170,7 @@ function Gen1:facts()
     for _, m in ipairs(facts.party()) do if m.level > best then best = m.level end end
     return best
   end
-  -- does the party (or PC box, with includeBox) hold this species?
+  -- Whether the party, or the PC box with includeBox, holds this species.
   function facts.has(species, includeBox)
     for _, m in ipairs(facts.party()) do if m.species == species then return true end end
     if includeBox then
@@ -198,19 +195,16 @@ function Gen1:facts()
 
   -- ------------------------------------------------- per-map clearing
   -- What a map holds, from the game's own data:
-  --   trainers  the EVENT_BEAT_* flag of every trainer with a trainer
-  --             header (data.trainer_headers[label][index].event) -- the
-  --             flag the engine sets when you win (OverworldController).
-  --             Gym leaders and scripted rivals have no header; rules add
-  --             their own story flags for those.
+  --   trainers  the EVENT_BEAT_* flag from each trainer header
+  --             (data.trainer_headers[label][index].event), which
+  --             OverworldController sets when you win. Gym leaders and scripted
+  --             rivals have no header, so rules add their story flags instead.
   --   items     item balls, keyed like save.itemsTaken ("<MAP>_obj_<n>")
   --   hidden    hidden items, keyed like save.hiddenTaken ("<MAP>_<x>_<y>")
-  --   statics   static Pokemon (birds, Voltorb...), keyed like
-  --             save.defeatedTrainers, which the engine sets on a win/catch
-  -- Cached per pass.
-  -- Map contents only depend on the game data, never on the save, so they
-  -- are cached for the session (keyed by the data table) instead of being
-  -- rebuilt on every check.
+  --   statics   static Pokémon (birds, Voltorb), keyed like save.defeatedTrainers,
+  --             which the engine sets on a win or catch
+  -- This only depends on game data, never the save, so it's cached for the
+  -- session (keyed by the data table) rather than rebuilt every check.
   local static = self.static
   if not static or static.data ~= data then
     static = { data = data, maps = {}, matching = {} }
@@ -242,7 +236,7 @@ function Gen1:facts()
   end
   facts.mapContents = mapContents
 
-  -- every map id matching a Lua pattern (e.g. "^SILPH_CO_")
+  -- Every map id matching a Lua pattern, like "^SILPH_CO_".
   function facts.mapsMatching(pattern)
     if static.matching[pattern] then return static.matching[pattern] end
     local out = {}
@@ -254,27 +248,26 @@ function Gen1:facts()
     return out
   end
 
-  -- trainers beaten on a map: returns beaten, total
+  -- Trainers beaten on a map: beaten, total.
   function facts.trainersBeaten(mapId)
     local list, n = mapContents(mapId).trainers, 0
     for _, flag in ipairs(list) do if facts.flag(flag) then n = n + 1 end end
     return n, #list
   end
-  -- An item ball or static Pokemon is gone when the engine says so: it
-  -- records pickups in save.itemsTaken / wins in save.defeatedTrainers,
-  -- but saves imported from a cartridge carry the same fact as a hidden
-  -- object toggle (save.objectToggles[map][name] == false), exactly what
-  -- OverworldController.objectVisible checks.
+  -- The engine records pickups in save.itemsTaken and wins in save.defeatedTrainers.
+  -- Saves imported from a cartridge carry the same thing as a hidden object toggle
+  -- (save.objectToggles[map][name] == false), which is what
+  -- OverworldController.objectVisible checks, so both count.
   local function toggledOff(mapId, name)
     local toggles = tbl(save.objectToggles)[mapId]
     return name ~= nil and type(toggles) == "table" and toggles[name] == false
   end
 
-  -- is a map object switched off (a beaten rival who walked away, ...)?
+  -- Whether a map object is switched off, like a beaten rival who walked away.
   function facts.objectHidden(mapId, name) return toggledOff(mapId, name) end
 
-  -- item balls (+ hidden items unless includeHidden == false) on a map.
-  -- `skip(item)` may exclude items (missable fossils...).  Returns found, total.
+  -- Item balls on a map, plus hidden items unless includeHidden is false.
+  -- `skip(item)` can leave items out, like missable fossils. Returns found, total.
   function facts.itemsFound(mapId, includeHidden, skip)
     local c = mapContents(mapId)
     local n, total = 0, 0
@@ -294,7 +287,7 @@ function Gen1:facts()
     end
     return n, total
   end
-  -- static Pokemon defeated or caught on a map: returns done, total
+  -- Static Pokémon beaten or caught on a map: done, total.
   function facts.staticsDone(mapId)
     local list, n = mapContents(mapId).statics, 0
     for _, st in ipairs(list) do
@@ -302,7 +295,7 @@ function Gen1:facts()
     end
     return n, #list
   end
-  -- sums over several maps.  what: "trainers" | "items" | "both"
+  -- Totals over several maps. what = "trainers", "items" or "both".
   function facts.sweep(mapIds, what, opts)
     opts = opts or {}
     local done, total = 0, 0
@@ -324,7 +317,7 @@ function Gen1:facts()
 
   -- ------------------------------------------------------ species data
   local function speciesDef(species) return tbl(data.pokemon)[species] end
-  -- list of type ids, e.g. { "WATER", "ICE" }
+  -- Type ids, like { "WATER", "ICE" }.
   function facts.types(species)
     local def = speciesDef(species)
     local out = {}
@@ -341,7 +334,7 @@ function Gen1:facts()
   end
 
   -- ---------------------------------------------------------- encounters
-  -- species in a map's walking tables (grass / cave floors), as a set
+  -- Species in a map's walking tables (grass and cave floors), as a set.
   function facts.encounterSpecies(pattern)
     local out = {}
     for id, enc in pairs(tbl(data.encounters)) do
@@ -355,8 +348,8 @@ function Gen1:facts()
     return out
   end
 
-  -- everything found in the Safari Zone (walking + every rod) and all
-  -- of their evolutions, as a set.  Cached per pass.
+  -- Everything found in the Safari Zone, walking and on every rod, plus all
+  -- their evolutions, as a set. Cached per pass.
   function facts.safariFamily()
     if memo.safari then return memo.safari end
     local out = facts.encounterSpecies("^SAFARI_ZONE")
@@ -368,7 +361,7 @@ function Gen1:facts()
         end
       end
     end
-    out.MAGIKARP, out.POLIWAG, out.GOLDEEN = true, true, true -- old/good rod
+    out.MAGIKARP, out.POLIWAG, out.GOLDEEN = true, true, true -- Old and Good Rod
     local changed = true
     while changed do
       changed = false
@@ -383,7 +376,7 @@ function Gen1:facts()
   end
 
   -- ------------------------------------------------------------ misc
-  -- story flags of the card-key doors on maps matching a pattern
+  -- Story flags of the Card Key doors on maps matching a pattern.
   function facts.cardKeyDoorFlags(pattern)
     local out = {}
     local closed = tbl(tbl(tbl(data.field).cardKeyDoors).closedDoors)
@@ -400,7 +393,7 @@ function Gen1:facts()
     return out
   end
 
-  -- hidden coins picked up on a map: returns found, total
+  -- Hidden coins picked up on a map: found, total.
   function facts.hiddenCoinsFound(mapId)
     local n, total = 0, 0
     for _, h in ipairs(tbl(tbl(tbl(data.field).hiddenCoins)[mapId])) do
@@ -410,7 +403,7 @@ function Gen1:facts()
     return n, total
   end
 
-  -- the state on top of the stack, and its screen id ("SlotMachine", ...)
+  -- The state on top of the stack, and its screen id ("SlotMachine").
   function facts.topState()
     local states = tbl(tbl(game.stack).states)
     local top = states[#states]
@@ -421,15 +414,15 @@ function Gen1:facts()
     local st = states[#states - 1]
     return type(st) == "table" and st or nil
   end
-  -- a Pokemon in the PC box currently open (Boxes.active)
+  -- A Pokémon in the PC box that's open now (Boxes.active).
   function facts.boxMon(index)
     local boxes = tbl(save.boxes)
     local box = tbl(boxes[save.currentBox or 1])
     local mon = box[tonumber(index) or 0]
     return type(mon) == "table" and mon or nil
   end
-  -- Yellow: the starter Pikachu is the one with your own trainer id and
-  -- name (PikachuFollower.isStarterPikachu)
+  -- Yellow: the starter Pikachu has your own trainer id and name,
+  -- same test as PikachuFollower.isStarterPikachu.
   function facts.isStarterPikachu(mon)
     local player = tbl(save.player)
     return type(mon) == "table" and mon.species == "PIKACHU"
@@ -440,7 +433,7 @@ function Gen1:facts()
     return top and top.screenId or nil
   end
 
-  -- where the player stands (cells) and the map's own flags
+  -- Where the player stands, in cells, and whether Flash has lit the map.
   function facts.playerCell()
     local ow = game.overworld
     local p = type(ow) == "table" and ow.player
@@ -449,7 +442,7 @@ function Gen1:facts()
   end
   function facts.flashLit() return save.flashLit == true end
 
-  -- Yellow: the following Pikachu's overworld object, if out
+  -- Yellow: the following Pikachu's overworld object, if it's out.
   function facts.pikachuNpc()
     local ow = game.overworld
     for _, npc in ipairs(tbl(type(ow) == "table" and ow.npcs)) do
@@ -489,10 +482,9 @@ function Gen1:facts()
     return ow and type(ow.player) == "table" and ow.player.facing or nil
   end
 
-  -- Was the most recent Cut used on tall grass rather than a tree?  The
-  -- engine records the block it replaced (ow.cutBlocks) and decides
-  -- "grass" by the OVERWORLD tile $52 in front of the player
-  -- (OverworldController:tryCut); we look that tile up in the old block.
+  -- Whether the last Cut was on tall grass rather than a tree. The engine keeps
+  -- the block it replaced (ow.cutBlocks) and calls it grass when the OVERWORLD
+  -- tile in front is $52 (OverworldController:tryCut), so we check the old block.
   function facts.lastCutWasGrass()
     local ow = overworld()
     if not (ow and ow.player and ow.player.facingCell) then return false end
@@ -507,9 +499,9 @@ function Gen1:facts()
     return blocks[(ty % 4) * 4 + (tx % 4) + 1] == 0x52
   end
 
-  -- Yellow: which emotion talking to the following Pikachu shows right
-  -- now.  Mirrors src/world/PikachuFollower.lua selectEmotion (itself a
-  -- port of pokeyellow engine/pikachu/pikachu_emotions.asm).
+  -- Yellow: the emotion the following Pikachu would show if you talked to it now.
+  -- Mirrors selectEmotion in src/world/PikachuFollower.lua, itself a port of
+  -- pokeyellow engine/pikachu/pikachu_emotions.asm.
   function facts.pikachuEmotion()
     local ow = overworld()
     local field = tbl(data.field).pikachu

@@ -1,29 +1,21 @@
 -- rules/gen1_official.lua
--- ==================================================================
--- Native detectors for the official RetroAchievements sets of
--- Pokemon Red (RA game 724), Blue (586) and Yellow (723).
---
--- Each rule's `ra` table says which RA achievement it tracks on which
--- game; titles, descriptions and points shown in game come from the
--- catalog files (catalog/<game>.lua).  The logic is ours, written against
--- Gen1Recomp's save and events.  RA's own trigger logic is not public and
--- is not used.
---
--- `fidelity = "interpretation"` + `note` marks rules whose check is a
--- close local reading of the goal rather than an exact one; the note is
--- shown on the achievement's ABOUT page.
---
--- Entries not listed here are shown as "not tracked yet" in the RA
--- reference view; docs/COVERAGE.md says why for each.
--- ==================================================================
+-- Detectors for the RetroAchievements sets of Pokémon Red (RA game 724),
+-- Blue (586) and Yellow (723), written against Gen1Recomp's save and events.
+-- Each rule's `ra` table names the RA entry it answers on each game. Titles,
+-- descriptions and points come from catalog/<game>.lua. RA's trigger logic
+-- isn't public and isn't used.
+-- `fidelity = "interpretation"` marks a close reading rather than an exact one,
+-- and its `note` shows on the ABOUT page.
+-- Entries with no rule show as "not tracked yet"; docs/COVERAGE.md says why.
+-- ------------------
 
 return function(L)
   local rules = {}
   local function add(r) rules[#rules + 1] = r end
   local set = L.set
 
-  -- ================================================================ STORY
-  -- the Viridian Mart employee on Route 1 hands out a free Potion sample
+  -- ------------------ story
+  -- The Viridian Mart clerk on Route 1 hands out a free Potion.
   add(L.flag("off_free_sample", { red = 108020, blue = 540267 }, "Free sample",
     "EVENT_GOT_POTION_SAMPLE", { category = "STORY", points = 1 }))
   add(L.flag("off_town_map", { red = 108021, blue = 540268 }, "Town map",
@@ -38,8 +30,8 @@ return function(L)
     "EVENT_GOT_HM01", { category = "ITEMS" }))
   add(L.flag("off_hm05", { red = 108028, blue = 540278 }, "HM05 Flash",
     "EVENT_GOT_HM05", { category = "ITEMS" }))
-  -- Oak's aides give these without setting a story flag in this port
-  -- (data/scripts/story4.lua oaksAide), so the item itself is the proof.
+  -- Oak's aides set no story flag in this port (data/scripts/story4.lua
+  -- oaksAide), so having the item is the proof.
   add(L.item("off_itemfinder", { red = 108027, blue = 540282 }, "Itemfinder", "ITEMFINDER"))
   add(L.flag("off_bicycle", { red = 108049, blue = 540283 }, "Bicycle",
     "EVENT_GOT_BICYCLE", { category = "ITEMS" }))
@@ -68,7 +60,7 @@ return function(L)
     title = "Full team", kind = "state", category = "POKEMON", goal = 6, unit = "IN PARTY",
     check = function(f) return f.partySize() end }))
 
-  -- ================================================================ BADGES
+  -- ------------------ badges
   local badgeIds = {
     { "BOULDERBADGE", 4401, 540249, 4428 }, { "CASCADEBADGE", 4402, 540250, 4429 },
     { "THUNDERBADGE", 4403, 540251, 4430 }, { "RAINBOWBADGE", 4404, 540252, 4431 },
@@ -80,9 +72,9 @@ return function(L)
       b[1]:sub(1, 1) .. b[1]:sub(2):lower(), b[1]))
   end
 
-  -- ======================================================= GYM CHALLENGES
-  -- Red: Challenge rules (RA's "Set mode", the SET battle style), no items
-  -- in battle, level cap at the start of the fight.
+  -- ------------------ gym challenges
+  -- Red: challenge rules (RA's "Set mode", the SET battle style), no items
+  -- in battle, and the level cap checked when the fight starts.
   local redCaps = {
     { 1, 108058, 14 }, { 2, 108059, 21 }, { 3, 108060, 24 }, { 4, 108061, 29 },
     { 5, 108062, 43 }, { 6, 108063, 43 }, { 7, 108065, 47 }, { 8, 108068, 50 },
@@ -94,7 +86,7 @@ return function(L)
       { category = "CHALLENGE", note = L.CHALLENGE .. ", use no items in the battle, and start it with "
         .. "no Pokemon above Lv." .. c[3] .. "." }))
   end
-  -- Blue: beat the leader using only one type.
+  -- Blue: beat the leader with a single type.
   local blueTypes = {
     { 1, 540298, "NORMAL" }, { 2, 540299, "BUG" }, { 3, 540300, "FIRE" },
     { 4, 540301, "ELECTRIC" }, { 5, 540302, "GRASS" }, { 6, 540303, "GHOST" },
@@ -128,7 +120,7 @@ return function(L)
         if f.flag(gym.flag) and beaten >= total then return true end
       end,
     }, function(state, f, ctx)
-      -- loading a save inside the gym counts as entering it now
+      -- Loading a save inside the gym counts as walking in.
       if ctx.map == gym.map then
         state.inside = true
         state.fresh = f.trainersBeaten(gym.map) == 0 and not f.flag(gym.flag)
@@ -136,7 +128,7 @@ return function(L)
     end, { category = "GYMS" }))
   end
 
-  -- ============================================================ LEAGUE RUNS
+  -- ------------------ league runs
   local function notMew(m) return m.species ~= "MEW" and m.species ~= "MEWTWO" end
   local function maxLevel(party)
     local best = 0
@@ -177,7 +169,7 @@ return function(L)
     function(party) return #party == 1 and party[1].species == "PIKACHU" end, nil, nil,
     { fidelity = "interpretation", note = "Surfing Pikachu can't be told apart, so it is allowed." }))
 
-  -- ============================================================== POKEMON
+  -- ------------------ Pokémon
   add(L.owns("off_snorlax", { red = 4419, blue = 540260, yellow = 4446 }, "Snorlax", "SNORLAX"))
   add(L.ownsAll("off_birds", { red = 4420, blue = 540261, yellow = 4447 }, "Legendary birds", L.BIRDS))
   add(L.owns("off_mewtwo", { red = 4421, blue = 540262, yellow = 4448 }, "Mewtwo", "MEWTWO"))
@@ -233,7 +225,7 @@ return function(L)
       set({ p[1] }), "^SAFARI_ZONE", { category = "SAFARI" }))
   end
 
-  -- =============================================================== TRADES
+  -- ------------------ trades
   local trades = {
     { "EVENT_TRADED_ABRA_FOR_MR_MIME", 540314, 81663 },
     { "EVENT_TRADED_NIDORAN_M_FOR_NIDORAN_F", 540315, 81662 },
@@ -248,16 +240,15 @@ return function(L)
   local allTradeFlags = {}
   for _, t in ipairs(trades) do
     allTradeFlags[#allTradeFlags + 1] = t[1]
-    -- Yellow trades different species through the same trade slots, so
-    -- the same done-flag tracks the Yellow trade at that NPC
-    -- (data/scripts/story5.lua explains the shared flags).
+    -- Yellow trades other species through the same slots, so one done-flag
+    -- covers that NPC in every game (see data/scripts/story5.lua).
     add(L.flag("off_" .. t[1]:lower(), { blue = t[2], yellow = t[3] }, "In-game trade",
       t[1], { category = "TRADES" }))
   end
   add(L.allFlags("off_all_trades", { red = 108053 }, "All in-game trades", allTradeFlags,
     { category = "TRADES", unit = "TRADES" }))
 
-  -- ============================================================ AREA CLEARS
+  -- ------------------ area clears
   local function maps(pattern) return function(f) return f.mapsMatching(pattern) end end
   local noFossils = function(item) return item == "DOME_FOSSIL" or item == "HELIX_FOSSIL" end
   add(L.sweep("off_clear_forest", { red = 108024 }, "Clear Viridian Forest",
@@ -273,8 +264,8 @@ return function(L)
     maps("^POKEMON_TOWER_"), "both"))
   add(L.sweep("off_clear_victory_road", { red = 108140 }, "Clear Victory Road",
     maps("^VICTORY_ROAD_"), "both"))
-  -- Silph Co.: every trainer, every item, Giovanni, the rival, and every
-  -- card-key door (the door flags come from data.field.cardKeyDoors).
+  -- Silph Co.: every trainer, item and card-key door, plus Giovanni and the
+  -- rival. Door flags come from data.field.cardKeyDoors.
   add(L.sweep("off_clear_silph", { red = 108051, blue = 540264 }, "Clear Silph Co.",
     maps("^SILPH_CO_"), "both", { extraFlags = function(f)
       local out = { "EVENT_BEAT_SILPH_CO_GIOVANNI", "EVENT_BEAT_SILPH_CO_RIVAL" }
@@ -284,9 +275,9 @@ return function(L)
   add(L.sweep("off_gym_item", { red = 108066, blue = 540266 }, "The gym item",
     { "VIRIDIAN_GYM" }, "items", { hidden = true }, { category = "ITEMS" }))
 
-  -- Whole-game sweeps.  "Unmissable" leaves out the S.S. Anne (it sails
-  -- away) and the fossil you didn't choose; League rooms are left out of
-  -- trainers because their flags reset for rematches.
+  -- Whole-game sweeps. "Unmissable" skips the S.S. Anne, which sails away,
+  -- and the fossil you didn't pick. League trainers are skipped because
+  -- their flags reset for rematches.
   local function overworld(f)
     local out = {}
     for _, id in ipairs(f.mapsMatching(".")) do
@@ -395,9 +386,9 @@ return function(L)
   add(L.sweep("off_tr_last", { blue = 540335 }, "Late trainers",
     routesAnd({ "^POKEMON_MANSION", "^VICTORY_ROAD" }, "ROUTE_21"), "trainers"))
 
-  -- ============================================================ GAME CORNER
-  -- Free coins: the twelve hidden on the Game Corner floor, plus the three
-  -- handouts from gamblers there.
+  -- ------------------ Game Corner
+  -- Free coins: the twelve hidden on the Game Corner floor and the three
+  -- that gamblers hand out.
   add(L.with({ id = "off_free_coins", ra = { red = 108037, blue = 540276 }, title = "Free coins",
     kind = "state", category = "CORNER", goal = 100, unit = "PERCENT",
     fidelity = "interpretation",
@@ -414,8 +405,8 @@ return function(L)
   add(L.with({ id = "off_9999_coins", ra = { red = 108182 }, title = "9,999 coins",
     kind = "state", category = "CORNER",
     check = function(f) return f.coins() >= 9999 end }))
-  -- Slot wins: the slot machine remembers the symbol it paid out on
-  -- (SlotMachine.winSymbol, set in resolveWin) while it shows the win.
+  -- The slot machine holds the winning symbol in SlotMachine.winSymbol
+  -- (set in resolveWin) while it shows the win.
   local function slotWin(id, raId, symbol)
     return L.tracker(id, { red = raId }, "Slot win", {
       tick = function(_, _, f)
@@ -427,9 +418,9 @@ return function(L)
   add(slotWin("off_slot_bar", 108179, "BAR"))
   add(slotWin("off_slot_seven", 108180, "7"))
 
-  -- =============================================================== SAFARI
-  -- A Safari hunt is the time save.safari exists (set when you pay at the
-  -- gate, cleared when you leave or run out).
+  -- ------------------ Safari
+  -- A Safari hunt lasts while save.safari exists: set when you pay at the
+  -- gate, cleared when you leave or run out.
   add(L.tracker("off_safari_ten", { red = 108047, blue = 540287 }, "Ten in one hunt", {
     ["map.entered"] = function(state, _, f)
       if not f.inSafari() then state.catches = nil
@@ -469,7 +460,7 @@ return function(L)
   }, nil, { category = "SAFARI", fidelity = "interpretation",
     note = "Exactly 209 Safari steps left when the HM03 is handed over; Surf use isn't checked." }))
 
-  -- ========================================================== EXPLORATION
+  -- ------------------ exploration
   add(L.onEvent("off_sleeping_giant", { red = 108138 }, "Sleeping giant", "world.interacted",
     function(ev, f)
       return ev and ev.kind == "sign" and type(ev.target) == "table"
@@ -501,8 +492,8 @@ return function(L)
       if n >= 4 then return true end
     end,
   }, function(state) state.read = {} end, { category = "STORY" }))
-  -- The quiz gates' flags are written directly (data/scripts/story6.lua),
-  -- with no flag.changed event, so this polls while you're in the gym.
+  -- The quiz gate flags are written directly (data/scripts/story6.lua) with
+  -- no flag.changed event, so this polls while you're in the gym.
   add(L.tracker("off_quiz", { red = 108056 }, "Quiz master", {
     ["map.entered"] = function(state, ev, f)
       if ev and ev.mapId == "CINNABAR_GYM" then
@@ -528,7 +519,7 @@ return function(L)
   }, nil, { category = "PUZZLES", fidelity = "interpretation",
     note = "All six quiz gates opened in one visit, without a single battle." }))
 
-  -- Ekans Dilos: reach the Silph Co. rival having beaten at most 1 Silph trainer
+  -- Ekans Dilos: reach the Silph Co. rival with at most one Silph trainer beaten.
   add(L.onEvent("off_silph_rival_dash", { red = 108069 }, "Silph dash", "battle.started",
     function(ev, f, ctx)
       if not (ev and ev.trainerId == "OPP_RIVAL2" and tostring(ctx.map):find("^SILPH_CO")) then return end
@@ -536,9 +527,9 @@ return function(L)
       return beaten <= 1
     end, { category = "PUZZLES" }))
 
-  -- Dearly Beloved: calm the Tower ghost with a Poke Doll, no Silph Scope.
-  -- (The engine sets EVENT_BEAT_GHOST_MAROWAK directly, without a
-  -- flag.changed event, so this watches the battle itself.)
+  -- Dearly Beloved: calm the Tower ghost with a Poké Doll and no Silph Scope.
+  -- The engine sets EVENT_BEAT_GHOST_MAROWAK with no flag.changed event,
+  -- so this watches the battle.
   add(L.onEvent("off_poke_doll", { red = 108040 }, "Poke Doll ghost", "battle.ended",
     function(_, f, ctx)
       local b = ctx.battle
@@ -549,7 +540,7 @@ return function(L)
       end
     end, { category = "PUZZLES" }))
 
-  -- Blue: Fish Fear Me -- six species on Cinnabar without leaving the island
+  -- Blue, Fish Fear Me: six species on Cinnabar without leaving the island.
   local fishSet = set({ "MAGIKARP", "POLIWAG", "GOLDEEN", "SHELLDER", "HORSEA", "STARYU" })
   local function onCinnabar(map)
     map = tostring(map)
@@ -566,7 +557,7 @@ return function(L)
     end,
   }, function(state) state.got = {} end, { category = "POKEMON" }))
 
-  -- Blue: Professor Oak Challenge Jr. -- catch and fully evolve a bug in the forest
+  -- Blue, Professor Oak Challenge Jr.: catch and fully evolve a bug in the forest.
   add(L.tracker("off_forest_bug", { blue = 540290 }, "Forest bug evolution", {
     ["map.entered"] = function(state, ev) if ev and ev.mapId ~= "VIRIDIAN_FOREST" then state.caught = nil end end,
     ["pokemon.caught"] = function(state, ev, _, ctx)
@@ -583,7 +574,7 @@ return function(L)
   }, nil, { category = "POKEMON", fidelity = "interpretation",
     note = "Any Weedle or Caterpie caught in the forest; the game can't tell which one evolved." }))
 
-  -- Red: Area Unknown -- one of every Cerulean Cave species in one stay
+  -- Red, Area Unknown: one of every Cerulean Cave species in one stay.
   add(L.tracker("off_cerulean_cave", { red = 108175 }, "Cerulean Cave dex", {
     ["map.entered"] = function(state, ev)
       if not tostring(ev and ev.mapId):find("^CERULEAN_CAVE") then state.got = {} end
@@ -604,8 +595,8 @@ return function(L)
   }, function(state) state.got = {} end, { category = "POKEMON", fidelity = "interpretation",
     note = "Species are read from the cave's walking encounter tables." }))
 
-  -- Red: Anybody Home? -- through Viridian Forest without a wild battle,
-  -- Repel or Cut, entrance to entrance.
+  -- Red, Anybody Home?: Viridian Forest entrance to entrance with no wild
+  -- battle, Repel or Cut.
   add(L.tracker("off_forest_dash", { red = 108026 }, "Forest dash", {
     ["map.entered"] = function(state, ev, f)
       local map, from = ev and ev.mapId, ev and ev.fromMapId
@@ -633,8 +624,8 @@ return function(L)
     function(ev, f) return ev and ev.name == "Cut" and f.lastCutWasGrass() end,
     { category = "PUZZLES" }))
 
-  -- Gym puzzles, each "starting from the gym entrance": the run starts when
-  -- you walk in from the city and is judged when the leader's battle starts.
+  -- Gym puzzles "from the gym entrance": a run starts when you walk in from
+  -- the city and is judged when the leader's battle starts.
   local function gymRun(id, raId, gymMap, cityMap, opp, on, extra)
     local handlers = {
       ["map.entered"] = function(state, ev)
@@ -657,8 +648,8 @@ return function(L)
       L.with({ category = "PUZZLES" }, extra))
   end
   add(gymRun("off_fuchsia_walls", 108057, "FUCHSIA_GYM", "FUCHSIA_CITY", "OPP_KOGA", {
-    -- a bump re-arms the overworld's bump cooldown (OverworldController,
-    -- CollisionCheckOnLand), so a rising cooldown is a new bump
+    -- Each bump re-arms the bump cooldown (OverworldController,
+    -- CollisionCheckOnLand), so a rising cooldown means a new bump.
     events = { frame = function(state, _, f, ctx)
       if not (state.run and ctx.map == "FUCHSIA_GYM") then return end
       local ow = f.overworld()
@@ -687,7 +678,7 @@ return function(L)
     judge = function(run) return run.spins == 0 end,
   }))
 
-  -- Game Corner prizes and TMs in one session
+  -- Game Corner prizes and TMs in one session.
   local prizeMons = set({ "ABRA", "CLEFAIRY", "NIDORINA", "DRATINI", "SCYTHER", "PORYGON" })
   add(L.tracker("off_prize_mons", { red = 108183 }, "Every prize Pokemon", {
     ["pokemon.before_give"] = function(state, ev, _, ctx)
@@ -718,14 +709,14 @@ return function(L)
   end, { category = "CORNER", fidelity = "interpretation",
     note = "One more of each Celadon Dept. Store and Game Corner TM than you had when the session started." }))
 
-  -- Anti-Darwinism: press B during an evolution
+  -- Anti-Darwinism: press B during an evolution.
   add(L.onEvent("off_cancel_evolution", { red = 108370 }, "Evolution cancelled", "screen.popped",
     function(ev)
       local st = ev and ev.state
       return type(st) == "table" and st.screenId == "EvolutionState" and st.canceled == true
     end, { category = "POKEMON" }))
 
-  -- ============================================================== BATTLE
+  -- ------------------ battle
   add(L.tracker("off_crits", { red = 108033 }, "Five crits in a row", {
     ["battle.started"] = function(state) state.streak = 0 end,
     ["battle.damage_dealt"] = function(state, ev)
@@ -743,7 +734,7 @@ return function(L)
       if not (type(u) == "table" and (u.side == "player" or u.isPlayer == true)) then return end
       local move = type(ev.move) == "table" and ev.move.id or ev.move
       if OHKO[move] then
-        if state.pending then state.streak = 0 end -- the last one missed
+        if state.pending then state.streak = 0 end -- the previous one missed
         state.pending = true
       else
         state.streak, state.pending = 0, nil
@@ -816,7 +807,7 @@ return function(L)
       return ev and ev.result == "win" and ctx.battle and (ctx.battle.payDay or 0) > 2000
     end, { category = "BATTLE" }))
 
-  -- ================================================================ LEVELS
+  -- ------------------ levels
   add(L.onEvent("off_halfway_solo", { red = 4411 }, "Lead to level 50", "pokemon.level_up",
     function(ev, f)
       local lead = f.party()[1]
@@ -844,7 +835,7 @@ return function(L)
       return true
     end, { category = "POKEMON" }))
 
-  -- ================================================================ YELLOW
+  -- ------------------ Yellow
   add(L.tracker("off_y_route22_early", { yellow = 81656 }, "Early rival", {
     ["flag.changed"] = function(_, ev, f)
       return ev and ev.name == "EVENT_BEAT_ROUTE22_RIVAL_1ST_BATTLE" and ev.value
@@ -884,8 +875,8 @@ return function(L)
   for _, y in ipairs(yFlags) do
     add(L.flag(y[1], { yellow = y[2] }, "Yellow story", y[3], { category = y[4] }))
   end
-  -- Cartridge saves imported into Gen1Recomp record the S.S. Anne rival
-  -- only as his hidden map object, so either proof counts.
+  -- Imported cartridge saves only record the S.S. Anne rival as his hidden
+  -- map object, so either proof counts.
   add(L.with({ id = "off_y_ss_anne_rival", ra = { yellow = 81665 }, title = "S.S. Anne rival",
     kind = "state", category = "STORY",
     check = function(f)
@@ -894,7 +885,7 @@ return function(L)
   add(L.onEvent("off_y_tower_ghost", { yellow = 4445 }, "Tower ghost", "battle.started",
     function(ev, _, ctx) return ev and ev.kind == "ghost" and ctx.map == "POKEMON_TOWER_6F" end,
     { category = "STORY",
-      -- beating the ghost proves you met it, so old saves get credit
+      -- Beating the ghost proves you met it, so older saves get credit.
       check = function(f) return f.flag("EVENT_BEAT_GHOST_MAROWAK") end }))
   add(L.tracker("off_y_gauntlet", { yellow = 81681 }, "Route 12-15 gauntlet", {
     ["map.entered"] = function(state, ev, f)
@@ -913,7 +904,7 @@ return function(L)
   }, nil, { category = "CLEAR", fidelity = "interpretation",
     note = "Route gates count as part of the area." }))
 
-  -- Rock Tunnel from the Route 9 side to Lavender, never lit by Flash
+  -- Rock Tunnel from the Route 9 side to Lavender without Flash.
   add(L.tracker("off_y_no_flash", { yellow = 81680 }, "Who needs Flash", {
     ["map.entered"] = function(state, ev, f)
       local map, from = ev and ev.mapId, ev and ev.fromMapId
@@ -935,7 +926,7 @@ return function(L)
   }, nil, { category = "PUZZLES", fidelity = "interpretation",
     note = "Enter from the north end, leave by the south end and walk into Lavender with no Flash used." }))
 
-  -- Bill's house: Pikachu watches Bill come out of the Cell Separator
+  -- Bill's house: Pikachu watches Bill come out of the Cell Separator.
   add(L.tracker("off_y_bill_scene", { yellow = 81976 }, "Surprised Pikachu", {
     tick = function(_, _, f, ctx)
       local ow = f.overworld()
@@ -943,9 +934,8 @@ return function(L)
         and f.flag("EVENT_MET_BILL_2")
     end,
   }, nil, { category = "PIKACHU", points = 1 }))
-  -- Trying to release your Pikachu: in the PC's RELEASE list the game
-  -- refuses with a text box over the list (src/ui/BoxMenu.lua), so this
-  -- looks for that box over the release list with your own Pikachu picked.
+  -- Releasing your Pikachu is refused with a text box over the PC's RELEASE
+  -- list (src/ui/BoxMenu.lua), so this looks for that box with Pikachu picked.
   add(L.tracker("off_y_release", { yellow = 81978 }, "Not getting away", {
     tick = function(_, _, f)
       local list, top = f.stateBelowTop(), f.topState()
@@ -954,7 +944,7 @@ return function(L)
       return mon ~= nil and f.isStarterPikachu(mon)
     end,
   }, nil, { category = "PIKACHU", points = 1 }))
-  -- Pikachu stranded behind a ledge, doing its idle dance for a while
+  -- Pikachu stuck behind a ledge, doing its idle dance for a while.
   add(L.tracker("off_y_ledge_dance", { yellow = 82089 }, "Look, I'm dancing", {
     tick = function(state, ev, f)
       local npc = f.pikachuNpc()
@@ -968,10 +958,10 @@ return function(L)
   }, nil, { category = "PIKACHU", points = 1, fidelity = "interpretation",
     note = "Pikachu doing its idle animation two or more steps away from you for three seconds." }))
 
-  -- Pikachu's emotions: talking to the following Pikachu shows one picked
-  -- from friendship x mood (field.pikachu.moodRows) or a special case.
-  -- adapters/gen1.lua:pikachuEmotion() repeats the engine's choice
-  -- (src/world/PikachuFollower.lua selectEmotion) at the moment you talk.
+  -- Talking to Pikachu shows an emotion picked from friendship x mood
+  -- (field.pikachu.moodRows) or a special case. adapters/gen1.lua
+  -- pikachuEmotion() repeats the engine's pick (src/world/PikachuFollower.lua
+  -- selectEmotion) as you talk.
   local emotions = {
     { 81795, 14 }, { 81796, 6 }, { 81797, 13 },
     { 81798, 9 },  { 81799, 5 }, { 81800, 12 },

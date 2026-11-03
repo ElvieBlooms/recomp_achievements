@@ -1,24 +1,18 @@
 -- rules/gen2_lib.lua
--- ==================================================================
--- Building blocks for rules/gen2_official.lua, the Gen 2 counterpart of
--- rules/gen1_lib.lua.  Each constructor returns one rule table.
---
+-- Building blocks for rules/gen2_official.lua, the Gen 2 side of
+-- rules/gen1_lib.lua. Each constructor returns one rule table.
 --   ra    = { gold = <RA id>, silver = <RA id>, crystal = <RA id> }
---           links the rule to RetroAchievements entries; the registry
---           only offers it on the games listed.
---   extra = optional fields merged in last (points/category/goal/unit,
---           fidelity = "interpretation" + note for local readings).
---
--- Facts come from adapters/gen2.lua.  Event flags are named the pret way
--- ("EVENT_BEAT_FALKNER"); the adapter turns names into each game's own
--- numbers (data/gen2_<game>.lua), so one rule serves Gold, Silver and
--- Crystal even where Crystal numbers its flags differently.
--- ==================================================================
+--           links the rule to RetroAchievements; it's only offered on those games.
+--   extra = optional fields merged in last (points, category, goal, unit,
+--           fidelity = "interpretation" plus a note for our own readings).
+-- Facts come from adapters/gen2.lua. Flags use pret names ("EVENT_BEAT_FALKNER")
+-- and the adapter maps them to each game's numbers (data/gen2_<game>.lua), so one
+-- rule covers Gold, Silver and Crystal even though Crystal numbers flags differently.
+-- ------------------
 
 local L = {}
 
--- Every rule here is an official one: the registry then offers it only on
--- the games its `ra` table names.
+-- Every rule here is official, so the registry only offers it on the games in `ra`.
 local function with(rule, extra)
   for k, v in pairs(extra or {}) do rule[k] = v end
   if rule.official == nil then rule.official = true end
@@ -78,9 +72,9 @@ function L.dexAtLeast(id, ra, title, n, extra)
     with({ goal = n, unit = "POKEMON", category = "POKEDEX" }, extra))
 end
 
--- Share of a generated list (trainers/items/hidden/gifts) that is done.
--- `percent` of the rows passing `keep` must be done.  Progress is in
--- percent (the list's length depends on the game version).
+-- Finish `percent` of a generated list (trainers, items, hidden, gifts),
+-- counting only rows that pass `keep`. Progress is a percentage because the
+-- list length depends on the version.
 function L.sweep(id, ra, title, kind, keep, percent, extra)
   return L.state(id, ra, title, function(f)
     local done, total = f.sweep(kind, keep)
@@ -98,16 +92,16 @@ function L.tracker(id, ra, title, on, init, extra)
   return with({ id = id, ra = ra, title = title, kind = "tracker", on = on, init = init }, extra)
 end
 
--- A flag the game sets at New Game to hide something, then clears and
--- sets again when the moment happens (Suicune sightings, the Machine
--- Part).  Counted when it's seen going from clear to set; `check` credits
--- old saves from something that can only be true afterwards.
+-- For flags the game sets at New Game to hide something, then clears and sets
+-- again when the moment happens (Suicune sightings, the Machine Part). It counts
+-- when the flag goes from clear to set. `check` credits old saves from something
+-- that can only be true afterwards.
 function L.flagRises(id, ra, title, flag, check, extra)
   local rule = L.tracker(id, ra, title, {
     tick = function(s, _, f)
-      -- A New Game runs InitializeEventsScript, which sets these flags
-      -- (and EVENT_INITIALIZED_EVENTS last).  A rise only counts once that
-      -- script had already finished, so starting a game doesn't unlock it.
+      -- New Game runs InitializeEventsScript, which sets these flags and then
+      -- EVENT_INITIALIZED_EVENTS. A rise only counts after that script has run,
+      -- so starting a game doesn't unlock it.
       local v = f.flag(flag)
       local init = f.flag("EVENT_INITIALIZED_EVENTS")
       local rose = s.prev == false and s.prevInit == true and v
@@ -119,7 +113,7 @@ function L.flagRises(id, ra, title, flag, check, extra)
   return rule
 end
 
--- A wild catch of one species, optionally refusing a ball (e.g. MASTER_BALL).
+-- Catch one species in the wild, optionally not with a given ball (MASTER_BALL).
 function L.caught(id, ra, title, species, notBall, extra)
   return L.onEvent(id, ra, title, "pokemon.caught", function(ev)
     if not (ev and ev.species == species) then return false end
@@ -128,7 +122,7 @@ function L.caught(id, ra, title, species, notBall, extra)
 end
 
 -- ---------------------------------------------------------- battles
--- Highest level of any Pokemon in the party right now (eggs excluded).
+-- Highest level in the party right now. Eggs don't count.
 function L.partyMax(f)
   local best = 0
   for _, m in ipairs(f.party()) do
@@ -143,7 +137,7 @@ function L.partyCount(f)
   return n
 end
 
--- Every species sent out in the battle passes pred.
+-- True when every species sent out in the battle passes pred.
 function L.usedOnly(b, pred)
   local any = false
   for _, s in ipairs(b.used or {}) do
@@ -153,8 +147,8 @@ function L.usedOnly(b, pred)
   return any
 end
 
--- Won a battle against `trainerClass` and cond(battle, facts) holds.  Gen 2
--- battles carry the trainer class ("FALKNER") straight from the battle.
+-- Win against `trainerClass` with cond(battle, facts) holding. Gen 2 battles
+-- carry the trainer class ("FALKNER") directly.
 function L.beatTrainer(id, ra, title, trainerClass, cond, extra)
   return L.onEvent(id, ra, title, "battle.ended", function(ev, f, ctx)
     local b = ctx.battle
@@ -163,8 +157,8 @@ function L.beatTrainer(id, ra, title, trainerClass, cond, extra)
   end, with({ category = "GYMS" }, extra))
 end
 
--- Challenge rules (RA's "Set mode"): the SET battle style from OPTION >
--- BATTLE STYLE, no Pokemon above `cap` at the start or the end.
+-- Challenge rules, RA's "Set mode": the SET battle style from OPTION >
+-- BATTLE STYLE, and no Pokémon above `cap` at the start or the end.
 L.CHALLENGE = "Challenge: set OPTION > BATTLE STYLE to SET"
 
 function L.prettyName(id)
@@ -178,7 +172,7 @@ function L.setCap(cap)
   end
 end
 
--- ...and only Pokemon of `typeId` were sent out (any of a list).
+-- Only Pokémon of one of `types` were sent out.
 function L.onlyTypes(types)
   return function(b, f)
     return L.usedOnly(b, function(s)
@@ -188,7 +182,7 @@ function L.onlyTypes(types)
   end
 end
 
--- Crystal's "only Johto Pokemon, no Pack items" family.
+-- Crystal's "only Johto Pokémon, no Pack items" family.
 L.LEGENDARY_EXCEPT_BEASTS = set({ "LUGIA", "HO_OH", "MEWTWO", "MEW", "CELEBI", "ARTICUNO", "ZAPDOS", "MOLTRES" })
 L.LUGIA_HOOH = set({ "LUGIA", "HO_OH" })
 function L.johtoOnly(cap, excluded)
@@ -206,10 +200,10 @@ function L.all(...)
   end
 end
 
--- The Elite Four and the Champion in one go.  battleOk(battle, facts) must
--- hold for every league battle (checked at its end); startOk(facts) when
--- each league battle starts.  A loss or a failed check ends the run; the
--- Champion's defeat with all four beaten in this run unlocks.
+-- The Elite Four and the Champion in one go. battleOk(battle, facts) is checked
+-- at the end of each League battle, startOk(facts) at the start. A loss or a
+-- failed check breaks the run. Beating the Champion with all four beaten in the
+-- same run unlocks it.
 L.ELITE = { "WILL", "KOGA", "BRUNO", "KAREN" }
 function L.leagueRun(id, ra, title, startOk, battleOk, extra)
   local league = set({ "WILL", "KOGA", "BRUNO", "KAREN", "CHAMPION" })
@@ -239,7 +233,7 @@ function L.leagueRun(id, ra, title, startOk, battleOk, extra)
 end
 
 -- ---------------------------------------------------------- map data
--- keep() helpers for L.sweep: by region, by map name prefix, by item.
+-- keep() filters for L.sweep: by region, by map name prefix, by item.
 function L.region(...)
   local want = set({ ... })
   return function(row) return want[row[#row]] == true end

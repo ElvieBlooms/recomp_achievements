@@ -1,7 +1,7 @@
 {
   "id": "recomp_achievements",
   "name": "Recomp Achievements",
-  "version": "2.6.1",
+  "version": "2.6.2",
   "github": "ElvieBlooms/recomp_achievements",
   "api": 3,
   "entry": "main.lua",
@@ -14,7 +14,9 @@
   "conflicts": [],
   "incompatible": [],
   "experimental": false,
-  "permissions": [],
+  "permissions": [
+    "engine_internals"
+  ],
   "games": [
     "gen1",
     "gen2",

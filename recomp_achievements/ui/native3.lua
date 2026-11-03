@@ -1,20 +1,18 @@
 -- ui/native3.lua
--- ==================================================================
--- The CLASSIC MENU for Gen 3: the achievements menu drawn the way the
--- game draws its own menus (and the way Gen1Recomp draws its Gen 3 Mods
--- manager): the blue help bar with button icons, a title window, the
--- player's chosen window frame, the game's font and the ▶ cursor, on the
--- 240x160 GBA screen.
+-- CLASSIC MENU on Gen 3: the achievements menu drawn like the game's own
+-- menus and Gen1Recomp's Gen 3 Mods manager. Blue help bar with button
+-- icons, a title window, the player's chosen window frame, the game font
+-- and the ▶ cursor, all on the 240x160 GBA screen.
 --
--- It uses the engine's Gen 3 drawing modules (src/ui/game3/*).  Those
+-- It borrows the engine's Gen 3 drawing modules (src/ui/game3/*). Those
 -- aren't part of the documented mod API, so Native3.available() checks
--- for every function used first; if anything is missing (a future
--- engine), main/browser fall back to the modern menu.
+-- for every function used first. If anything is missing, browser.lua
+-- opens the modern menu instead.
 --
 --   list    UP/DOWN pick, LEFT/RIGHT filter, A details, SELECT card, B back
 --   detail  LEFT/RIGHT page (summary / how it's checked), A or B back
---   card    LEFT/RIGHT page (leaderboard card / credits), B back
--- ==================================================================
+--   card    LEFT/RIGHT page (leaderboard card / extra credit / credits), B back
+-- ------------------
 
 local Native3 = {}
 
@@ -25,7 +23,7 @@ local CURSOR_X, ICON_X, LABEL_X, RIGHT_X = WIN_X, WIN_X + 9, WIN_X + 20, WIN_X +
 local TEXT_W = WIN_W - 16
 local HELP_BG = { 0 / 255, 123 / 255, 197 / 255, 1 }
 
-local function load()
+local function loadLibs()
   local need = {
     Window = "src.ui.game3.window", Chrome = "src.ui.game3.chrome",
     Font = "src.ui.game3.frlg_font", Pokedex = "src.ui.game3.pokedex_chrome",
@@ -46,16 +44,16 @@ end
 
 local libs
 function Native3.available()
-  if libs == nil then libs = load() or false end
+  if libs == nil then libs = loadLibs() or false end
   return libs ~= false
 end
 
--- The game font reads {TOKENS}; achievement text must never be taken for one.
+-- The game font reads {TOKENS}, so achievement text must never look like one.
 function Native3.clean(s)
   return (tostring(s or ""):gsub("{", "("):gsub("}", ")"):gsub("[\r\n]+", " "))
 end
 
--- Cut a string to a pixel width, with "…" when it had to be cut.
+-- Cuts a string to a pixel width, adding … when it had to cut.
 local function fit(G, s, w, opts)
   s = Native3.clean(s)
   if G.Font.measure(s, opts) <= w then return s end
@@ -72,10 +70,10 @@ end
 Native3.fit = fit
 
 function Native3.newScreen(o)
-  local G = libs or load()
+  local G = libs or loadLibs()
   local mod, engine, Browser, Share, game = o.mod, o.engine, o.Browser, o.Share, o.game
   local C = G.Font.COLOR
-  -- pokefirered stdpal_0 greens/grays, as plain RGB for the status icons
+  -- pokefirered stdpal_0 greens and grays as plain RGB, for the status icons
   local PAL = {
     [2] = { 98 / 255, 98 / 255, 98 / 255 }, [3] = { 213 / 255, 213 / 255, 205 / 255 },
     [6] = { 32 / 255, 156 / 255, 8 / 255 }, [7] = { 148 / 255, 246 / 255, 148 / 255 },
@@ -87,7 +85,7 @@ function Native3.newScreen(o)
   local filterIndex, index, scroll = 1, 1, 0
   local rows, list = {}, {}
   local detail, page = nil, 1
-  local card = false               -- false, 1 (leaderboard card), 2 (extra credit), 3 (credits)
+  local card = false               -- false, or the SELECT page: 1 leaderboard card, 2 extra credit, 3 credits
   local reveal = mod.options:get("showHidden") == true
   local closing, settled = false, false
   local blink = 0
@@ -102,13 +100,13 @@ function Native3.newScreen(o)
   rebuild()
   self.rebuild = rebuild
 
-  -- ---------------------------------------------------------- input
+  -- ------------------ input
   function self:update(dt)
     blink = blink + 1
     local input = game.input
     if not input then return end
-    -- never act on the press that opened us, and close a frame after B,
-    -- so neither press reaches the screen underneath
+    -- skip the press that opened us and close a frame after B, so neither
+    -- press reaches the screen underneath
     if closing then game.stack:pop() return end
     if not settled then settled = true return end
     local function pressed(b) return input:wasPressed(b) end
@@ -146,7 +144,7 @@ function Native3.newScreen(o)
     if index - scroll < 1 then scroll = math.max(0, index - 1) end
   end
 
-  -- ---------------------------------------------------------- drawing
+  -- ------------------ drawing
   local function print(s, x, y, colors, opts)
     G.Window.printPx(s, x, y, { colors = colors or C.NORMAL, small = opts and opts.small,
                                 maxWidth = opts and opts.maxWidth })
@@ -180,7 +178,8 @@ function Native3.newScreen(o)
     G.Window.userFrame(G.Window.template(2, 7, 26, 12), frameType())
   end
 
-  -- earned: filled green; in progress: half; locked: hollow; archived: gray
+  -- Earned is filled green, in progress part filled, locked hollow,
+  -- archived and reference gray.
   local function icon(kind, x, y, part)
     local g = love.graphics
     local function px(c) g.setColor(c[1], c[2], c[3], 1) end
@@ -276,8 +275,8 @@ function Native3.newScreen(o)
     local raw, lines = {}, {}
     if type(wrapped) == "table" then raw = wrapped
     else for l in (tostring(wrapped) .. "\n"):gmatch("(.-)\n") do raw[#raw + 1] = l end end
-    -- the font's wrap keeps a word longer than the line whole (a URL in a
-    -- mod's description); cut those a character at a time
+    -- frlg_font's wrap keeps an over-long word whole (a URL in a mod's
+    -- description), so those get cut a character at a time
     for _, l in ipairs(raw) do
       if G.Font.measure(l, opts) <= TEXT_W then lines[#lines + 1] = l
       else
@@ -330,8 +329,8 @@ function Native3.newScreen(o)
     print(fit(G, originOf(row), TEXT_W, { small = true }), LABEL_X - 4, footer + 14, C.DARK_GRAY, { small = true })
   end
 
-  -- Text with "_" in it: the font has none, so print spaces and draw the
-  -- underscores as lines (URLs and mod ids must be typed exactly).
+  -- The font has no _, so print spaces and draw the underscores as lines.
+  -- URLs and mod ids have to be typed exactly.
   local function printU(text, x, y, colors, rgb, small)
     small = small == nil and true or small
     local opts = { small = small }
@@ -405,7 +404,7 @@ function Native3.newScreen(o)
       print(l[1], LABEL_X - 4, y, C.DARK_GRAY, { small = true })
       print(l[2], LABEL_X + 52, y, C.NORMAL, { small = true })
     end
-    -- the font has no "_": printU draws it as a line (the URL needs it)
+    -- the font has no _, so printU draws it as a line for the URL
     printU(Browser.BOARD_URL, LABEL_X - 4, WIN_Y + WIN_H - 12, C.BLUE, PAL[8])
   end
 

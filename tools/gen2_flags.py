@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Event flag numbers for Gold/Silver and Crystal, read from the pret
-disassemblies (constants/event_flags.asm), the same source Gen1Recomp uses.
+# tools/gen2_flags.py
+"""Event flag numbers for Gold/Silver and Crystal, read from the pret disassemblies.
+
+Reads constants/event_flags.asm from pokegold and pokecrystal, the same
+source Gen1Recomp uses. tools/gen2_data.py imports parse_consts from here.
+Run on its own, it prints a quick sanity check.
 
     python3 tools/gen2_flags.py <pokegold dir> <pokecrystal dir>
-
-Prints a quick check; used by tools/gen2_data.py.
 """
+# ------------------
 import re
 import sys
 

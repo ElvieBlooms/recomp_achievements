@@ -1,8 +1,9 @@
 -- ui/browser.lua
--- ==================================================================
--- The ACHIEVEMENTS screen, opened from the START menu.
+-- The ACHIEVEMENTS screen in its Game Boy text-box form, the CLASSIC MENU
+-- on Gen 1 and 2. Browser.install also picks which menu opens, and adds
+-- the START row through ui.start_menu.items.
 --
--- Layout on the 20 x 18 tile Game Boy screen:
+-- Layout on the 20 x 18 tile screen:
 --
 --   +------------------+   rows 0-3   header: count, points, filter
 --   | 12/27   PTS 85   |
@@ -13,28 +14,27 @@
 --   | ...              |
 --   +------------------+
 --
--- Controls: UP/DOWN move, LEFT/RIGHT change filter, A opens details,
--- B (or START) goes back.  Earned = filled square, locked = hollow
--- square, archived = slashed square, so nothing depends on colour.
+-- UP/DOWN move, LEFT/RIGHT change filter, A opens details, B or START goes
+-- back. Earned is a filled square, locked is hollow and archived is
+-- slashed, so nothing depends on colour.
 --
--- The screen reads plain rows from engine:rows() each time it opens or a
--- filter changes.  It holds no references into the ledger, so an unlock
--- arriving while it is open can't corrupt anything; it just shows up the
--- next time the list is rebuilt.
--- ==================================================================
+-- Rows come fresh from engine:rows() on open and on each filter change.
+-- Nothing here holds onto the ledger, so an unlock while the screen is
+-- open just shows up on the next rebuild.
+-- ------------------
 
 local Browser = {}
 
 Browser.SCREEN_ID = "RecompAchievements"
--- The START menu row.  Gen 2's menu has room for 7 characters before the
--- frame (POKéGEAR is 6 tiles), so it gets the singular there.
+-- START menu labels. Gen 2's box fits 7 characters before the frame
+-- (POKéGEAR is 6), so it gets the singular.
 Browser.MENU_LABEL = "TROPHIES"
 Browser.SHORT_LABEL = "TROPHY"
--- Where the START row goes.  insertBefore falls back to appending if the
--- anchor label isn't there (another mod renamed it, a different gen).
+-- The START row goes before OPTION. insertBefore appends instead if that
+-- label isn't there (another mod renamed it, or a different gen).
 Browser.MENU_ANCHOR = "OPTION"
 
--- The SELECT page.  Kept short: it has to fit 16 rows of 18 characters.
+-- The SELECT page text. It has to fit 16 rows of 18 characters.
 Browser.ABOUT = {
   "ACHIEVEMENTS",
   "Lists and text from RetroAchievements and their authors.",
@@ -42,12 +42,11 @@ Browser.ABOUT = {
   "Not affiliated with RetroAchievements.",
 }
 
--- Where players submit the leaderboard card.  Change this if the repo
--- lives somewhere else.  The font has no "_"; drawCard draws them as
--- lines so the URL can still be typed exactly.
+-- Where players submit the leaderboard card. The font has no _, so
+-- drawCard draws them as lines and the URL can still be typed exactly.
 Browser.BOARD_URL = "elvieblooms.github.io/recomp_achievements"
 
--- Lines of the leaderboard card page (pure, so tests can check it).
+-- Leaderboard card text, kept pure so tests can check it.
 function Browser.cardLines(card, url)
   if not card then return { "LEADERBOARD", "", "Load a save first." } end
   local lines = {
@@ -59,7 +58,7 @@ function Browser.cardLines(card, url)
     ("EARNED  %d/%d"):format(card.earned, card.total),
   }
   if card.time then
-    -- play time when this score was reached, H:MM like the trainer card
+    -- play time when the score was reached, H:MM like the trainer card
     lines[#lines + 1] = ("TIME    %d:%02d"):format(math.floor(card.time / 60), card.time % 60)
   end
   for _, line in ipairs({ "SAVE ID " .. card.saveId, "CHECK   " .. card.code, "",
@@ -71,7 +70,7 @@ function Browser.cardLines(card, url)
   return lines
 end
 
--- Lines of the Extra Credit page (pure, so tests can check it).
+-- Extra Credit page text, kept pure so tests can check it.
 function Browser.extraLines(card)
   if not card then return { "EXTRA CREDIT", "", "Load a save first." } end
   local lines = { "EXTRA CREDIT", "", "TRAINER " .. tostring(card.name), "SAVE ID " .. card.saveId, "" }
@@ -87,8 +86,8 @@ function Browser.extraLines(card)
   return lines
 end
 
--- Slide a long title left and back so the selected row can be read in
--- full: hold one second, scroll at 4 chars/s, hold, return.
+-- Slides a long title left and back so the selected row can be read in
+-- full: hold a second, scroll 4 characters a second, hold, return.
 function Browser.marquee(Text, title, width, t)
   local chars = Text.chars(Text.safe(title))
   local extra = #chars - width
@@ -121,10 +120,10 @@ local FILTERS = {
 
 Browser.FILTERS = FILTERS
 
--- The filter tabs for this game: the fixed ones, plus one per mod that
--- has achievements here ("mod:<provider id>"), labelled with the mod's
--- chosen tab label or its name.  One mod: its tab takes FROM MODS' place.
--- Two or more: FROM MODS (all of them), then each mod's own.
+-- The filter tabs for this game: the fixed ones plus one per mod with
+-- achievements here ("mod:<provider id>"), named by the mod's tab label
+-- or its name. With one mod, its tab takes FROM MODS' place. With two or
+-- more, FROM MODS shows them all and each mod gets its own tab too.
 function Browser.filtersFor(mod, engine)
   local providers, seen = {}, {}
   local registry = engine and engine.registry
@@ -160,7 +159,7 @@ local function passes(filter, row)
   if filter == "progress" then
     return not row.unlocked and row.goal ~= nil and (row.progress or 0) > 0
   end
-  -- RetroAchievements' own "missable" tag: can be lost for good in a playthrough.
+  -- RA's own missable tag: can be lost for good in a playthrough.
   if filter == "missable" then return row.raType == "missable" and not row.archived end
   if filter == "official" then return row.source == "core" and row.official == true end
   if filter == "bonus" then return row.source == "core" and not row.official end
@@ -172,10 +171,9 @@ local function passes(filter, row)
   return true
 end
 
--- ------------------------------------------------------------------
--- View model: turn engine rows (+ reference catalog) into display rows.
--- Kept separate from drawing so tests can check it without a screen.
--- ------------------------------------------------------------------
+-- ------------------ view model
+-- Engine rows (and the RA reference list) turned into display rows.
+-- Kept apart from drawing so tests can check it without a screen.
 function Browser.model(engine, opts)
   opts = opts or {}
   local rows = engine:rows()
@@ -206,7 +204,7 @@ function Browser.filtered(rows, filter)
   return out
 end
 
--- What a row is allowed to show.  Hidden + locked = no spoilers.
+-- What a row may show. Hidden and still locked means no spoilers.
 function Browser.display(row, reveal)
   local secret = row.hidden and not row.unlocked and not reveal
   return {
@@ -215,26 +213,25 @@ function Browser.display(row, reveal)
   }
 end
 
--- ------------------------------------------------------------------
--- The screen object.  Gen 1's state stack calls update(dt) and draw();
--- popping ourselves (game.stack:pop()) closes the screen.
--- ------------------------------------------------------------------
+-- ------------------ screen
+-- Gen 1's state stack calls update(dt) and draw(); game.stack:pop()
+-- closes it.
 function Browser.newScreen(mod, engine, util, Text, game, Share)
   local Font = mod.ui.Font
   local Theme = mod.ui.Theme
-  -- isOpaque: the state stack stops drawing the world under us
-  -- (src/core/StateStack.lua), like the Pokedex and Diploma screens.
+  -- isOpaque stops the state stack drawing the world underneath
+  -- (src/core/StateStack.lua), like the Pokédex and Diploma screens.
   local self = { isMenu = true, isOpaque = true, game = game }
 
   local filters = Browser.filtersFor(mod, engine)
   local filterIndex, index, scroll = 1, 1, 0
   local rows, list = {}, {}
   local detail = nil -- the row being inspected, or nil for the list
-  local page = 1     -- detail page: 1 = summary, 2 = about this rule
-  local about = false -- SELECT pages: 1 = leaderboard card, 2 = extra credit, 3 = credits
+  local page = 1     -- detail page: 1 = summary, 2 = how it's checked
+  local about = false -- SELECT page: 1 leaderboard card, 2 extra credit, 3 credits
   local clock = 0     -- drives the selected row's title scroll
   local reveal = mod.options:get("showHidden") == true
-  local closing, settled = false, false -- see Modern's update
+  local closing, settled = false, false -- same trick as Modern's update
 
   local function rebuild()
     rows = Browser.model(engine, { reference = mod.options:get("showReference") })
@@ -336,7 +333,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     end
   end
 
-  -- Detail, page 1: what it is and where you stand.
+  -- Detail page 1: what it is and where you stand.
   local function drawSummary(row)
     local shown = Browser.display(row, reveal)
     local y = 1
@@ -349,7 +346,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
       if y > 11 then break end
       Text.draw(Font, line, 1, y); y = y + 1
     end
-    -- footer: fixed rows so long text never overlaps it
+    -- the footer rows are fixed so long text never runs into them
     local status
     if row.reference then
       status = row.tracked and "TRACKED HERE" or "NOT TRACKED YET"
@@ -382,7 +379,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     if not row.reference then Text.arrow("right", 18, 16) end
   end
 
-  -- Detail, page 2: how this mod decides it, and the RA reference.
+  -- Detail page 2: how this mod checks it, and the RA reference.
   local function drawAbout(row)
     Text.draw(Font, "ABOUT", 1, 1)
     local y = 3
@@ -416,7 +413,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     Text.arrow("left", 18, 16)
   end
 
-  -- SELECT: what this mod is, and who the achievements come from.
+  -- SELECT page 3: what this mod is and who the achievements come from.
   local function drawCredits()
     Font.drawBox(0, 0, 20, 18)
     local y = 1
@@ -475,17 +472,16 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
   return self
 end
 
--- ------------------------------------------------------------------
--- Wiring: register the screen and add the START row.
--- ------------------------------------------------------------------
--- Modern (ui/modern.lua) is the default menu; the CLASSIC MENU option
--- brings back the Game Boy text-box version above.
+-- ------------------ wiring
+-- Registers the screen and adds the START row. The modern menu
+-- (ui/modern.lua) is the default; CLASSIC MENU brings back the game's
+-- own look.
 function Browser.install(mod, engine, util, Text, Share, Modern, Native3)
   mod.content.screens:register(Browser.SCREEN_ID, {
     new = function(game)
-      -- CLASSIC MENU: the game's own look.  Gen 1 and Gen 2 draw with
-      -- their tile font and text-box frame (below); Gen 3 with its GBA
-      -- windows and font (ui/native3.lua), when the engine has them.
+      -- CLASSIC MENU: Gen 1 and 2 use their tile font and text-box frame
+      -- (this file), Gen 3 its GBA windows and font (ui/native3.lua) when
+      -- the engine has them.
       local classic = mod.options:get("classicMenu")
       if classic and mod.generation == 3 and Native3 and Native3.available() then
         return Native3.newScreen({ mod = mod, engine = engine, Browser = Browser, Share = Share, game = game })
@@ -498,16 +494,14 @@ function Browser.install(mod, engine, util, Text, Share, Modern, Native3)
     end,
   })
 
-  -- The modern menu draws at window resolution, after the game frame.
-  -- Installed before the popups' hook, so unlock popups stay on top.
+  -- The modern menu draws on render.hud at window resolution, after the
+  -- game frame. It draws before handing on down the chain, so the unlock
+  -- popups land on top whichever order the hooks went in.
   if Modern then
-    -- Drawn BEFORE handing on, so anything later in the chain (the unlock
-    -- popups included) lands on top of the menu whichever order the
-    -- hooks were installed in.
     mod.hooks:wrap("render.hud", function(nextFn, game, vp, ...)
       local live = mod.game or game
-      -- Gen 1/2 keep a list of states; Gen 3's mod stack is a facade
-      -- with top() (src/ui/game3/mod_ui.lua)
+      -- Gen 1/2 keep a list of states; Gen 3's mod stack only offers top()
+      -- (src/ui/game3/mod_ui.lua)
       local stack = live and live.stack
       local top
       if stack and type(stack.states) == "table" then top = stack.states[#stack.states]
@@ -534,8 +528,8 @@ function Browser.install(mod, engine, util, Text, Share, Modern, Native3)
   end
   Browser.openMenu = openMenu
 
-  -- OPEN TROPHIES in the Mods manager: the menu opens on top of it, and
-  -- B goes back there.
+  -- OPEN TROPHIES in the Mods manager opens the menu on top of it, and B
+  -- goes back there.
   mod.events:on("mod.options_changed", function(ev)
     if type(ev) == "table" and ev.mod == mod.id and ev.key == "openMenu" then
       if engine.game then openMenu(mod.game)
@@ -549,11 +543,11 @@ function Browser.install(mod, engine, util, Text, Share, Modern, Native3)
     if mod.options:get("startMenuEntry") == false then return items end
     mod.ui.insertBefore(items, Browser.MENU_ANCHOR, {
       -- Gen 1/2 START boxes are 10 tiles and grow to the widest label + 3,
-      -- so anything over 7 letters would widen them (and push other mods'
-      -- menus around): TROPHY there, TROPHIES on Gen 3.
+      -- so anything over 7 letters widens them and shifts other mods' menus:
+      -- TROPHY there, TROPHIES on Gen 3.
       label = mod.generation == 3 and Browser.MENU_LABEL or Browser.SHORT_LABEL,
-      -- Gen 2's MENU ACCOUNT help box: two lines, 9 characters at most
-      -- (like its own "Your own" / "status")
+      -- Gen 2's help box under MENU ACCOUNT: two lines of 9 characters at
+      -- most, like its own "Your own" / "status"
       desc = { "Your", "trophies" },
       onSelect = function() openMenu(game) end,
     })

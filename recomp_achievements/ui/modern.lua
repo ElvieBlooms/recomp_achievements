@@ -1,29 +1,25 @@
 -- ui/modern.lua
--- ==================================================================
--- The modern achievements menu: a list on the left, the selected
--- achievement's details on the right, drawn with smooth text at the
--- window's own resolution.
+-- The modern achievements menu: the list on the left and the selected
+-- achievement on the right, in smooth text at the window's resolution.
+-- It also draws the modern and corner unlock popups and progress notes.
 --
--- How it fits into the game: the screen is still an ordinary state on
--- the game's stack (it takes input and hides the world like any menu),
--- but its own draw() only blanks the game frame.  The real drawing
--- happens on the render.hud hook, which runs after the frame is scaled
--- into the window and hands us the game's rectangle in window pixels.
--- Every generation's engine calls render.hud with that rectangle, so the
--- same menu works on Gen 1, 2 and 3; only the accent colour changes.
+-- The screen is still a normal state on the game's stack, so it takes
+-- input and hides the world like any menu, but its draw() only blanks the
+-- game frame. The real drawing happens on render.hud, which runs after
+-- the frame is scaled and passes the game's rectangle in window pixels.
+-- Every gen's engine calls it that way, so one menu works on Gen 1, 2 and
+-- 3; only the accent colour changes.
 --
--- Everything is sized from one unit, u = one Game Boy pixel at the
--- current scale, so the layout keeps its proportions in any window.
--- ==================================================================
+-- Everything is sized from u, one Game Boy pixel at the current scale, so
+-- the layout keeps its shape in any window.
+-- ------------------
 
 local Modern = {}
 
--- ------------------------------------------------------------------
--- Look
--- ------------------------------------------------------------------
--- Palettes.  Each names its surfaces, text shades and a set of hues;
--- the game's accent is picked from the hues (Modern.GAME_HUE), so every
--- palette has a matching red, blue, yellow and so on.
+-- ------------------ look
+-- Each palette names its surfaces, text shades and a set of hues. The
+-- game's accent comes from the hues (Modern.GAME_HUE), so every palette
+-- has its own red, blue, yellow and so on.
 local function hex(h, a)
   return { tonumber(h:sub(2, 3), 16) / 255, tonumber(h:sub(4, 5), 16) / 255,
            tonumber(h:sub(6, 7), 16) / 255, a or 1 }
@@ -95,7 +91,7 @@ Modern.GAME_HUE = {
   firered = "orange", leafgreen = "green",
 }
 
--- The colours in use, filled from the chosen palette (Modern.apply).
+-- The colours in use, filled from the chosen palette by Modern.apply.
 local C = {}
 
 function Modern.apply(name)
@@ -109,11 +105,11 @@ function Modern.accent(game)
   return C.hues[Modern.GAME_HUE[game or ""] or "yellow"] or C.earned
 end
 
--- Kept for callers that want a game's colour outside a palette.
+-- For callers that want a game's colour outside a palette.
 Modern.ACCENTS = {}
 for game, hue in pairs(Modern.GAME_HUE) do Modern.ACCENTS[game] = Modern.THEMES.midnight.hues[hue] end
 
--- What players pick in the leaderboard form's Game field.
+-- Matches the choices in the leaderboard form's Game field.
 Modern.SHORT_NAMES = {
   red = "Red", blue = "Blue", yellow = "Yellow", green = "Green", gold = "Gold", silver = "Silver",
   crystal = "Crystal", ruby = "Ruby", sapphire = "Sapphire", emerald = "Emerald",
@@ -127,7 +123,7 @@ Modern.GAME_NAMES = {
   firered = "Pokémon FireRed", leafgreen = "Pokémon LeafGreen",
 }
 
--- Filter names for this menu (same ids as Browser's filters).
+-- Filter names for this menu, same ids as Browser's filters.
 Modern.FILTER_LABELS = {
   all = "All", earned = "Earned", missing = "Missing", progress = "In progress", missable = "Missable",
   official = "RA list", bonus = "Bonus", mods = "From mods", archived = "Archived",
@@ -136,9 +132,7 @@ Modern.FILTER_LABELS = {
 
 local REPEAT_DELAY, REPEAT_RATE = 0.35, 0.07
 
--- ------------------------------------------------------------------
--- Small drawing helpers
--- ------------------------------------------------------------------
+-- ------------------ drawing helpers
 local G -- love.graphics, bound when drawing
 
 local function color(c, alpha)
@@ -162,7 +156,7 @@ local function textRight(f, s, right, y, c)
   text(f, s, right - f:getWidth(s), y, c)
 end
 
--- Shorten to fit `width` pixels, ending in an ellipsis.
+-- Cuts a string to `width` pixels, ending in …
 function Modern.ellipsize(f, s, width)
   s = tostring(s or "")
   if f:getWidth(s) <= width then return s end
@@ -192,8 +186,8 @@ local function bar(x, y, w, h, frac, c)
   if frac > 0 then rrect("fill", x, y, math.max(h, w * frac), h, h / 2, c) end
 end
 
--- Status icon: gold disc with a tick when earned, a ring when locked, a
--- partly filled ring for progress, a slashed ring when archived.
+-- Status icon: a gold disc with a tick when earned, a ring when locked, a
+-- part-filled ring for progress, a slashed ring when archived.
 local function icon(cx, cy, r, row)
   G.setLineWidth(math.max(1, r * 0.22))
   if row.reference then
@@ -217,7 +211,7 @@ local function icon(cx, cy, r, row)
   end
 end
 
--- A button cap: rounded box with a label, or a direction triangle.
+-- A button cap: a rounded box with a label, or direction triangles.
 local function keycap(x, y, h, label, f)
   local w
   if label == "updown" or label == "leftright" then w = h * 1.25 else w = math.max(h, f:getWidth(label) + h * 0.6) end
@@ -263,11 +257,10 @@ function Modern.status(row)
   return "Locked", C.faint
 end
 
--- ------------------------------------------------------------------
--- Where the menu goes: the whole window (landscape or portrait), minus
--- any notch or rounded-corner insets the OS reports.  Falls back to the
--- game's own rectangle if the engine didn't say how big the window is.
--- ------------------------------------------------------------------
+-- ------------------ layout
+-- The menu fills the whole window, landscape or portrait, minus any notch
+-- or rounded-corner insets the OS reports. It uses the game's rectangle
+-- instead if the engine didn't pass the window size.
 function Modern.region(vp, size)
   local W, H = tonumber(vp.width), tonumber(vp.height)
   if size == "game" or not (W and H and W > 0 and H > 0) then
@@ -284,28 +277,27 @@ function Modern.region(vp, size)
   return x, y, W, H
 end
 
--- Height of the touch pad's deck in portrait, following the engine's own
--- default layout (src/core/TouchControls.lua defaultLayout).
+-- Height of the on-screen pad in portrait, following the engine's own
+-- defaultLayout (src/core/TouchControls.lua).
 function Modern.deckHeight(ww, wh)
   local dpadW = math.min(180, math.min(ww, wh) * 0.34)
   local lrH = dpadW * 0.56 * 0.5
   return math.floor(dpadW * 0.12 + dpadW + lrH * 1.4 + wh * 0.09 + 6)
 end
 
--- One "Game Boy pixel" of layout: the game's own scale, so text is the
--- same size as in the game, but never so big the menu can't fit.
+-- One Game Boy pixel of layout: the game's own scale, so text matches the
+-- game, but capped so the menu always fits.
 function Modern.unit(vp, W, H)
   local gw, gh = vp.gameWidth or W, vp.gameHeight or H
   local u = math.min(gw / 160, gh / 144)
   return math.max(0.5, math.min(u, W / 150, H / 128))
 end
 
--- ------------------------------------------------------------------
--- Unlock popups in the menu's style (ui/toast.lua decides when)
--- ------------------------------------------------------------------
+-- ------------------ popups
+-- Unlock popups in the menu's style; ui/toast.lua decides when.
 -- c: { kind = "unlock" | "summary" | "more", title, points }
--- shown: 0..1 slide-in amount.  opts: { style = "modern" | "corner",
--- theme = palette name, game = running game id }
+-- shown: how far it has slid in, 0..1
+-- opts: { style = "modern" | "corner", theme = palette name, game = game id }
 function Modern.drawToast(c, shown, vp, opts)
   G = love.graphics
   Modern.apply(opts.theme)
@@ -321,7 +313,7 @@ function Modern.drawToast(c, shown, vp, opts)
   G.push("all")
   G.setScissor(x0, y0, W, H)
   if opts.style == "corner" then
-    -- a small card in the top-right corner that slides in from the side
+    -- corner: a small card that slides in at the top right
     local fTitle, fTiny = font(4.4 * u), font(3.6 * u)
     local pad, r = 2.6 * u, 3.4 * u
     local w = math.floor(W * 0.46)
@@ -338,7 +330,7 @@ function Modern.drawToast(c, shown, vp, opts)
     if pts ~= "" then textRight(fTiny, pts, x + w - pad, y + pad, accent) end
     text(fTitle, Modern.ellipsize(fTitle, c.title or "", x + w - pad - tx), tx, y + pad + fTiny:getHeight(), C.text)
   else
-    -- a banner across the top that slides down
+    -- modern: a banner that slides down across the top
     local fTitle, fSmall = font(5.6 * u), font(4.2 * u)
     local pad, r = 4 * u, 5 * u
     local w = W - 8 * u
@@ -365,8 +357,8 @@ function Modern.drawToast(c, shown, vp, opts)
   G.pop()
 end
 
--- A progress note: a small, see-through card in the top-left corner,
--- "3 / 50" with a bar, for a moment after an achievement moves along.
+-- A progress note: a small see-through card at the top left with
+-- "3 / 50" and a bar, for a moment after an achievement moves along.
 function Modern.drawProgress(c, shown, vp, opts)
   G = love.graphics
   Modern.apply(opts.theme)
@@ -401,9 +393,7 @@ function Modern.drawProgress(c, shown, vp, opts)
   G.pop()
 end
 
--- ------------------------------------------------------------------
--- Screen
--- ------------------------------------------------------------------
+-- ------------------ screen
 -- deps: { mod, engine, Browser, Share, game }
 function Modern.newScreen(deps)
   local mod, engine, Browser, Share, game = deps.mod, deps.engine, deps.Browser, deps.Share, deps.game
@@ -439,9 +429,9 @@ function Modern.newScreen(deps)
     dt = tonumber(dt) or 1 / 60
     local input = game.input
     if not input then return end
-    -- Close a frame after B/START and ignore the frame we opened on, so
-    -- the press never reaches the screen underneath (the Mods manager
-    -- when opened from OPEN TROPHIES).
+    -- Close a frame after B or START, and skip the frame we opened on, so
+    -- neither press reaches the screen underneath (the Mods manager, when
+    -- opened from OPEN TROPHIES).
     if st.closing then game.stack:pop() return end
     if not st.settled then st.settled = true return end
     local function pressed(b) return input:wasPressed(b) end
@@ -465,7 +455,7 @@ function Modern.newScreen(deps)
     if pressed("right") then setFilter(1) end
     if pressed("up") then move(-1); st.held, st.heldFor = "up", 0 end
     if pressed("down") then move(1); st.held, st.heldFor = "down", 0 end
-    -- hold to scroll
+    -- hold UP or DOWN to keep scrolling
     if st.held and input.isDown and input:isDown(st.held) then
       st.heldFor = st.heldFor + dt
       if st.heldFor >= REPEAT_DELAY then
@@ -481,7 +471,7 @@ function Modern.newScreen(deps)
   end
 
   -- Gen 2 paints the window white behind an opaque screen unless the
-  -- screen draws the whole window itself; this is that, in our backdrop.
+  -- screen draws the whole window itself, so this fills it with the backdrop.
   function self:drawsWidescreen() return true end
   function self:drawWidescreen(w, h)
     Modern.apply(mod.options:get("menuTheme"))
@@ -490,8 +480,8 @@ function Modern.newScreen(deps)
     love.graphics.setColor(1, 1, 1, 1)
   end
 
-  -- The game frame under the menu: plain dark, so nothing shows through
-  -- if the window draw is late by a frame.
+  -- The game frame under the menu gets the backdrop too, so nothing shows
+  -- through if the window draw is a frame late.
   function self:draw()
     Modern.apply(mod.options:get("menuTheme"))
     love.graphics.setColor(C.backdrop)
@@ -499,9 +489,7 @@ function Modern.newScreen(deps)
     love.graphics.setColor(1, 1, 1, 1)
   end
 
-  -- ----------------------------------------------------------------
-  -- Window-space drawing (called from the render.hud hook)
-  -- ----------------------------------------------------------------
+  -- ------------------ window drawing, called from the render.hud hook
   function self:drawWindow(vp)
     G = love.graphics
     local size = mod.options:get("menuSize")
@@ -517,13 +505,13 @@ function Modern.newScreen(deps)
     G.push("all")
     G.setScissor(x0, y0, W, H)
     rrect("fill", x0, y0, W, H, 0, C.backdrop)
-    -- On a phone held upright the on-screen pad sits along the bottom, so
-    -- the content stops above it (the backdrop still fills the screen).
+    -- On an upright phone the touch pad sits along the bottom, so the
+    -- content stops above it. The backdrop still fills the screen.
     if portrait then H = H - Modern.deckHeight(vp.width or W, vp.height or H) end
-    -- a thin accent line along the top edge
+    -- thin accent line along the top edge
     rrect("fill", x0, y0, W, 1.2 * u, 0, accent)
 
-    -- header ------------------------------------------------------
+    -- ------------------ header
     local t = engine:totals()
     local hx, hy = x0 + p, y0 + p * 0.9
     text(fTitle, "Achievements", hx, hy, C.text)
@@ -540,7 +528,7 @@ function Modern.newScreen(deps)
     bar(hx, by + fTiny:getHeight() / 2 - 1.2 * u, barW, 2.4 * u, t.total > 0 and t.earned / t.total or 0, accent)
     textRight(fTiny, stats, x0 + W - p, by, C.muted)
 
-    -- filter chips, scrolled so the current one is on screen
+    -- filter chips, scrolled so the current one stays on screen
     local cy = by + fTiny:getHeight() + 3 * u
     local chipH = fSmall:getHeight() + 2.4 * u
     local chips, total = {}, 0
@@ -570,11 +558,11 @@ function Modern.newScreen(deps)
     end
     G.setScissor(x0, y0, W, H)
 
-    -- body --------------------------------------------------------
+    -- ------------------ body
     local footH = fTiny:getHeight() + 4 * u
     local top = cy + chipH + 3.5 * u
     local bottom = y0 + H - footH
-    -- landscape: list left, details right.  portrait: list above details.
+    -- Landscape puts the details beside the list, portrait puts them below.
     local listW, px, py, pw, ph
     if portrait then
       listW = W - 2 * p
@@ -596,8 +584,7 @@ function Modern.newScreen(deps)
       local msg = engine.active and "Nothing here yet" or "Load a save to see achievements"
       text(fBody, msg, lx + (listW - fBody:getWidth(msg)) / 2, top + (bottom - top) / 2 - fBody:getHeight(), C.faint)
     end
-    -- rows below the last full one would be cut off by the footer, so
-    -- only whole rows are drawn
+    -- only whole rows are drawn, since a part row would run under the footer
 
     G.setScissor(lx - 1, top, listW + 2, bottom - top)
     for i = 1, st.visible do
@@ -643,7 +630,7 @@ function Modern.newScreen(deps)
       rrect("fill", lx + listW + 0.8 * u, thumbY, 1 * u, thumbH, 0.5 * u, C.faint, 0.7)
     end
 
-    -- side panel ----------------------------------------------------
+    -- ------------------ side panel
     rrect("fill", px, py, pw, ph - 1.2 * u, 3 * u, C.panel)
     local row = st.list[st.index]
     if row then
@@ -669,7 +656,7 @@ function Modern.newScreen(deps)
         if (row.points or 0) > 0 then para(fSmall, row.points .. (row.points == 1 and " point" or " points"), accent, 3 * u) end
         para(fSmall, shown.description, C.muted, 3.5 * u)
         if row.category == "CHALLENGE" then
-          -- RA's text says "Set Mode"; spell out what that means here
+          -- RA's text says Set Mode, so spell out what that means here
           para(fTiny, "Challenge: needs OPTION > BATTLE STYLE set to SET. A shows the full rules.", accent, 3 * u)
         end
         if not row.unlocked and row.goal then
@@ -689,7 +676,7 @@ function Modern.newScreen(deps)
         elseif row.fidelity == "interpretation" then
           how = "A close local version of the RetroAchievements goal, adapted for Gen1Recomp." .. (row.note and ("\n\n" .. row.note) or "")
         elseif row.official and row.note then
-          -- the rules first (challenges): they're what the player needs
+          -- rules first for challenges, since they're what the player needs
           how = row.note .. "\n\nChecked by this mod with its own logic."
         elseif row.official then
           how = "Checked by this mod from your save and gameplay, with its own logic written for Gen1Recomp."
@@ -708,7 +695,7 @@ function Modern.newScreen(deps)
       end
     end
 
-    -- footer --------------------------------------------------------
+    -- ------------------ footer
     local fy = y0 + H - footH + 1.2 * u
     local capH = fTiny:getHeight() + 1.2 * u
     local fx = hx
@@ -726,7 +713,7 @@ function Modern.newScreen(deps)
     G.pop()
   end
 
-  -- SELECT: the leaderboard card (page 1), extra credit (2), credits (3).
+  -- SELECT pages: leaderboard card (1), extra credit (2), credits (3).
   function self:drawModal(x0, y0, W, H, u, accent)
     local fBody, fSmall, fTiny = font(5.6 * u), font(4.6 * u), font(4 * u)
     rrect("fill", x0, y0, W, H, 0, C.backdrop, 0.78)
@@ -824,7 +811,7 @@ function Modern.newScreen(deps)
         y = y + 3 * u
       end
     end
-    -- hints along the bottom edge
+    -- button hints along the bottom edge
     local capH = fTiny:getHeight() + 1.2 * u
     local hy = my + mh - ip - capH
     local function capWidth(label) return math.max(capH, fTiny:getWidth(label) + capH * 0.6) end

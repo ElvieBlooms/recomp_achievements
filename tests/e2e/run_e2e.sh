@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-# Boot the real game headless with our mods and a test plan.
-#   run_e2e.sh <game> <plan.lua> [seconds] [extra mod dirs...]
-# Uses COPIES of the extracted data folder; originals are never touched.
+# tests/e2e/run_e2e.sh
+# Boots the real game headless under xvfb with our mods and one test plan.
+# The plan is copied into the e2e_driver mod, which runs it from the core.update hook.
+# Works on copies of the extracted data folder, so the originals are never touched.
+#   run_e2e.sh <game> <plan.lua> [seconds]
+# MODS, SLOT, KEEP_OPTIONS, E2E_RUN and LINES_MAX change what it copies and shows.
+# ------------------
 set -u
 GAME=$1; PLAN=$2; SECS=${3:-60}; shift 3 || true
 HERE=$(cd "$(dirname "$0")" && pwd)

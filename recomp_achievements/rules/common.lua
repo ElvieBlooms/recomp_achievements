@@ -1,13 +1,9 @@
 -- rules/common.lua
--- ==================================================================
--- Bonus achievements that don't depend on the game: they reward using
--- this mod's own features.  Loaded for every generation, marked `extra`
--- (BONUS ACHIEVEMENTS option) like the other bonus rules, and never part
--- of the RetroAchievements list, so they never change leaderboard points.
---
--- "ui.*" events are sent by this mod's menus (engine:dispatch), not by
--- the game.
--- ==================================================================
+-- Bonus achievements for using the mod itself, so they work in every generation.
+-- They are marked `extra` like the other bonus rules, so the BONUS ACHIEVEMENTS
+-- option hides them, and they never count toward RetroAchievements points.
+-- The "ui.*" events come from this mod's own menus (engine:dispatch), not the game.
+-- ------------------
 
 return {
   {

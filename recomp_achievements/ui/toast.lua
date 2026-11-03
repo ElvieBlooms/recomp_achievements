@@ -1,22 +1,21 @@
 -- ui/toast.lua
--- ==================================================================
--- Unlock popups.  A small queue: one popup at a time, each slides in from
--- the top, holds, and slides out.  Drawn on the render.hud hook, which
--- runs after the frame is composed, so popups sit over gameplay without
--- being a stack state (they never steal input or pause the game).
+-- Unlock popups and progress notes. One popup at a time from a small
+-- queue: it slides in, holds, and slides out. They draw on render.hud
+-- after the frame is composed, so they sit over gameplay without being a
+-- stack state, and never take input or pause the game.
 --
--- A popup is never the proof of an unlock.  The engine writes the
--- ledger first and only then calls push(); turning popups off changes
--- nothing about what is saved.
--- ==================================================================
+-- A popup is never the proof of an unlock. The engine writes the ledger
+-- first and only then calls push(), so turning popups off changes nothing
+-- about what is saved.
+-- ------------------
 
 local Toast = {}
 Toast.__index = Toast
 
 Toast.HOLD = 2.6      -- seconds fully shown
-Toast.SLIDE = 0.18    -- seconds to slide in/out
-Toast.MAX_QUEUE = 12  -- extra unlocks collapse into one "+N more" popup
--- Progress notes ("3 / 50") are a lighter, separate lane in the top-left.
+Toast.SLIDE = 0.18    -- seconds to slide in or out
+Toast.MAX_QUEUE = 12  -- past this, extra unlocks fold into one "+N more" popup
+-- Progress notes ("3 / 50") get their own lighter lane at the top left.
 Toast.PROGRESS_HOLD = 1.8
 Toast.PROGRESS_QUEUE = 6
 Toast.PROGRESS_SLOTS = 3  -- cards shown at once, stacked
@@ -27,8 +26,8 @@ local function now()
   return os.clock()
 end
 
--- chime (ui/chime.lua) is optional: the unlock sound, played as each
--- popup appears, or straight away when popups are switched off.
+-- chime (ui/chime.lua) is optional. It plays as each popup appears, or
+-- straight away when popups are off.
 function Toast.new(mod, util, Text, chime)
   return setmetatable({ mod = mod, util = util, Text = Text, chime = chime, queue = {},
                         current = nil, overflow = 0, pqueue = {}, pactive = {} }, Toast)
@@ -42,8 +41,8 @@ function Toast:enabled()
   return self.mod.options:get("toasts") ~= false
 end
 
--- def: the registry definition; shown: what to display for it on this
--- game (Registry:display -- the official RA text when linked).
+-- def is the registry definition; shown is what to display for it on this
+-- game (Registry:display, the official RA text when linked).
 function Toast:push(def, shown)
   if not self:enabled() then return self:sound("unlock") end
   if #self.queue >= Toast.MAX_QUEUE then
@@ -75,10 +74,10 @@ function Toast:progressEnabled()
 end
 
 -- An achievement moved along (never the backfill on load).
---   * A newer value for one already waiting or showing updates that card.
---   * Goals that count the same thing (Pokedex 10/50/100 all at 12) show
---     only the nearest one: same unit and same count, smallest goal wins.
---   * Up to three cards show at once, stacked down from the top-left.
+-- A newer value for a card already waiting or showing updates that card.
+-- Goals that count the same thing (Pokédex 10/50/100 all at 12) show only
+-- the nearest one: same unit and count, smallest goal wins.
+-- Up to three cards show at once, stacked down from the top left.
 local function sameThing(a, b)
   return a.unit ~= nil and a.unit == b.unit and a.value == b.value
 end
@@ -113,9 +112,9 @@ function Toast:pushProgress(def, shown, value, goal)
   self.pqueue[#self.pqueue + 1] = note
 end
 
--- Advance the progress cards; returns { { note, shown }, ... } top to
--- bottom.  New cards wait while an unlock popup is showing, so the two
--- never overlap.
+-- Moves the progress cards along and returns { { note, shown }, ... } top
+-- to bottom. New cards wait while an unlock popup shows, so the two never
+-- overlap.
 function Toast:tickProgress()
   local t = now()
   local total = Toast.SLIDE * 2 + Toast.PROGRESS_HOLD
@@ -146,7 +145,7 @@ function Toast:clear()
   self.pqueue, self.pactive = {}, {}
 end
 
--- Advance the queue; returns the popup to draw and its slide offset 0..1.
+-- Moves the queue along; returns the popup to draw and how far it has slid in (0..1).
 function Toast:tick()
   local t = now()
   if not self.current then
@@ -177,12 +176,12 @@ function Toast:tick()
 end
 
 -- POPUP STYLE: "modern" (a banner in the menu's palette), "corner" (a
--- small card in the top-right corner) or "classic" (the Game Boy text box).
+-- small card at the top right) or "classic" (the Game Boy text box).
 function Toast:style()
   local s = self.mod.options:get("popupStyle")
   if not self.Modern then return "classic" end
   if s == "classic" then
-    -- the Game Boy box uses Gen 1's tile font
+    -- the Game Boy box needs Gen 1's tile font
     return self.mod.generation == 1 and "classic" or "modern"
   end
   if s == "corner" then return "corner" end
@@ -215,8 +214,8 @@ function Toast:draw(vp)
   g.push("all")
   g.translate(vp.gameX or 0, vp.gameY or 0)
   g.scale(vp.gameWidth / 160, vp.gameHeight / 144)
-  -- Border, heading, one or two title lines, border.  Slides down from
-  -- above the screen.  Long official titles wrap to a second line.
+  -- Border, heading, one or two title lines, border, sliding down from
+  -- above the screen. Long official titles wrap to a second line.
   local lines = Text.wrap(c.line, 18)
   if #lines > 2 then lines = { lines[1], Text.fit(lines[2], 17) .. "…" } end
   local height = 2 + 1 + math.max(1, #lines)

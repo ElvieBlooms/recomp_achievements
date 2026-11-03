@@ -1,3 +1,8 @@
+-- tests/e2e/plans/red_progress_cards.lua
+-- Red: restores the save, adds a couple of owned Pokémon and some money, and
+-- screenshots the progress cards that pop up.
+-- Run it with tests/e2e/run_e2e.sh, which hands it to the e2e_driver mod.
+-- ------------------
 return function(ctx)
   local mod = ctx.mod
   local function wait(s) local t0 return function(_, c) if not t0 then t0 = c.t end; if c.t - t0 >= s then t0 = nil return true end end end

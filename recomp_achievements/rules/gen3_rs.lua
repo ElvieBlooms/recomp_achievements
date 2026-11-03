@@ -1,14 +1,11 @@
 -- rules/gen3_rs.lua
--- ==================================================================
--- Detectors for the RetroAchievements lists of Ruby (49) and Sapphire
--- (49), built with rules/gen3_lib.lua.  Names are pret/pokeruby's, turned
--- into the save's numbers by data/gen3_rs.lua (both games share it).
---
--- Team Magma runs Ruby's story and Team Aqua Sapphire's.  The two games
--- use different trainer numbers for the same fights; which is which comes
--- from pokeruby's constants/version.inc (Ruby: TRAINER_MT_CHIMNEY_GRUNT_3
--- is TRAINER_MAXIE_3, Sapphire: TRAINER_ARCHIE_3, and so on).
--- ==================================================================
+-- Detectors for the RetroAchievements lists of Ruby (49) and Sapphire (49).
+-- Built on rules/gen3_lib.lua. Names are pokeruby's, and data/gen3_rs.lua
+-- turns them into save numbers for both games.
+-- Ruby's villains are Team Magma and Sapphire's are Team Aqua, so the same
+-- fight has a different trainer number in each. The mapping comes from
+-- pokeruby constants/version.inc (Ruby TRAINER_MAXIE_3, Sapphire TRAINER_ARCHIE_3).
+-- ------------------
 
 return function(L)
   local out = {}
@@ -22,7 +19,7 @@ return function(L)
     extra.note = note
     return extra
   end
-  -- Brendan/May with any starter: rival battle n uses _n, _n+3, _n+6
+  -- The rival is Brendan or May with any starter, so battle n is _n, _n+3 or _n+6.
   local function rival(n)
     local list = {}
     for _, who in ipairs({ "BRENDAN", "MAY" }) do
@@ -30,9 +27,9 @@ return function(L)
     end
     return list
   end
-  local MASTER_BALL = 1 -- item number of the Master Ball (the ball a Pokemon was caught in)
+  local MASTER_BALL = 1 -- ITEM_MASTER_BALL, as stored in a Pokémon's caught-in ball
 
-  -- ------------------------------------------------ rival, badges, league
+  -- ------------------ rival, badges, league
   add(L.anyFlag("rs_rival1", RS(31199, 31146), "Rival: Route 103",
     (function() local l = rival(1); l[#l + 1] = "FLAG_DEFEATED_RIVAL_ROUTE103"; return l end)(), { category = "RIVAL" }))
   add(L.anyFlag("rs_rival2", RS(31200, 31147), "Rival: Route 110", rival(2), { category = "RIVAL" }))
@@ -52,8 +49,8 @@ return function(L)
   add(L.anyFlag("rs_champion", RS(31223, 31169), "Champion", { "FLAG_SYS_GAME_CLEAR", "TRAINER_STEVEN" },
     { category = "LEAGUE" }))
 
-  -- ------------------------------------------------ the villains
-  -- (Ruby raids the Magma Hideout, Sapphire the Aqua Hideout.)
+  -- ------------------ the villains
+  -- Ruby raids the Magma Hideout, Sapphire the Aqua Hideout.
   add(L.flag("rs_master_ball_r", R(31205), "Hideout Master Ball", "FLAG_ITEM_MAGMA_HIDEOUT_B1F_1", { category = "STORY" }))
   add(L.flag("rs_master_ball_s", S(31163), "Hideout Master Ball", "FLAG_ITEM_AQUA_HIDEOUT_B1F_2", { category = "STORY" }))
   add(L.flag("rs_chimney_r", R(31214), "Maxie at Mt. Chimney", "TRAINER_MAXIE_3", { category = "STORY" }))
@@ -65,7 +62,7 @@ return function(L)
   add(L.flag("rs_hideout_s", S(31161), "Matt in the Hideout", "TRAINER_MATT_1", { category = "STORY" }))
   add(L.flag("rs_seafloor_s", S(31162), "Archie in the Seafloor Cavern", "TRAINER_ARCHIE_2", { category = "STORY" }))
 
-  -- ------------------------------------------------ legendaries
+  -- ------------------ legendaries
   add(L.owns("rs_groudon", R(31224), "Groudon", "GROUDON"))
   add(L.owns("rs_rayquaza_r", R(31225), "Rayquaza", "RAYQUAZA"))
   add(L.owns("rs_regirock_r", R(31226), "Regirock", "REGIROCK"))
@@ -73,7 +70,7 @@ return function(L)
   add(L.owns("rs_registeel_r", R(31228), "Registeel", "REGISTEEL"))
   add(L.owns("rs_latios", R(31229), "Latios", "LATIOS"))
   add(L.owns("rs_latias", S(31176), "Latias", "LATIAS"))
-  -- "without the Master Ball": the Pokemon you have is in another ball
+  -- "Without the Master Ball" means the one you have sits in any other ball.
   local function noMaster(id, ra, title, species)
     add(L.state(id, ra, title, function(f)
       return f.anyMon(function(name, m) return name == species and tonumber(m.pokeball) ~= MASTER_BALL end)
@@ -87,7 +84,7 @@ return function(L)
   noMaster("rs_registeel_s", S(31175), "Registeel, No Master Ball", "REGISTEEL")
   noMaster("rs_latios_pro", R(92003), "Latios, No Master Ball", "LATIOS")
 
-  -- ------------------------------------------------ side stories (both)
+  -- ------------------ side stories (both)
   add(L.flag("rs_new_mauville", RS(91983, 92019), "New Mauville", "FLAG_GOT_TM_THUNDERBOLT_FROM_WATTSON",
     { category = "EVENTS" }))
   add(L.var("rs_trick_master", RS(91984, 92012), "Trick Master", "VAR_TRICK_HOUSE_ROOMS_COMPLETED", 8,
@@ -97,7 +94,7 @@ return function(L)
   add(L.flag("rs_scanner", RS(91986, 92020), "Scanner Delivered", "FLAG_EXCHANGED_SCANNER", { category = "EVENTS" }))
   add(L.flag("rs_orb", RS(91987, 92024), "Orb Returned", "FLAG_RETURNED_RED_OR_BLUE_ORB", { category = "EVENTS" }))
 
-  -- ------------------------------------------------ Ruby
+  -- ------------------ Ruby
   local function holds(item)
     return function(f)
       return f.hasItem(item) or f.anyMon(function(_, m) return tonumber(m.heldItem or m.item) == f.data().itemIds[item] end)
@@ -110,7 +107,7 @@ return function(L)
   add(L.state("rs_dragon_fang", R(91990), "Dragon Fang", holds("DRAGON_FANG"),
     interp("You hold a Dragon Fang, in your Bag or on a Pokemon.", { category = "ITEMS" })))
   add(L.state("rs_tms", R(89506), "Machine Collector", function(f)
-    -- a TM counts when it's in your Bag now, or when its one-off pickup or gift is done
+    -- A TM counts if it's in the Bag now or its one-off pickup or gift is done.
     local done = {}
     for _, kind in ipairs({ "items", "hidden", "gifts" }) do
       for _, row in ipairs(f.data()[kind] or {}) do
@@ -143,8 +140,8 @@ return function(L)
     return n >= #list or n
   end, interp("Every hidden Kecleon, the hideout Electrode and New Mauville's Voltorb have been dealt with.",
     { category = "POKEMON", goal = 15, unit = "POKEMON" })))
-  -- Azurill (75% female) becomes a Marill (50%); the same Pokemon reads
-  -- female before and male after when its personality's low byte is 127-190.
+  -- Azurill is 75% female and Marill 50%, so a personality low byte of
+  -- 127-190 reads female before evolving and male after.
   add(L.onEvent("rs_azurill", R(91997), "Successful Transition", "pokemon.evolved", function(ev)
     if not (ev and ev.fromSpecies == "AZURILL" and ev.toSpecies == "MARILL") then return false end
     local p = type(ev.mon) == "table" and tonumber(ev.mon.personality) or nil
@@ -220,7 +217,7 @@ return function(L)
   add(L.dexAtLeast("rs_dex", R(91998), "Ruby Pokedex", 177,
     interp("Counted as 177 Pokemon marked caught in your Pokedex.")))
 
-  -- ------------------------------------------------ Sapphire
+  -- ------------------ Sapphire
   add(L.state("rs_cycling", S(92006), "Going All Out", function(f)
     local frames = f.var("VAR_CYCLING_ROAD_RECORD_TIME_L") + f.var("VAR_CYCLING_ROAD_RECORD_TIME_H") * 65536
     return frames > 0 and frames <= 570 and f.var("VAR_CYCLING_ROAD_RECORD_COLLISIONS") == 0

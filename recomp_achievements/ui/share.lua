@@ -1,37 +1,35 @@
 -- ui/share.lua
--- ==================================================================
--- The leaderboard card: what a player types into the GitHub issue form
--- to put their score on the public leaderboard page.
+-- The leaderboard card: what a player types into the GitHub issue form to
+-- put their score on the public leaderboard page.
 --
--- The mod itself never goes online.  It only shows the numbers plus a
--- short CHECK CODE.  The code is a checksum over the other fields, so the
--- GitHub Action that reads the form can catch typos.  It is NOT security:
--- anyone can read this file and compute a code, so the leaderboard is an
--- honor system, and its page says so.
+-- The mod never goes online. It only shows the numbers and a short CHECK
+-- CODE, a checksum over the other fields so the GitHub Action reading the
+-- form can catch typos. It isn't security: anyone can read this file and
+-- work out a code, so the leaderboard runs on trust and its page says so.
 --
--- The same checksum is implemented in tools/leaderboard_ingest.py; the
--- two must stay identical (tests/run.lua checks known values).
--- ==================================================================
+-- tools/leaderboard_ingest.py has the same checksum. The two must match,
+-- and tests/run.lua checks known values.
+-- ------------------
 
 local Share = {}
 
--- v2 adds the play time (whole minutes) when the score was reached.
--- v1 codes (mod 1.1.0, no TIME line) are still accepted by the bot.
+-- v2 adds the play time in whole minutes when the score was reached.
+-- The bot still accepts v1 codes (mod 1.1.0, no TIME line).
 Share.VERSION = "v2"
 
--- Crockford base32: no I, L, O or U, so the code is easy to read off a
+-- Crockford base32 has no I, L, O or U, so the code is easy to read off a
 -- Game Boy screen and type.
 local ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
--- Normalise a trainer name the way the server does before hashing:
--- uppercase ASCII letters, drop spaces.  Non-ASCII glyphs (é, ♂, ♀) are
--- kept as their UTF-8 bytes.
+-- Normalises a trainer name the way the server does before hashing: ASCII
+-- letters uppercased, spaces dropped. Non-ASCII glyphs (é, ♂, ♀) stay as
+-- their UTF-8 bytes.
 function Share.normName(name)
   return (tostring(name or ""):gsub("%s", ""):upper())
 end
 
--- 32-bit djb2-style hash, kept below 2^53 at every step so plain Lua
--- numbers are exact (no bit library needed).
+-- 32-bit djb2-style hash. It stays below 2^53 at every step, so plain Lua
+-- numbers stay exact and no bit library is needed.
 local function hash(s, seed)
   local h = seed
   for i = 1, #s do
@@ -50,7 +48,7 @@ local function base32(n, digits)
   return table.concat(out)
 end
 
--- The canonical string the checksum covers.  `f.time` is in minutes.
+-- The exact string the checksum covers. f.time is in minutes.
 function Share.payload(f)
   local parts = { f.time ~= nil and "v2" or "v1", f.game, Share.normName(f.name),
     tostring(f.points), tostring(f.earned), tostring(f.saveId):upper() }
@@ -64,7 +62,7 @@ function Share.clock(minutes)
   return ("%d:%02d"):format(math.floor(minutes / 60), minutes % 60)
 end
 
--- 8 characters, shown as XXXX-XXXX: 20 bits from each of two hashes.
+-- 8 characters shown as XXXX-XXXX, 20 bits from each of two hashes.
 function Share.code(f)
   local p = Share.payload(f)
   local a = hash(p, 5381) % 1048576
@@ -73,10 +71,10 @@ function Share.code(f)
   return s:sub(1, 4) .. "-" .. s:sub(5, 8)
 end
 
--- A short id for this playthrough, so the leaderboard keeps one row per
--- playthrough.  It comes from the engine's save.meta.playthroughId, which
--- stays the same across saves and Save Sync and changes with a New Game.
--- Saves without one get a random id kept in the ledger instead.
+-- A short id per playthrough, so the leaderboard keeps one row for each.
+-- It comes from the engine's save.meta.playthroughId, which survives saving
+-- and Save Sync and changes with a New Game. Saves without one get a random
+-- id kept in the ledger.
 function Share.saveId(save, ledgerData)
   local meta = type(save) == "table" and save.meta
   local pid = type(meta) == "table" and meta.playthroughId
@@ -98,7 +96,7 @@ function Share.card(engine)
   if not (engine.active and engine.game) then return nil end
   local data = engine.ledger:get(engine.game)
   local save = engine.adapter and engine.adapter:save() or {}
-  -- Gen 1/2 keep the name under save.player; Gen 3 at save.name
+  -- Gen 1/2 keep the name at save.player.name; Gen 3 at save.name
   local name = type(save.player) == "table" and save.player.name
     or (type(save.name) == "string" and save.name ~= "" and save.name) or "?"
   local t = engine:officialTotals()
@@ -112,17 +110,16 @@ function Share.card(engine)
   return f
 end
 
--- ------------------------------------------------------------------
--- Extra Credit: the achievements the main board leaves out, this mod's
--- bonus ones and other mods', each source on its own line so the board
--- can rank the combined total and every mod separately.
+-- ------------------ extra credit
+-- The achievements the main board leaves out: this mod's bonus ones and
+-- other mods'. Each source gets its own line, so the board can rank the
+-- combined total and every mod on its own.
 --
 --   source id: "bonus", or the providing mod's id ("naviplay")
 --   line:      "<id> <earned>/<total> <points>"   e.g. "bonus 3/9 20"
 --
--- The extra code covers game, name, save id and every source, sorted by
--- id, in the same checksum as the main card (prefix "x1").
--- ------------------------------------------------------------------
+-- The extra code covers game, name, save id and every source sorted by id,
+-- with the same checksum as the main card (prefix "x1").
 Share.EXTRA_VERSION = "x1"
 
 function Share.extraLine(s)
@@ -147,9 +144,9 @@ function Share.extraCode(f)
   return s:sub(1, 4) .. "-" .. s:sub(5, 8)
 end
 
--- Sources from the engine's rows: earned/total/points per source, for
--- achievements that apply to this game (archived ones aren't counted:
--- their mod isn't loaded, so the total can't be known).
+-- Earned, total and points per source from the engine's rows, for this
+-- game only. Archived ones are left out: their mod isn't loaded, so the
+-- total can't be known.
 function Share.extraSources(engine)
   local by, order = {}, {}
   local ok, rows = pcall(function() return engine:rows() end)

@@ -1,3 +1,8 @@
+-- tests/e2e/plans/emerald_continue_and_browse.lua
+-- Emerald: continues a save, logs the totals, opens TROPHIES from the Gen 3
+-- START menu and browses the list and share card.
+-- Run it with tests/e2e/run_e2e.sh, which hands it to the e2e_driver mod.
+-- ------------------
 return function(ctx)
   local mod = ctx.mod
   local function wait(s) local t0 return function(_, c) if not t0 then t0 = c.t end; if c.t - t0 >= s then t0 = nil return true end end end
@@ -32,7 +37,7 @@ return function(ctx)
     end, shot("w0"), wait(0.5), shot("w1"), wait(0.5), shot("w2"), wait(0.5), shot("w3"), wait(1), shot("welcome"),
     report("loaded"),
     wait(4), shot("after_toasts"),
-    -- open START, find our row
+    -- Open START and work out how far down our row is.
     tap("start"), wait(1), shot("startmenu"),
     function(game) local SM = require("src.ui.game3.start_menu")
       ctx.downs = 0
@@ -49,7 +54,7 @@ return function(ctx)
     tap("select"), wait(0.5), shot("card"),
     function(game) ctx.log("card %s", tostring(ach().leaderboardCard and require and "ok")) return true end,
     tap("b"), wait(0.3), tap("b"), wait(0.5), shot("closed"), tap("b"), wait(0.5),
-    -- a live flag change: Lorelei's errand var and a flag-based gift
+    -- Log a flag-based gift (the Eevee), to check live flag reads work.
     function(game)
       local d = dofile and nil
       ctx.log("flag Eevee before=%s", tostring(mod.world:getFlag("FLAG_GOT_EEVEE")))

@@ -1,16 +1,14 @@
 -- rules/gen2_official.lua
--- ==================================================================
--- One detector per entry in the RetroAchievements lists for Pokemon
--- Gold (game 576), Silver (722) and Crystal (810), written from scratch
--- against Gen1Recomp's Gen 2 state.  No RetroAchievements trigger logic is
--- used.  `ra` links each rule to the entries it answers; one rule serves
+-- Detectors for the RetroAchievements lists of Pokémon Gold (game 576),
+-- Silver (722) and Crystal (810), written from scratch against Gen1Recomp's
+-- Gen 2 state. No RA trigger logic is used.
+-- `ra` links each rule to the entries it answers, so one rule can serve
 -- several games when the goal is the same.
---
--- Rules marked `fidelity = "interpretation"` are a close local reading
--- of the RA wording; their `note` says exactly what counts here.  Entries
--- this mod can't judge yet have no rule; they show in the RA REFERENCE
--- view as "not tracked yet" and don't count toward totals.
--- ==================================================================
+-- `fidelity = "interpretation"` marks a close reading of the RA wording, and
+-- its `note` says what counts here.
+-- Entries with no rule show in RA REFERENCE as "not tracked yet" and don't
+-- count toward totals.
+-- ------------------
 
 return function(L)
   local rules = {}
@@ -21,7 +19,7 @@ return function(L)
     return e
   end
 
-  -- ------------------------------------------------------------ story
+  -- ------------------ story
   add(L.state("g2o_rival_name", { gold = 5086, silver = 5113, crystal = 5636 }, "Rival named",
     function(f) return f.rivalNamed() end, { category = "STORY" }))
   add(L.flag("g2o_slowpoke_well", { gold = 5092, silver = 5118, crystal = 5934 }, "Slowpoke Well",
@@ -33,9 +31,9 @@ return function(L)
   add(L.state("g2o_elite_four", { gold = 5509, silver = 5520, crystal = 5949 }, "Elite Four",
     function(f) return f.flag("EVENT_BEAT_CHAMPION_LANCE") or f.hallOfFame() > 0 end, { category = "LEAGUE" }))
 
-  -- ------------------------------------------------------------ badges
+  -- ------------------ badges
   local GYMS = {
-    -- badge, trainer class, RA ids (plain badge), set-mode cap
+    -- badge, leader, RA ids for the plain badge, Set mode level cap
     { "ZEPHYR",  "FALKNER",  { gold = 5070, silver = 5097, crystal = 5637 }, 9 },
     { "HIVE",    "BUGSY",    { gold = 5071, silver = 5098, crystal = 5638 }, 16 },
     { "PLAIN",   "WHITNEY",  { gold = 5072, silver = 5099, crystal = 5639 }, 20 },
@@ -53,9 +51,9 @@ return function(L)
     { "VOLCANO", "BLAINE",   { gold = 5084, silver = 5111, crystal = 5651 }, 50 },
     { "EARTH",   "BLUE",     { gold = 5085, silver = 5112, crystal = 5652 }, 58 },
   }
-  -- Challenge rules, which RA calls "Set Mode" (the SET battle style):
-  -- Gold/Silver "[Set Mode, <= Lv.N]" and Silver's type-only versions,
-  -- Crystal's "Set battle style, Johto Pokemon only, no Pack items".
+  -- Challenge rules, RA's "Set Mode" (the SET battle style). Gold and Silver
+  -- have "[Set Mode, <= Lv.N]" and Silver adds type-only versions. Crystal's
+  -- is "Set battle style, Johto Pokémon only, no Pack items".
   local SET_MODE = {
     FALKNER = { gold = 155162, silver = 163143 }, BUGSY = { gold = 155163, silver = 163145 },
     WHITNEY = { gold = 155168, silver = 163147 }, MORTY = { gold = 155170, silver = 163149 },
@@ -107,7 +105,7 @@ return function(L)
           .. "and send out only Pokemon you can find in Johto (or evolved from one).", { category = "CHALLENGE" })))
     end
   end
-  -- Silver: Blue with exactly Delibird, Corsola, Lickitung, Aipom, Farfetch'd, Onix
+  -- Silver: beat Blue with exactly Delibird, Corsola, Lickitung, Aipom, Farfetch'd and Onix.
   local TERRIBLE = L.set({ "DELIBIRD", "CORSOLA", "LICKITUNG", "AIPOM", "FARFETCH_D", "ONIX" })
   add(L.beatTrainer("g2o_terrible_blue", { silver = 163187 }, "Challenge: a terrible team", "BLUE",
     function(b, f)
@@ -122,7 +120,7 @@ return function(L)
     end, { category = "CHALLENGE", note = L.CHALLENGE .. ", have no Pokemon above Lv.58, and bring exactly "
       .. "Delibird, Corsola, Lickitung, Aipom, Farfetch'd and Onix." }))
 
-  -- ------------------------------------------------------------ league and Red
+  -- ------------------ league and Red
   local function onePokemon(f) return L.partyCount(f) == 1 end
   add(L.leagueRun("g2o_five_chumps", { gold = 5511, silver = 5521, crystal = 5950 }, "League with one Pokemon",
     onePokemon, nil, interp("Every battle from Will to Lance in one run, with exactly one Pokemon in your party.")))
@@ -138,7 +136,7 @@ return function(L)
     L.johtoOnly(65), interp(L.CHALLENGE .. ", use no Pack items, have nobody above Lv.65, and send out only "
       .. "Johto Pokemon.", { category = "CHALLENGE" })))
 
-  -- ------------------------------------------------------------ legendaries
+  -- ------------------ legendaries
   add(L.ownsAll("g2o_beasts", { gold = 5087, silver = 5114 }, "Runaway Trio", { "ENTEI", "SUICUNE", "RAIKOU" }))
   add(L.owns("g2o_ho_oh", { gold = 5089, silver = 5116, crystal = 5953 }, "Ho-Oh", "HO_OH"))
   add(L.owns("g2o_lugia", { gold = 5088, silver = 5115, crystal = 5952 }, "Lugia", "LUGIA"))
@@ -156,7 +154,7 @@ return function(L)
   add(L.dexAtLeast("g2o_dex_silver", { silver = 5120 }, "Gotta catch 'em all", 199))
   add(L.dexAtLeast("g2o_dex_crystal", { crystal = 5954 }, "Gotta catch 'em all", 206))
 
-  -- Snorlax, Sudowoodo, Lapras, red Gyarados
+  -- Snorlax, Sudowoodo, Lapras and the red Gyarados
   add(L.state("g2o_snorlax", { gold = 155188, crystal = 199586 }, "Snorlax",
     function(f) return f.flag("EVENT_FOUGHT_SNORLAX") and f.owns("SNORLAX") end,
     interp("You've battled the Snorlax by Diglett's Cave and have Snorlax registered as caught.")))
@@ -169,7 +167,7 @@ return function(L)
     function(f) return f.ownsWhere(function(m) return m.species == "GYARADOS" and m.shiny end) end,
     interp("You own a shiny Gyarados.")))
 
-  -- ------------------------------------------------------------ gifts and trades
+  -- ------------------ gifts and trades
   add(L.flag("g2o_spearow", { gold = 155164 }, "Free Spearow", "EVENT_GOT_KENYA", { category = "GIFTS" }))
   add(L.flag("g2o_eevee", { gold = 155169 }, "Bill's Eevee", "EVENT_GOT_EEVEE", { category = "GIFTS" }))
   add(L.flag("g2o_shuckle", { gold = 155172 }, "Mania's Shuckle", "EVENT_GOT_SHUCKIE", { category = "GIFTS" }))
@@ -188,7 +186,7 @@ return function(L)
       "EVENT_GOT_TYROGUE_FROM_KIYO", "EVENT_GOT_DRATINI", "EVENT_GOT_ODD_EGG" },
     interp("Spearow, the Mystery Egg, Shuckle, Eevee, Tyrogue, Dratini and the Odd Egg.", { category = "GIFTS" })))
 
-  -- in-game trades, by trade number (data/events/npc_trades.asm)
+  -- In-game trades by trade number (pokecrystal data/events/npc_trades.asm).
   local function trade(id, ra, title, n)
     add(L.state(id, ra, title, function(f) return f.traded(n) end, { category = "TRADES" }))
   end
@@ -205,7 +203,7 @@ return function(L)
       return n
     end, { goal = 7, unit = "TRADES", category = "TRADES" }))
 
-  -- ------------------------------------------------------------ side quests
+  -- ------------------ side quests
   add(L.state("g2o_haircut", { gold = 155179 }, "Haircut",
     function(f) return f.engineFlag("ENGINE_GOLDENROD_UNDERGROUND_GOT_HAIRCUT") end,
     interp("The Goldenrod Underground haircut is noted while today's haircut flag is set.")))
@@ -298,7 +296,7 @@ return function(L)
     function(f) return f.engineFlag("ENGINE_DAISYS_GROOMING") end,
     interp("Noted while today's grooming flag is set (Daisy grooms once a day).", { category = "SIDE" })))
 
-  -- Flag-to-item handovers that only exist as a moment in time
+  -- Handovers that leave no flag behind, so they're caught as they happen.
   local function handover(id, ra, title, readyCheck, item, note)
     add(L.tracker(id, ra, title, {
       tick = function(s, _, f)
@@ -328,7 +326,7 @@ return function(L)
     function(f) return f.flag("EVENT_LAKE_OF_RAGE_ELIXIR_ON_STANDBY") or f.itemCount("ELIXER") > 0 and f.flag("EVENT_LAKE_OF_RAGE_ASKED_FOR_MAGIKARP") end,
     interp("The Fishing Guru asked for a big Magikarp and you hold his Elixir (or it's waiting for you).", { category = "SIDE" })))
 
-  -- ------------------------------------------------------------ battles and minigames (Crystal)
+  -- ------------------ battles and minigames (Crystal)
   local TRAINER_MAP = function(prefixes)
     return function(row) for _, p in ipairs(prefixes) do if row[3]:sub(1, #p) == p then return true end end return false end
   end
@@ -382,7 +380,7 @@ return function(L)
     end,
   }, nil, interp("A Shuckle that went into battle holding a Berry comes out holding Berry Juice.", { category = "BATTLE" })))
 
-  -- Bug-Catching Contest (bug_contest.scored)
+  -- Bug-Catching Contest, judged on bug_contest.scored
   local BUGS = L.set({ "BUTTERFREE", "BEEDRILL", "SCYTHER", "PINSIR" })
   add(L.onEvent("g2o_bug_contest", { crystal = 199622 }, "Bug contest winner", "bug_contest.scored",
     function(ev) return ev and ev.place == 1 end, { category = "SIDE" }))
@@ -393,33 +391,39 @@ return function(L)
     end, interp("Won first place with a Pokemon that isn't Butterfree, Beedrill, Scyther or Pinsir.", { category = "SIDE" })))
   add(L.onEvent("g2o_bug_contest_nick", { crystal = 199624 }, "Beat Cooltrainer Nick", "bug_contest.scored",
     function(ev, f)
-      -- Contestants who are NOT taking part have their event flag set
+      -- A contestant's event flag is set on days they aren't taking part.
       return ev.place == 1 and not f.flag("EVENT_BUG_CATCHING_CONTESTANT_1A")
     end, interp("Won first place on a day Cooltrainer Nick was one of the contestants.", { category = "SIDE" })))
 
-  -- Game Corner (watched while the minigame screen is open)
+  -- Game Corner, watched while the minigame screen is open
   local function topScreen(f, ctx)
     local game = ctx.engine and ctx.engine.mod and ctx.engine.mod.game
     local states = game and game.stack and game.stack.states
     return states and states[#states] or nil
   end
+  -- Gen 2 screen ids carry a "Gen2" prefix (Screens.GEN2_IDS in
+  -- src/ui/Screens.lua; src/world/gen2/World.lua:3544 pushes Gen2SlotMachine
+  -- and Gen2CardFlip).
+  local function isScreen(top, id)
+    return top ~= nil and top.screenId == id
+  end
   add(L.tracker("g2o_slots_golem", { crystal = 199634 }, "Golem on the slots", {
     tick = function(_, _, f, ctx)
       local top = topScreen(f, ctx)
-      return top and top.screenId == "SlotMachine" and top.reel3Action == "golem" and top.matchingSevens == true or nil
+      return isScreen(top, "Gen2SlotMachine") and top.reel3Action == "golem" and top.matchingSevens == true or nil
     end,
   }, nil, { category = "GAME CORNER" }))
   add(L.tracker("g2o_slots_777", { crystal = 199635 }, "Triple seven", {
     tick = function(_, _, f, ctx)
       local top = topScreen(f, ctx)
-      return top and top.screenId == "SlotMachine" and top.matched == 0 or nil
+      return isScreen(top, "Gen2SlotMachine") and top.matched == 0 or nil
     end,
   }, nil, { category = "GAME CORNER" }))
   add(L.tracker("g2o_card_flip", { crystal = 199627 }, "x24 Card Flip", {
     tick = function(s, _, f, ctx)
       local top = topScreen(f, ctx)
       local coins = f.coins()
-      local won = top and top.screenId == "CardFlip" and s.coins and coins - s.coins >= 72
+      local won = isScreen(top, "Gen2CardFlip") and s.coins and coins - s.coins >= 72
       s.coins = coins
       return won or nil
     end,
@@ -463,7 +467,7 @@ return function(L)
     end,
   }, nil, interp("Counted when you spend money on the Goldenrod Dept. Store roof.", { category = "SIDE" })))
 
-  -- Held items from wild Pokemon (catch or Thief)
+  -- Held items from wild Pokémon, caught or taken with Thief
   local function heldItem(id, ra, title, item)
     add(L.state(id, ra, title, function(f)
       return f.hasItem(item) or f.ownsWhere(function(m) return m.item == item end)
@@ -487,11 +491,11 @@ return function(L)
     end,
   }, nil, interp("A seven-win streak while your party is all Johto Pokemon, without Lugia or Ho-Oh.", { category = "TOWER" })))
 
-  -- ------------------------------------------------------------ completion
+  -- ------------------ completion
   local johto, kanto = L.region("johto"), L.region("kanto")
   local both = L.region("johto", "kanto")
   local function tms(row) return L.isTM(row) end
-  -- every TM/HM from item balls and NPC gifts
+  -- Every TM and HM from item balls and NPC gifts.
   local function tmCount(f)
     local d1, t1 = f.sweep("items", tms)
     local d2, t2 = f.sweep("gifts", tms)
@@ -513,7 +517,7 @@ return function(L)
   add(L.sweep("g2o_hidden_25", { silver = 163162 }, "Hidden: 25%", "hidden", both, 25))
   add(L.sweep("g2o_hidden_50", { gold = 155199, silver = 163160 }, "Hidden: 50%", "hidden", both, 50))
   add(L.sweep("g2o_hidden_100", { gold = 155200, silver = 163161 }, "Hidden: 100%", "hidden", both, 100))
-  -- Crystal: visible and hidden together, per region
+  -- Crystal counts visible and hidden items together, per region.
   local function fieldItems(id, ra, title, keep)
     add(L.state(id, ra, title, function(f)
       local d1, t1 = f.sweep("items", keep)
@@ -525,8 +529,8 @@ return function(L)
   fieldItems("g2o_field_johto", { crystal = 199562 }, "Johto field items", johto)
   fieldItems("g2o_field_kanto", { crystal = 199584 }, "Kanto field items", kanto)
 
-  -- Trainers.  "Non-missable" here leaves out Team Rocket, who leave once
-  -- their part of the story is over.
+  -- Trainers. "Non-missable" leaves out Team Rocket, who are gone once
+  -- their part of the story ends.
   local function regular(region)
     return function(row)
       return row[4] == region and not row[2]:match("GRUNT") and not row[2]:match("EXECUTIVE")

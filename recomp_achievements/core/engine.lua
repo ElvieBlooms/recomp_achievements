@@ -1,46 +1,44 @@
 -- core/engine.lua
--- ==================================================================
--- The award pipeline.  EVERY unlock and progress change -- from our own
--- rules or from another mod -- goes through Engine:award / Engine:progress
--- so that validation, saving, popups and broadcast events can never
--- drift apart.
+-- The award path. Every unlock and progress change, from our own rules or
+-- from another mod, goes through Engine:award or Engine:setProgress, so
+-- checks, saving, popups and broadcast events always agree.
 --
 --   gameplay event --> rule test --> Engine:award --> ledger (save)
 --                                                 \-> toast (popup)
 --                                                 \-> mod.<id>.unlocked event
 --
--- Two kinds of core rules (see rules/gen1.lua):
---   kind = "state": a predicate over durable game state (badges, flags,
---     Pokedex count).  Re-checked whenever something MIGHT have changed,
---     and once on load -- which is how an old save gets credit for what
---     it already did ("backfill").
---   kind = "event": reacts to one engine event (a catch, an evolution, a
---     trainer win).  Cannot be backfilled: there is no proof it happened.
---     Returning a number adds to a counter toward `goal`.
+-- It hooks Gen1Recomp's save.*, battle.* and other gameplay events, plus
+-- the core.update hook. It reads game state through the adapter and
+-- writes only to the ledger, never to the game's own data.
 --
--- Lifecycle safety: between save.loading and save.loaded the old save's
--- table is going away, so nothing may be awarded.  `self.active` guards
--- that window and the title screen.
--- ==================================================================
+-- Rule kinds (see rules/gen1.lua):
+--   "state": a check over lasting game state (badges, flags, Pokédex
+--     count). Re-run whenever something might have changed and once on
+--     load, which is how an old save gets credit ("backfill").
+--   "event": reacts to one engine event (a catch, an evolution, a trainer
+--     win). Can't be backfilled, since there's no proof it happened.
+--     Returning a number adds to a counter towards `goal`.
+--   "tracker": keeps notes across several events in one play session.
+--
+-- Between save.loading and save.loaded the old save is going away, so
+-- nothing may be awarded. `self.active` guards that gap and the title screen.
+-- ------------------
 
 local Engine = {}
 Engine.__index = Engine
 
 local EVENT_PREFIX = "mod.recomp_achievements."
 
--- Engine events that might change durable state.  Any of them marks the
--- state rules "dirty"; the actual check runs once, on the next frame.
--- Batching like this keeps a flurry of flag changes inside one script from
--- costing more than a single evaluation, and makes sure we read state
--- AFTER the script finished writing it.
+-- Engine events that might change lasting state. Each one marks the state
+-- rules dirty, and the check runs once on the next frame. A burst of flag
+-- changes in one script then costs one check, read after the script is done.
 local DIRTY_EVENTS = {
   "flag.changed", "battle.ended", "map.entered", "script.ended",
   "pokemon.caught", "pokemon.evolved", "pokemon.received", "trade.completed",
   "pokemon.level_up", "screen.popped", "world.interacted",
 }
--- Some state changes have no event at all (coins from a slot machine,
--- an item bought in a mart, a flag a script writes directly), so state
--- rules are also re-checked on a slow timer as a safety net.
+-- Some changes have no event (slot machine coins, a mart purchase, a flag
+-- a script writes directly), so state rules also re-run on a slow timer.
 local RECHECK_SECONDS = 5
 
 function Engine.new(opts)
@@ -51,16 +49,16 @@ function Engine.new(opts)
   self.registry = opts.registry
   self.toast = opts.toast
   self.rules = {}          -- core rules by id
-  self.stateRules = {}     -- ordered list of kind=="state"
+  self.stateRules = {}     -- ordered list of state rules
   self.eventRules = {}     -- engine event name -> list of rules
-  self.trackers = {}       -- ordered list of kind=="tracker"
+  self.trackers = {}       -- ordered list of trackers
   self.trackerEvents = {}  -- engine event name -> list of trackers
-  self.map = nil           -- current map id (from map.entered)
+  self.map = nil           -- current map id, from map.entered
   self.adapter = nil
-  self.active = false      -- a real save context is attached
-  self.game = nil          -- running version id ("red", "blue", ...)
+  self.active = false      -- a real save is attached
+  self.game = nil          -- running version id: "red", "blue", ...
   self.dirty = false
-  self.battle = nil        -- what battle.started told us, for battle.ended
+  self.battle = nil        -- notes from battle.started, read at battle.ended
   return self
 end
 
@@ -72,20 +70,18 @@ function Engine:setAdapter(adapter)
   self.adapter = adapter
 end
 
--- ------------------------------------------------------------------
--- Core rules
--- ------------------------------------------------------------------
+-- ------------------ core rules
 function Engine:addRule(rule)
   local def, code, message = self.registry:add("core", "core", rule)
   if not def then
-    -- A broken built-in rule is our bug: log loudly, keep running.
+    -- A broken built-in rule is our bug: log it and carry on.
     self.mod.log:error("core rule %s rejected: %s %s", tostring(rule.id), code, message)
     return
   end
   local entry = { def = def, rule = rule }
   self.rules[rule.id] = entry
-  -- Event rules and trackers may ALSO carry a state `check`: proof that
-  -- can be read from the save (so an old save gets credit too).
+  -- Event rules and trackers can also have a state `check`, proof read
+  -- from the save, so an old save gets credit too.
   if rule.kind ~= "state" and type(rule.check) == "function" then
     self.stateRules[#self.stateRules + 1] = entry
   end
@@ -96,9 +92,9 @@ function Engine:addRule(rule)
     if not list then list = {}; self.eventRules[rule.on] = list end
     list[#list + 1] = entry
   elseif rule.kind == "tracker" then
-    -- A tracker keeps in-memory state for the current play session (it is
-    -- reset whenever a save is loaded or created, so "without resetting"
-    -- comes for free) and reacts to several events.
+    -- A tracker keeps notes in memory for this play session and reacts to
+    -- several events. Loading or creating a save clears them, so "without
+    -- resetting" goals come for free.
     --   rule.init(state, facts, ctx)               optional
     --   rule.on[eventName](state, ev, facts, ctx)  -> true | number | nil
     entry.state = {}
@@ -113,11 +109,9 @@ function Engine:addRule(rule)
   end
 end
 
--- ------------------------------------------------------------------
--- The award pipeline
--- ------------------------------------------------------------------
+-- ------------------ award path
 
--- Why an award may be refused.  Returned to API callers as error codes.
+-- Why an award may be refused. API callers get these as error codes.
 function Engine:canAward(key)
   if not self.active or not self.game then return false, "no_save" end
   local def = self.registry:get(key)
@@ -127,20 +121,19 @@ function Engine:canAward(key)
   return true, def
 end
 
--- "Extras" are built-in achievements that are NOT official RA entries
--- (e.g. Seasoned Battler).  Players who want the official lists only can
--- switch them off; nothing already earned is deleted.
+-- Extras are our own bonus achievements, not on RA's lists (Seasoned
+-- Battler, say). Players can turn them off; earned ones aren't deleted.
 function Engine:extrasOn()
   return self.mod.options:get("extras") ~= false
 end
 
--- Title/description/points to show for a definition on the running game.
+-- Title, description and points to show on the running game.
 function Engine:display(def)
   return self.registry:display(def, self.game)
 end
 
 -- opts.how    "event" | "backfill" | "api"
--- opts.silent true to skip the popup (backfill batches its own summary)
+-- opts.silent true skips the popup; backfill shows its own summary
 function Engine:award(key, opts)
   opts = opts or {}
   local ok, def = self:canAward(key)
@@ -153,7 +146,7 @@ function Engine:award(key, opts)
   })
   if not wrote then return false, "already_unlocked" end
   self:log("unlocked %s (%s)", key, opts.how or "event")
-  -- Popup only AFTER the record exists: a popup is never the proof.
+  -- Popup only once the record exists: the save is the proof, not the popup.
   if not opts.silent then self.toast:push(def, shown) end
   self:broadcast("unlocked", {
     key = key, id = def.id, source = def.source, provider = def.provider,
@@ -163,10 +156,9 @@ function Engine:award(key, opts)
   return true
 end
 
--- Whether a step forward deserves a progress note.  Not for the backfill
--- when a save loads, not for hidden ones (the note would spoil them), and
--- for big or percent goals only each tenth of the way, so a steps counter
--- or an area sweep doesn't chatter.
+-- Whether a step forward gets a progress popup. Never during backfill or
+-- for hidden ones (it would spoil them). Big or percent goals only pop up
+-- every tenth of the way, so a step counter doesn't chatter.
 function Engine:showsProgress(def, before, value, opts)
   opts = opts or {}
   if opts.silent or opts.how == "backfill" or not self.toast.pushProgress then return false end
@@ -179,7 +171,7 @@ function Engine:showsProgress(def, before, value, opts)
   return true
 end
 
--- Absolute progress.  Clamped to [0, goal]; reaching the goal awards.
+-- Set progress to a value, clamped to 0..goal. Reaching the goal awards it.
 function Engine:setProgress(key, value, opts)
   local ok, def = self:canAward(key)
   if not ok then return false, def end
@@ -211,19 +203,17 @@ end
 
 -- Custom events other mods can listen to with
 --   mod.events:on("mod.recomp_achievements.unlocked", fn)
--- Payloads are plain data copies; listeners cannot mutate our state.
+-- Payloads are plain copies, so listeners can't change our state.
 function Engine:broadcast(name, payload)
   local ok, err = pcall(self.mod.events.emit, self.mod.events,
     EVENT_PREFIX .. name, self.util.plain(payload))
   if not ok then self.mod.log:warn("broadcast %s failed: %s", name, tostring(err)) end
 end
 
--- ------------------------------------------------------------------
--- Rule evaluation
--- ------------------------------------------------------------------
+-- ------------------ rule checks
 
--- Run one rule function with errors contained: a buggy rule must never
--- take the game down.  Returns the rule's result or nil.
+-- Run one rule function inside pcall so a buggy rule can't crash the game.
+-- Returns the rule's result, or nil on error.
 function Engine:try(entry, fn, ...)
   local ok, result = pcall(fn, ...)
   if not ok then
@@ -233,7 +223,7 @@ function Engine:try(entry, fn, ...)
   return result
 end
 
--- Check every state rule against current state.  Returns how many unlocked.
+-- Check every state rule against the save. Returns how many unlocked.
 function Engine:evaluateState(how, silent)
   if not (self.active and self.adapter) then return 0 end
   local facts = self.adapter:facts()
@@ -260,8 +250,8 @@ function Engine:context()
            map = self.map, engine = self }
 end
 
--- Apply what a rule function returned: true awards, a number is progress
--- (added for event rules, absolute for trackers).
+-- Act on a rule's result: true awards, a number is progress.
+-- Event rules add to it; trackers set it outright.
 function Engine:apply(def, result, additive)
   if result == true then
     self:award(def.key, { how = "event" })
@@ -285,13 +275,13 @@ function Engine:resetTrackers()
   end
 end
 
--- Event rules and trackers: called with the engine event payload.
+-- Runs event rules and trackers with the engine event's payload.
 function Engine:dispatch(name, payload)
   if not (self.active and self.adapter) then return end
   local trackers = self.trackerEvents[name]
   if trackers then
-    -- facts/ctx are built lazily: per-frame trackers on a game where they
-    -- don't apply (or are already earned) then cost nothing
+    -- facts and ctx are built only when needed, so per-frame trackers
+    -- that don't apply or are already earned cost nothing
     local facts, ctx
     for _, entry in ipairs(trackers) do
       local def = entry.def
@@ -316,13 +306,12 @@ function Engine:dispatch(name, payload)
   end
 end
 
--- Reconcile after a save becomes active: credit durable milestones the
--- save already has, quietly, then show ONE summary popup instead of a
--- burst of twenty.
+-- After a save loads, quietly credit what it has already done, then show
+-- one summary popup instead of a burst of twenty.
 function Engine:reconcile()
   local n = self:evaluateState("backfill", true)
   if n == 1 then
-    -- a single one reads better as a normal popup
+    -- just one reads better as a normal popup
     local newest, newestAt
     local data = self.ledger:peek()
     for key, record in pairs(data and data.unlocked or {}) do
@@ -338,33 +327,30 @@ function Engine:reconcile()
   return n
 end
 
--- ------------------------------------------------------------------
--- Save context
--- ------------------------------------------------------------------
+-- ------------------ save context
 function Engine:attach(how)
   self.game = self.adapter and self.adapter:version() or nil
   self.active = self.game ~= nil
   self.battle = nil
   self.toast:clear()
   if not self.active then return end
-  local data = self.ledger:get(self.game) -- create / migrate / repair now, not mid-award
+  local data = self.ledger:get(self.game) -- create, migrate and repair now, not mid-award
   self:dropNewGameMisfires(data)
   local save = self.adapter and self.adapter:save()
   self.map = save and save.player and save.player.map or nil
   self.lastBattle = nil
   self:resetTrackers()
   self:log("attached to %s save (%s)", self.game, how)
-  -- Reconcile first, so providers listening for "ready" see a ledger that
-  -- already reflects what this save has done.
+  -- Backfill first, so providers listening for "ready" see a ledger that
+  -- already matches this save.
   if how ~= "created" then self:reconcile() end
   self:broadcast("ready", { game = self.game, how = how })
 end
 
--- 2.0.0 to 2.1.0 unlocked these Gen 2 achievements at the start of a New
--- Game: the game sets their flags during its opening script.  None can
--- really be earned in the first half hour, so such records are moved to the
--- ledger's quarantine (kept, not deleted) and the achievement can be
--- earned again for real.
+-- 2.0.0 to 2.1.0 unlocked these Gen 2 achievements at New Game, because
+-- the opening script sets their flags. None can really be earned in the
+-- first half hour, so those records move to quarantine (kept, not deleted)
+-- and can be earned again properly.
 Engine.NEW_GAME_MISFIRES = {
   ["core:g2o_machine_part"] = true,
   ["core:g2o_suicune_42"] = true,
@@ -390,19 +376,16 @@ function Engine:detach()
   self.battle = nil
 end
 
--- ------------------------------------------------------------------
--- Wiring to engine events and hooks
--- ------------------------------------------------------------------
+-- ------------------ engine events and hooks
 function Engine:wire()
   local mod, events = self.mod, self.mod.events
 
-  -- At boot the engine builds a throwaway skeleton save for the title
-  -- screen and fires save.created for it BEFORE game.ready
-  -- (src/core/Game.lua:99-121).  That save is never played, so we ignore
-  -- it; save.created after game.ready is a real NEW GAME.
+  -- At boot the engine makes a throwaway save for the title screen and
+  -- fires save.created for it before game.ready (src/core/Game.lua:99-121).
+  -- We ignore that one; save.created after game.ready is a real New Game.
   events:on("game.ready", function() self.booted = true end)
   events:on("save.loading", function() self:detach() end)
-  -- The event's own save is handed to the adapter too: on Gen 3,
+  -- Pass the event's own save to the adapter too, since on Gen 3
   -- mod.game.save can still be unset when save.loaded fires.
   local function seen(ev)
     if self.adapter and type(ev) == "table" and type(ev.save) == "table" then
@@ -413,16 +396,15 @@ function Engine:wire()
   events:on("save.created", function(ev)
     if self.booted then seen(ev); self:attach("created") else self:detach() end
   end)
-  -- A checkpoint restore can rewind the save table, ledger included.  Drop
-  -- any queued popups (they may describe a future that no longer exists)
-  -- and re-check state.
+  -- checkpoint.restored can rewind the save, ledger included. Drop queued
+  -- popups, since they may be for unlocks that no longer exist, and re-check.
   events:on("checkpoint.restored", function()
     self.toast:clear()
     self.battle = nil
     if self.active then self.dirty = true; self:resetTrackers() end
   end)
-  -- Flush pending state checks right before the save is written, so an
-  -- unlock earned this very frame is included in the file.
+  -- Run any pending state check on save.writing, so an unlock earned this
+  -- frame makes it into the file.
   events:on("save.writing", function()
     if self.active and self.dirty then self:evaluateState("event", false) end
   end)
@@ -431,20 +413,18 @@ function Engine:wire()
     events:on(name, function() if self.active then self.dirty = true end end)
   end
 
-  -- ---------------------------------------------------------------
-  -- Battle context.  battle.ended's payload only says win/lose, so we
-  -- keep our own notes from the start of the fight, which "challenge"
-  -- rules read through ctx.battle:
-  --   kind, trainerId ("OPP_BROCK"), species/level (wild), style
-  --   ("shift"/"set"), partyAtStart, partyMaxAtStart,
-  --   playerFainted (count), movesUsed (count), itemsUsed (bool, set
-  --   at the end by comparing the bag before and after)
-  -- ---------------------------------------------------------------
+  -- ------------------ battle notes
+  -- battle.ended only says win or lose, so we keep notes from the start of
+  -- the fight for challenge rules to read through ctx.battle:
+  --   kind, trainerId ("OPP_BROCK"), species and level (wild), style
+  --   ("shift" or "set"), partyAtStart, partyMaxAtStart,
+  --   playerFainted (count), movesUsed (count), itemsUsed (true or false,
+  --   set at the end by comparing the bag before and after)
   events:on("battle.started", function(ev)
     ev = ev or {}
     local adapter = self.adapter
-    -- Gen 2 reports each battle twice; keep the first report and fill in
-    -- the trainer from whichever copy has it.
+    -- Gen 2 reports each battle twice: keep the first and take the
+    -- trainer from whichever copy has it.
     local info = adapter and adapter.battleInfo and adapter:battleInfo(ev) or {}
     if info.key ~= nil and self.battle and self.battle.key == info.key then
       self.battle.trainerId = self.battle.trainerId or info.trainerId
@@ -454,7 +434,7 @@ function Engine:wire()
     local maxLevel = 0
     for _, m in ipairs(party) do if (m.level or 0) > maxLevel then maxLevel = m.level end end
     local facts = adapter and adapter:facts()
-    -- the player's lead Pokemon, read off the raw battle object
+    -- the player's lead Pokémon, read off the raw battle object
     local raw = type(ev.battle) == "table" and ev.battle or nil
     local lead = raw and type(raw.player) == "table" and type(raw.player.mon) == "table"
       and raw.player.mon.species or nil
@@ -508,14 +488,14 @@ function Engine:wire()
     local b = self.battle
     local info = self.adapter and self.adapter.battleInfo and self.adapter:battleInfo(ev) or {}
     if not b and info.key ~= nil and self.lastBattle and self.lastBattle.key == info.key then
-      -- the second report of a battle that already ended (Gen 2); a catch
-      -- only arrives here, so let it update the result
+      -- Gen 2's second report of a finished battle. A catch only shows
+      -- up here, so let it update the result.
       if ev and ev.result == "caught" then self.lastBattle.result = "caught" end
       return
     end
     if b and b.bagAtStart and self.adapter then
-      -- Any bag item that went DOWN during the fight was used (balls
-      -- included).  Rules that allow balls can check b.itemsUsedList.
+      -- Any bag item that went down during the fight was used, balls
+      -- included. Rules that allow balls can check b.itemsUsedList.
       local now = self.adapter:bagSnapshot()
       b.itemsUsedList = {}
       for id, before in pairs(b.bagAtStart) do
@@ -527,13 +507,13 @@ function Engine:wire()
     if b then b.result = ev and ev.result end
     self:dispatch("battle.ended", ev)
     -- kept for rules that react to the story flag a win sets afterwards
-    -- (gym leaders' EVENT_BEAT_* are set in the battle's onFinish)
+    -- (gym leaders' EVENT_BEAT_* flags are set in the battle's onFinish)
     self.lastBattle = b
     self.battle = nil
   end)
 
-  -- Where the player is (trackers ask "inside the gym?").  Registered
-  -- before the dispatcher below, so trackers see the new map id.
+  -- Where the player is, for trackers asking "inside the gym?".
+  -- Registered before the dispatcher below so trackers see the new map id.
   events:on("map.entered", function(ev)
     if ev and ev.mapId then self.map = ev.mapId end
   end)
@@ -543,7 +523,7 @@ function Engine:wire()
   local names = {}
   for name in pairs(self.eventRules) do names[name] = true end
   for name in pairs(self.trackerEvents) do names[name] = true end
-  -- driven from core.update below, not engine events
+  -- these come from core.update below, not engine events
   names.tick, names.frame = nil, nil
   -- sent by this mod's own menus (rules/common.lua)
   for name in pairs(names) do if name:match("^ui%.") then names[name] = nil end end
@@ -559,13 +539,12 @@ function Engine:wire()
     end
   end
 
-  -- Deferred state evaluation: at most once per frame, and only when
-  -- something marked it dirty.  core.update wraps the whole game step.
-  -- "tick" and "frame" are pseudo-events for trackers that must watch
-  -- state the engine has no event for (Pikachu's idle dance, a wall
-  -- bump).  "frame" runs every frame, "tick" four times a second; each
-  -- only if some tracker subscribed, and handlers return early when the
-  -- player isn't where they care about.
+  -- core.update wraps the whole game step. State rules run here at most
+  -- once a frame, and only when something marked them dirty.
+  -- "frame" and "tick" are made-up events for trackers that watch things
+  -- the engine has no event for (Pikachu's idle dance, a wall bump).
+  -- "frame" runs every frame and "tick" four times a second, each only if
+  -- a tracker asked for it.
   local TICK = 0.25
   local tickClock = 0
   mod.hooks:wrap("core.update", function(nextFn, game, dt)
@@ -601,10 +580,8 @@ function Engine:wire()
   end)
 end
 
--- ------------------------------------------------------------------
--- Read model for the browser and the public query API.
--- Builds plain rows; nothing returned here aliases live tables.
--- ------------------------------------------------------------------
+-- ------------------ rows for the menu and the API
+-- Builds plain rows that never share live tables.
 function Engine:status(key)
   local def = self.registry:get(key)
   local record = self.ledger:record(key)
@@ -629,7 +606,7 @@ function Engine:status(key)
       and not (def.extra and not self:extrasOn())
     row.archived = false
   else
-    -- Saved but no definition this session: provider missing.
+    -- Saved, but nothing defines it this session: its provider is missing.
     row.title = record.title or key
     row.description = ""
     row.source = record.source
@@ -641,8 +618,8 @@ function Engine:status(key)
   return row
 end
 
--- All rows relevant to the running game: every definition that applies,
--- plus archived records from the save.
+-- Every row for the running game: definitions that apply, plus archived
+-- records from the save.
 function Engine:rows()
   local rows, seen = {}, {}
   for _, key in ipairs(self.registry.order) do
@@ -663,8 +640,8 @@ function Engine:rows()
   return rows
 end
 
--- Totals count ONLY earnable, available achievements, never reference
--- catalog entries and never archived ones.
+-- Totals only count achievements you can earn here, never catalog entries
+-- or archived ones.
 function Engine:totals(filterSource)
   local t = { earned = 0, total = 0, points = 0, maxPoints = 0, archived = 0 }
   for _, row in ipairs(self:rows()) do
@@ -690,9 +667,9 @@ function Engine:playTime()
   return ok and t or nil
 end
 
--- Official RetroAchievements entries only (no bonus, no other mods):
--- the numbers the public leaderboard compares.  `reachedAt` is the play
--- time (seconds) of the latest official unlock, or nil with none.
+-- Official RetroAchievements entries only, no bonus ones or other mods:
+-- the numbers the leaderboard compares. `reachedAt` is the play time in
+-- seconds of the latest official unlock, or nil if there are none.
 function Engine:officialTotals()
   local t = { earned = 0, total = 0, points = 0, maxPoints = 0 }
   for _, row in ipairs(self:rows()) do
@@ -703,7 +680,7 @@ function Engine:officialTotals()
         t.earned = t.earned + 1
         t.points = t.points + (row.points or 0)
         -- the score was reached at the latest unlock's play time; records
-        -- from before 1.2.0 have none, so fall back to the time now
+        -- from before 1.2.0 have none, so use the time now
         local record = self.ledger:record(row.key)
         local pt = record and tonumber(record.pt) or self:playTime()
         if pt and (t.reachedAt == nil or pt > t.reachedAt) then t.reachedAt = pt end

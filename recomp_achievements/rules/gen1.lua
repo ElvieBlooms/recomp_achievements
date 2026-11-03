@@ -1,29 +1,22 @@
 -- rules/gen1.lua
--- ==================================================================
--- BONUS achievements for Red, Blue and Yellow: goals made for this mod
--- that are not in the official RetroAchievements sets (those live in
--- rules/gen1_official.lua).  main.lua marks every rule here `extra`, so
--- players can switch them off with the BONUS ACHIEVEMENTS option.
+-- Bonus achievements for Red, Blue and Yellow. These are goals made for this mod,
+-- not part of the RetroAchievements sets (those live in rules/gen1_official.lua).
+-- main.lua marks every rule here `extra`, so the BONUS ACHIEVEMENTS option hides them.
+-- The detectors are ours, read from Gen1Recomp's own state. RA only publishes a hash
+-- of its trigger logic and its terms reserve it, so none of it is used here.
 --
--- These are OUR detectors, written against Gen1Recomp's own state.  The
--- objectives are inspired by the kinds of goals in the RetroAchievements
--- sets (badges, legendaries, Pokedex milestones), but no RA trigger
--- logic is used or needed -- RA only publishes a hash of that logic, and
--- its terms reserve it.  Titles here are written for this mod.
---
--- Rule fields
+-- Rule fields:
 --   id, title, description, points, category, hidden, goal, games
---       -> become the registry definition (see core/registry.lua)
---   kind = "state"  check(facts, game) -> true | number | false
---       re-checked whenever state may have changed and on load, so old
---       saves are credited ("backfill").  A number is progress toward goal.
---   kind = "event"  on = "<engine event>"
---                   test(payload, facts, ctx) -> true | number | false
---       a number is ADDED to progress (a counter).  Never backfilled.
+--       become the registry definition (core/registry.lua).
+--   kind = "state", check(facts, game) -> true | number | false
+--       Re-checked whenever state may have changed and on save.loaded, so old saves
+--       get credit (backfill). A number is progress toward goal.
+--   kind = "event", on = "<engine event>", test(payload, facts, ctx) -> true | number | false
+--       A number is added to progress, like a counter. Events are never backfilled.
 --
--- Stable ids matter: the id is the save key ("core:<id>").  Renaming a
--- title is safe; renaming an id orphans every player's record.
--- ==================================================================
+-- The id is the save key ("core:<id>"). Renaming a title is fine; renaming an id
+-- loses every player's record for it.
+-- ------------------
 
 local function flagRule(id, title, description, flag, points, category, extra)
   local rule = {

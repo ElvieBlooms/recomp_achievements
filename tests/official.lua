@@ -1,12 +1,12 @@
 -- tests/official.lua
--- ==================================================================
--- Tests for the official Red/Blue/Yellow rule set (rules/gen1_official.lua)
--- in the real 0.3.97 loader, against the real extracted game data.
--- Each test plays out the situation an RA achievement describes -- and,
--- where it matters, a near miss that must NOT unlock.
+-- Tests for the official Red, Blue and Yellow rule set in rules/gen1_official.lua.
+-- They run in the real 0.3.97 mod loader through tests/harness.lua, against
+-- the real extracted game data.
+-- Each test plays out what an RA achievement describes and, where it matters,
+-- a near miss that must not unlock.
 --
 --   luajit tests/official.lua
--- ==================================================================
+-- ------------------
 
 local H = dofile((os.getenv("PROJECT") or ".") .. "/tests/harness.lua")
 
@@ -35,7 +35,7 @@ local function api(env) return env:exports("recomp_achievements") end
 local function has(env, id) return api(env).isUnlocked("core:" .. id) end
 local function progress(env, id) local r = api(env).get("core:" .. id); return r and r.progress end
 
--- ------------------------------------------------------------- coverage
+-- ------------------ Coverage
 test("every RA entry of all three games has a rule", function()
   for _, game in ipairs({ "red", "blue", "yellow" }) do
     local env = boot(game)
@@ -63,7 +63,7 @@ test("rule display uses the official RA text", function()
   eq(api(y).get("core:off_boulderbadge").title, "Showdown in Pewter City", "Yellow's title")
 end)
 
--- --------------------------------------------------------------- state
+-- ------------------ State
 test("flags, badges and items", function()
   local env = boot("red")
   check(not has(env, "off_free_sample"), "not before")
@@ -86,7 +86,7 @@ test("Pokemon ownership, exclusives and Pokedex size", function()
   for _, s in ipairs({ "ARTICUNO", "ZAPDOS" }) do owned[s] = true end
   env:emit("pokemon.caught", { species = "ZAPDOS" }); env:frame()
   eq(progress(env, "off_birds"), 2, "two birds")
-  owned.MOLTRES = true; env:frame(6) -- no event: the 5-second recheck picks it up
+  owned.MOLTRES = true; env:frame(6) -- no event, so the 5-second recheck has to pick it up
   check(has(env, "off_birds"), "three birds")
   for _, s in ipairs({ "EKANS", "ARBOK", "ODDISH", "GLOOM", "VILEPLUME", "MANKEY", "PRIMEAPE",
                        "GROWLITHE", "ARCANINE", "SCYTHER", "ELECTABUZZ" }) do owned[s] = true end
@@ -104,7 +104,7 @@ end)
 test("area sweeps read trainer headers, item pickups and object toggles", function()
   local env = boot("red")
   local f = env.game.data
-  -- every trainer-header flag in Viridian Forest, every item ball, hidden item
+  -- Set every trainer-header flag and take every item ball in Viridian Forest, but no hidden items.
   local def = f.maps.VIRIDIAN_FOREST
   local headers = f.trainer_headers[def.label]
   for _, h in pairs(headers) do env.game.save.flags[h.event] = true end
@@ -113,10 +113,10 @@ test("area sweeps read trainer headers, item pickups and object toggles", functi
     if o.item then
       items = items + 1
       if items == 1 then
-        env.game.save.itemsTaken["VIRIDIAN_FOREST_obj_" .. o.index] = true -- picked up in Gen1Recomp
+        env.game.save.itemsTaken["VIRIDIAN_FOREST_obj_" .. o.index] = true -- how Gen1Recomp records a pickup
       else
         env.game.save.objectToggles.VIRIDIAN_FOREST = env.game.save.objectToggles.VIRIDIAN_FOREST or {}
-        env.game.save.objectToggles.VIRIDIAN_FOREST[o.name] = false     -- imported cartridge save
+        env.game.save.objectToggles.VIRIDIAN_FOREST[o.name] = false     -- how an imported cartridge save shows it
       end
     end
   end
@@ -187,7 +187,7 @@ test("Yellow S.S. Anne rival counts the hidden rival object of imported saves", 
   check(has(env, "off_y_ss_anne_rival"), "rival via toggle")
 end)
 
--- ---------------------------------------------------------- battles
+-- ------------------ Battles
 local function setParty(env, list)
   local party = {}
   for i, m in ipairs(list) do party[i] = { species = m[1], level = m[2], hp = 10 } end
@@ -249,7 +249,7 @@ test("Blue gym sweep in one visit", function()
   check(has(env, "off_gymclear_pewter_gym"), "swept")
   local miss = boot("blue")
   local h1 = next(headers)
-  miss:setFlag(headers[h1].event) -- beaten on an earlier visit
+  miss:setFlag(headers[h1].event) -- this one was beaten on an earlier visit
   miss:enter("PEWTER_GYM", "PEWTER_CITY")
   for _, h in pairs(headers) do miss:setFlag(h.event) end
   miss:setFlag("EVENT_BEAT_BROCK")
@@ -313,7 +313,7 @@ test("level 50 milestones", function()
   check(has(env, "off_halfway_solo"), "slot one to 50")
 end)
 
--- -------------------------------------------------------- trackers
+-- ------------------ Trackers
 test("Safari: ten in one hunt", function()
   local env = boot("red")
   env.game.save.safari = { balls = 30, steps = 500 }

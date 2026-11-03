@@ -1,24 +1,22 @@
 -- adapters/gen3.lua
--- ==================================================================
--- FireRed/LeafGreen (and later Ruby/Sapphire/Emerald) state as plain
--- "facts" for the rules, the same idea as adapters/gen1.lua and gen2.lua.
--- Engine 0.3.97 Gen 3 save (the live session; game.save is that table):
---
+-- Turns FireRed and LeafGreen state, and later Ruby, Sapphire and Emerald, into
+-- plain "facts" for the rules, like adapters/gen1.lua and gen2.lua. It listens to
+-- flag.changed and the save events but never writes to the save.
+-- Gen 3 save in engine 0.3.97 (game.save is the live session table):
 --   save.version            "firered" | "leafgreen" | "ruby" | "sapphire" | "emerald"
 --   save.flags[n] = true    pret flag numbers (FLAG_BADGE01_GET = 0x820);
 --                           trainer flags are TRAINER_FLAGS_START + trainer
 --   save.vars[n]            pret var numbers (VAR_* >= 0x4000)
 --   save.dex.caught/seen[n] internal species numbers (Treecko is 277)
---   save.party, save.storage.boxes[1..14]   mons: { species (internal), level, isEgg, ... }
+--   save.party, save.storage.boxes[1..14]   Pokémon: { species (internal), level, isEgg, ... }
 --   save.bag.pockets.<POCKET> = { { id, qty }, ... }; save.storage.items the PC
 --   save.gameStats[n]       pret GAME_STAT_* counters
 --   save.playTime = { hours, minutes, seconds }
 --   save.engineOptions[<block>].battleStyle   0 SHIFT, 1 SET
 --   save.trainerTower / modData.trainerTower, save.fameChecker   (FRLG)
---
--- Flag and species names come from data/gen3_<family>.lua (tools/gen3_data.py),
--- generated from pret, so rules say "FLAG_GOT_EEVEE" and "SNORLAX".
--- ==================================================================
+-- Flag and species names come from data/gen3_<family>.lua, generated from pret by
+-- tools/gen3_data.py, so rules can say "FLAG_GOT_EEVEE" and "SNORLAX".
+-- ------------------
 
 local Gen3 = {}
 Gen3.__index = Gen3
@@ -33,16 +31,16 @@ local EMPTY = { flags = {}, trainerIds = {}, vars = {}, species = {}, itemIds = 
 -- loadData(family) returns data/gen3_<family>.lua.
 function Gen3.new(mod, util, loadData)
   local self = setmetatable({ mod = mod, util = util, loadData = loadData, cache = {}, live = {} }, Gen3)
-  -- During play the game keeps flags in its script engine's own store and
-  -- copies them into the save only now and then (map changes, the START
-  -- menu, saving).  flag.changed reports every change as it happens, so
-  -- those are kept here and win over the save until the next load.
+  -- During play the script engine keeps flags in its own store and only copies
+  -- them into the save now and then (map changes, the START menu, saving).
+  -- flag.changed reports each change straight away, so we keep those and they
+  -- win over the save until the next load.
   if mod and mod.events and mod.events.on then
     mod.events:on("flag.changed", function(ev)
       local id = type(ev) == "table" and tonumber(ev.id) or nil
       if id then self.live[id] = ev.value and true or false end
     end)
-    -- (a checkpoint restore rewinds the save, so flags set since then go too)
+    -- A checkpoint restore rewinds the save, so flags set since then go too.
     for _, name in ipairs({ "save.loading", "save.loaded", "save.created", "checkpoint.restored" }) do
       mod.events:on(name, function() self.live = {} end)
     end
@@ -52,8 +50,8 @@ end
 
 function Gen3:game() return self.mod.game end
 
--- The live save.  When save.loaded fires, mod.game.save may not point at
--- it yet, so the engine also hands over the event's save (eventSave).
+-- The live save. When save.loaded fires, mod.game.save may not point at it yet,
+-- so the event's own save is kept too (eventSave).
 function Gen3:save()
   local game = self.mod.game
   local live = game and game.save
@@ -115,7 +113,7 @@ function Gen3:speciesId(x)
   return self:data().species[tostring(x):upper()]
 end
 
--- A flag by number or pret name (FLAG_* or TRAINER_* for its trainer flag).
+-- A flag by number or pret name. TRAINER_* names give that trainer's flag.
 function Gen3:flag(id)
   if type(id) == "string" then
     local n = self:data().flags[id]
@@ -128,7 +126,7 @@ function Gen3:flag(id)
   local save = self:save()
   local flags = save and save.flags
   if type(flags) ~= "table" then return false end
-  -- the game writes numeric keys, and string ones through some paths
+  -- Keys are usually numbers, but some paths write strings.
   local v = flags[id]
   if v == nil then v = flags[tostring(id)] end
   return v == true or v == 1
@@ -142,7 +140,7 @@ function Gen3:var(id)
   return tonumber(vars[id]) or tonumber(vars[tostring(id)]) or 0
 end
 
--- Every stored Pokemon, eggs excluded unless asked.
+-- Every stored Pokémon, party and boxes. Eggs only with withEggs.
 function Gen3:eachMon(fn, withEggs)
   local save = self:save()
   if type(save) ~= "table" then return end
@@ -176,7 +174,7 @@ function Gen3:partySnapshot()
   return out
 end
 
--- item id -> quantity across the bag pockets (PC excluded: it isn't usable in battle).
+-- Item id to quantity across the bag pockets. The PC is left out, since it can't be used in battle.
 function Gen3:bagSnapshot()
   local save = self:save()
   local out = {}
@@ -193,10 +191,9 @@ function Gen3:bagSnapshot()
   return out
 end
 
--- battle.started gives the trainer as a number; rules use pret names.
--- Battle Frontier, Trainer Hill, Trainer Tower and secret-base battles use
--- their own numbering, so their trainer numbers are left as numbers (a
--- Battle Tower opponent 400 isn't the map trainer 400).
+-- battle.started gives the trainer as a number, and rules use pret names.
+-- Battle Frontier, Trainer Hill, Trainer Tower and secret base battles have their
+-- own numbering, so they aren't named: Battle Tower opponent 400 isn't map trainer 400.
 local SPECIAL_KINDS = { "frontier", "battleTower", "dome", "palace", "arena", "factory", "pike",
                         "pyramid", "trainerHill", "secretBase", "frontierTrainer" }
 function Gen3:battleInfo(ev)
@@ -213,7 +210,7 @@ function Gen3:battleInfo(ev)
   return { trainerName = id and self:data().trainerIds[id] or nil }
 end
 
--- The SET/SHIFT battle style from the game's own OPTION menu.
+-- SET or SHIFT, from the game's own OPTION menu.
 function Gen3:battleStyle()
   local save = self:save() or {}
   for _, block in pairs(type(save.engineOptions) == "table" and save.engineOptions or {}) do
@@ -293,13 +290,13 @@ function Gen3:facts()
   f.gameStat = function(n) return tonumber(stats[n]) or tonumber(stats[tostring(n)]) or 0 end
   f.battleStyle = function() return self_:battleStyle() end
   f.gameCleared = function() return save.game_cleared == true or f.flag("FLAG_SYS_GAME_CLEAR") end
-  -- Trainer Tower (FRLG): a challenge is cleared once it has a best time.
+  -- Trainer Tower (FRLG): a challenge counts as cleared once it has a best time.
   f.trainerTowerCleared = function(mode)
     local tt = type(save.trainerTower) == "table" and save.trainerTower or modData.trainerTower
     local rec = type(tt) == "table" and type(tt.records) == "table" and tt.records[mode + 1] or nil
     return type(rec) == "table" and (tonumber(rec.bestTime) or 215999) < 215999
   end
-  -- Fame Checker (FRLG): people fully filled in (picture plus all 6 facts).
+  -- Fame Checker (FRLG): people fully filled in, picture plus all 6 facts.
   f.fameCheckerFull = function()
     local recs = type(save.fameChecker) == "table" and save.fameChecker or modData.fameChecker
     if type(recs) ~= "table" then return 0 end
@@ -315,7 +312,7 @@ function Gen3:facts()
   f.data = function() return self_:data() end
   -- ------------------------------------------------ Emerald
   f.frontier = function() return type(save.frontier) == "table" and save.frontier or {} end
-  -- decoration ids owned in one category (0 desk .. 7 cushion)
+  -- Decoration ids owned in one category, 0 (desk) to 7 (cushion).
   f.decorations = function(cat)
     local inv = type(save.decorationInventory) == "table" and save.decorationInventory or {}
     local list = inv[cat] or inv[tostring(cat)] or {}
@@ -341,7 +338,7 @@ function Gen3:facts()
       out[i] = type(b) == "table" and ((tonumber(b.color) or 0) > 0 and 1 or 0) or 0
     end
     return out end)()) end
-  -- best contest ribbon rank (0 none .. 4 Master) in a category, across all Pokemon
+  -- Best contest ribbon rank in a category across every Pokémon, 0 (none) to 4 (Master).
   local RIBBON_SHIFT = { cool = 0, beauty = 3, cute = 6, smart = 9, tough = 12 }
   f.ribbonRank = function(category)
     local shift, best = RIBBON_SHIFT[category], 0
@@ -367,7 +364,7 @@ function Gen3:facts()
     end
     return n
   end
-  -- any stored Pokemon (eggs aside) passing test(speciesName, mon)
+  -- Whether any stored Pokémon, eggs aside, passes test(speciesName, mon).
   f.anyMon = function(test)
     local found = false
     self_:eachMon(function(m) if not found and test(monSpecies(self_, m), m) then found = true end end)
@@ -379,7 +376,7 @@ function Gen3:facts()
     return type(w) == "table" and (tonumber(w.species) or 0) > 0
   end
   f.pokeblocks = function() return type(save.pokeblocks) == "table" and save.pokeblocks or {} end
-  -- a stored Pokemon of one of `species` that knows `move`
+  -- Whether a stored Pokémon of one of `speciesList` knows `move`.
   f.knowsMove = function(speciesList, move)
     local want = {}
     for _, s in ipairs(speciesList) do want[s] = true end
@@ -394,9 +391,9 @@ function Gen3:facts()
     end)
     return found
   end
-  -- How many rows of a generated list (trainers/items/hidden/gifts) are done.
-  -- keep(row) filters; rows are { flagId, name, ..., map, region }.  Flags the
-  -- game sets at New Game never count (they'd look done from the start).
+  -- How many rows of a generated list (trainers, items, hidden, gifts) are done.
+  -- keep(row) filters. Rows are { flagId, name, ..., map, region }. Flags the game
+  -- sets at New Game never count, or they'd look done from the start.
   f.sweep = function(kind, keep)
     local d = self_:data()
     local done, total = 0, 0

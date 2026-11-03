@@ -1,14 +1,15 @@
 -- ui/text.lua
--- Shared drawing helpers for the Game Boy screen (20 x 18 tiles of 8px).
--- Uses mod.ui.Font -- the engine's own tile font -- so popups and the
--- browser look native and need no extra assets.
+-- Drawing helpers for the Game Boy screen (20 x 18 tiles of 8px). They use
+-- mod.ui.Font, the engine's own tile font, so popups and the browser look
+-- native and need no extra assets.
 --
 -- The Gen 1 font has no # $ % & * + < = > @ \ ^ _ ` { | } ~, but it does
--- have a few non-ASCII glyphs (é, curly quotes, …, ♀, ♂, ×).  Official
--- RA titles and provider text can contain anything, so every string is
--- normalised here first: supported glyphs pass, common symbols become
--- words, accents are dropped, and anything else becomes a space.  Widths
--- are counted in characters, not bytes, so "Pokémon" is 7 columns.
+-- have a few non-ASCII glyphs (é, curly quotes, …, ♀, ♂, ×). RA titles and
+-- other mods' text can hold anything, so every string is cleaned here
+-- first: glyphs the font has pass through, common symbols become words,
+-- accents are dropped and anything else becomes a space. Widths count
+-- characters, not bytes, so "Pokémon" is 7 columns.
+-- ------------------
 
 local Text = {}
 
@@ -19,7 +20,7 @@ local KEEP = {
   ["…"] = true, ["♀"] = true, ["♂"] = true, ["×"] = true,
 }
 
--- Replacements for characters the font lacks.
+-- Stand-ins for characters the font lacks.
 local SUBST = {
   ["&"] = "and", ["%"] = "pct", ["#"] = "No.", ["+"] = "plus", ["@"] = "at",
   ["<"] = "(", [">"] = ")", ["="] = "-", ["_"] = " ", ["*"] = "", ["~"] = "-",
@@ -67,7 +68,7 @@ function Text.fit(s, cols)
   return table.concat(out)
 end
 
--- Word-wrap to `width` characters.  Returns a list of lines.
+-- Word-wrap to `width` characters. Returns a list of lines.
 function Text.wrap(s, width)
   local lines, line, lineLen = {}, "", 0
   for word in Text.safe(s):gmatch("%S+") do
@@ -99,14 +100,14 @@ function Text.draw(Font, s, tx, ty)
   Font.draw(Text.safe(s), tx * 8, ty * 8)
 end
 
--- Right-aligned so the text ends just before column `rightTx`.
+-- Right-aligned so the text ends just before column rightTx.
 function Text.drawRight(Font, s, rightTx, ty)
   s = Text.safe(s)
   Text.draw(Font, s, rightTx - Text.len(s), ty)
 end
 
--- A status mark that does not rely on colour: filled square = earned,
--- hollow square = locked, hollow with a slash = archived, dot = reference.
+-- A status mark that doesn't rely on colour: filled square for earned,
+-- hollow for locked, hollow with a slash for archived, a dot for reference.
 function Text.mark(kind, tx, ty)
   local x, y = tx * 8 + 1, ty * 8 + 1
   love.graphics.setColor(0, 0, 0, 1)
@@ -122,9 +123,8 @@ function Text.mark(kind, tx, ty)
   end
 end
 
--- Small solid arrows drawn as shapes (the font has no < or >).
--- The font has no "_", so Text.draw shows a space.  For plain ASCII text
--- (a URL), call this after Text.draw to draw the underscores as lines.
+-- The font has no _, so Text.draw shows a space. For plain ASCII text like
+-- a URL, call this after Text.draw to draw the underscores as lines.
 function Text.underscores(s, tx, ty)
   love.graphics.setColor(0, 0, 0, 1)
   local i = 0
@@ -134,6 +134,7 @@ function Text.underscores(s, tx, ty)
   end
 end
 
+-- Small solid arrows drawn as shapes, since the font has no < or >.
 function Text.arrow(dir, tx, ty)
   local x, y = tx * 8, ty * 8
   love.graphics.setColor(0, 0, 0, 1)

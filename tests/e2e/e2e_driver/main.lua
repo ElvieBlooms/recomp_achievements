@@ -1,6 +1,11 @@
--- Test-only driver.  Runs the steps returned by plan.lua, one at a time,
--- from the core.update hook.  A step is a function(game, ctx, dt) that
--- returns true when finished (it is called every frame until then).
+-- tests/e2e/e2e_driver/main.lua
+-- A test-only mod that drives the real game through a plan.
+-- tests/e2e/run_e2e.sh copies it in with the plan as plan.lua, and it runs
+-- the plan's steps one at a time from the core.update hook.
+-- A step is a function(game, ctx, dt) that returns true when it's done,
+-- and it's called every frame until then.
+-- It logs the framework's events with an [E2E] prefix and never ships in a release.
+-- ------------------
 return function(mod)
   local source = assert(mod:read("plan.lua"), "plan.lua missing")
   local plan = assert(load(source, "@plan.lua"))()

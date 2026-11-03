@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
+# tools/gen2_data.py
 """Build recomp_achievements/data/gen2_<game>.lua from the pret disassemblies.
 
     python3 tools/gen2_data.py <pokegold dir> <pokecrystal dir>
 
-Gen1Recomp's Gen 2 games use the pret numbering for event flags (checked
-against the engine's own src/core/gen2/FlagNames.lua and Crystal's generated
-scripts), so the flag numbers here are the ones the game sets.  For each game
-the file lists:
+Gen1Recomp's Gen 2 games use pret's event flag numbering (checked against
+the engine's own src/core/gen2/FlagNames.lua and Crystal's generated
+scripts), so the numbers here are the ones the game really sets. Each
+game's file lists:
 
   flags     event flag name -> number
   trainers  every map trainer: beat flag, map, region (johto/kanto/other)
@@ -15,11 +16,12 @@ the file lists:
   gifts     items handed over by a script that then sets a flag
             (giveitem/verbosegiveitem ... setevent), with the flag and item
 
-Region comes from the map's landmark: before KANTO_LANDMARK is Johto,
-from it to KANTO_LANDMARK_LAST is Kanto, anything else (the S.S. Aqua,
-special places) is "other".  Silver shares Gold's source, so it gets the
-same file contents.
+Region comes from the map's landmark in constants/landmark_constants.asm:
+before KANTO_LANDMARK is Johto, from there to KANTO_LANDMARK_LAST is Kanto,
+and anything else (the S.S. Aqua, special places) is "other". Silver shares
+Gold's source, so its file has the same contents.
 """
+# ------------------
 import os
 import re
 import sys
@@ -73,8 +75,9 @@ def map_regions(repo):
 
 
 def initial_events(repo):
-    """Flags InitializeEventsScript sets on New Game (mostly 'hide this
-    object until later').  They can't be 'found', so sweeps skip them."""
+    """Flags InitializeEventsScript sets on New Game, mostly to hide objects until later.
+
+    The player can't find these, so the sweeps leave them out."""
     path = os.path.join(repo, "engine", "events", "std_scripts.asm")
     if not os.path.exists(path):
         return set()
@@ -98,10 +101,10 @@ def scan_maps(repo, flags):
         region = regions.get(mapname, "other")
         text = open(os.path.join(repo, "maps", fname), encoding="utf-8").read()
         lines = text.splitlines()
-        # label -> itemball item
+        # Maps each object label to the item its itemball holds.
         itemball = {}
         label = None
-        pending_give = []  # items given in the current label, waiting for setevent
+        pending_give = []  # items given under this label, until a setevent claims them
         for raw in lines:
             line = raw.split(";")[0].rstrip()
             m = re.match(r"^(\.?\w+):", line)
@@ -139,7 +142,7 @@ def scan_maps(repo, flags):
             m = re.search(r"OBJECTTYPE_ITEMBALL,\s*\w+,\s*(\w+),\s*(EVENT_\w+)", raw)
             if m and m.group(2) in flags:
                 items.append((flags[m.group(2)], m.group(2), itemball.get(m.group(1), "?"), mapname, region))
-    # one row per flag
+    # Keeps one row per flag and drops the ones New Game already sets.
     def uniq(rows):
         out, seen = [], set()
         for r in rows:
@@ -152,10 +155,10 @@ def scan_maps(repo, flags):
     return uniq(trainers), uniq(items), uniq(hidden), uniq(gifts)
 
 
-# Pokemon a Johto player can get without leaving Johto or trading:
-# Johto grass/water, fishing, Headbutt trees, swarms, the Bug-Catching
-# Contest, roaming beasts and Johto gifts.  Used for Crystal's "only Johto
-# Pokemon" challenges (a local reading of RA's wording).
+# Pokémon a player can get without leaving Johto or trading: starters,
+# gifts, roaming beasts and the odd static encounter. johto_species() adds
+# the grass, water, fishing, Headbutt, swarm and Bug-Catching Contest lists.
+# Crystal's "only Johto Pokémon" challenges use it, as a local reading of RA's wording.
 JOHTO_EXTRA = ["CHIKORITA", "CYNDAQUIL", "TOTODILE", "TOGEPI", "SPEAROW", "ONIX", "MACHOP",
                "VOLTORB", "SHUCKLE", "EEVEE", "TYROGUE", "RHYDON", "DRATINI", "LAPRAS",
                "SUDOWOODO", "GYARADOS", "RAIKOU", "ENTEI", "SUICUNE", "LUGIA", "HO_OH",
@@ -179,7 +182,7 @@ def johto_species(repo):
                 word = m.group(1)
                 if word in species:
                     out.add(word)
-    # evolutions of those count too: a Johto Pokemon raised into its final form
+    # Evolved forms count too, but they aren't added to this list.
     return sorted(out)
 
 

@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-"""Register the Discord bot's slash commands (run once, and again after
-changing COMMANDS).
+# tools/discord_register.py
+"""Register the Discord bot's slash commands (run once, and again after changing COMMANDS).
 
     DISCORD_APP_ID=... DISCORD_BOT_TOKEN=... python3 tools/discord_register.py
 
-Both values are on the Discord developer portal.  The token is only used
-for this call; the bot itself (discord/worker.js) never needs it.  Don't
-commit it.  --dry-run prints the commands instead of sending them.
+Both values come from the Discord developer portal. The bot token is only
+used for this one PUT to the application commands endpoint. The bot itself
+(discord/worker.js) never needs it, so keep it out of the repo.
+--dry-run prints the commands instead of sending them.
 """
+# ------------------
 
 import argparse
 import json
@@ -16,8 +18,8 @@ import sys
 import urllib.error
 import urllib.request
 
-# Usable in servers, in DMs with the bot and in other DMs, whether the bot
-# was added to a server or installed by the user.
+# Lets the commands work in servers, in DMs with the bot and in other DMs,
+# whether the bot was added to a server or installed by the user.
 WHERE = {"integration_types": [0, 1], "contexts": [0, 1, 2]}
 
 GAME_CHOICES = [{"name": "Red", "value": "red"}, {"name": "Blue", "value": "blue"},

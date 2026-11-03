@@ -1,36 +1,30 @@
--- Recomp Achievements: entry point
--- ==================================================================
--- The engine runs this file inside the mod sandbox and hands us `mod`
--- (the API 3 object built in src/mods/Loader.lua:_api).  Everything the
--- mod does is wired here, top to bottom, so this file doubles as a map
--- of the whole project:
+-- main.lua
+-- Entry point for Recomp Achievements. Gen1Recomp runs this file in the mod
+-- sandbox and passes in `mod`, the API 3 object (src/mods/Loader.lua:_api).
+-- Everything is wired here, top to bottom, so it doubles as a map of the mod:
 --
---   core/util.lua      tiny helpers (copy, clamp, string checks)
---   core/ledger.lua    the save bucket: what is unlocked / in progress
---   core/registry.lua  achievement *definitions* known this session
---   core/engine.lua    the one award pipeline every unlock goes through
+--   core/util.lua      small helpers (copy, clamp, string checks)
+--   core/ledger.lua    the save bucket: what's unlocked or in progress
+--   core/registry.lua  achievement definitions known this session
+--   core/engine.lua    the one award path every unlock goes through
 --   core/api.lua       the public exports other mods call
---   adapters/gen1.lua  reads Red/Blue/Yellow state into plain "facts"
---   rules/gen1.lua     native detectors (our own logic, not RA's)
---   catalog/*.lua      optional RA reference metadata (developer import)
---   ui/text.lua       font-safe text + status marks
+--   adapters/gen*.lua  read each generation's save into plain "facts"
+--   rules/gen*.lua     our own detectors, checked by this mod, not RA
+--   catalog/*.lua      optional RA reference text (developer import)
+--   ui/text.lua        font-safe text and status marks
 --   ui/toast.lua       unlock popups, drawn on the render.hud hook
 --   ui/browser.lua     the ACHIEVEMENTS screen opened from START
 --
--- Design rule worth remembering: definitions are rebuilt every session
--- (code), records live in the save (data).  Nothing in the save is ever
--- a function, so a save without this mod installed stays loadable.
--- ==================================================================
+-- Definitions are rebuilt from code each session; records live in the save.
+-- Nothing saved is ever a function, so a save still loads without this mod.
+-- ------------------
 
 return function(mod)
-  -- ----------------------------------------------------------------
-  -- import(): load one of our own files.
-  --
-  -- Other mods use require("mods.<id>.file"), which works but runs the
-  -- file through the engine's global require.  mod:read + load keeps the
-  -- file inside *our* sandbox environment and does not care what folder
-  -- name the player installed us under.  Results are cached like require.
-  -- ----------------------------------------------------------------
+  -- ------------------ import
+  -- Loads one of our own files. require("mods.<id>.file") would go through
+  -- the engine's global require; mod:read plus load keeps the file in our
+  -- sandbox and works whatever folder name the mod is installed under.
+  -- Results are cached like require.
   local cache = {}
   local function import(path)
     if cache[path] ~= nil then return cache[path] end
@@ -56,17 +50,16 @@ return function(mod)
   local Native3  = import("ui/native3.lua")
   local Share    = import("ui/share.lua")
 
-  -- ----------------------------------------------------------------
-  -- Player options.  These live in mod.options (install-wide), NOT in
-  -- the save, because they are preferences rather than progress.
-  -- ----------------------------------------------------------------
+  -- ------------------ options
+  -- These live in mod.options, shared across saves, because they're
+  -- preferences, not progress.
   mod.options:define({
-    -- Pressing A here opens the menu from the Mods manager (the options
-    -- screen has no buttons, so it's a one-choice row; any press fires
-    -- mod.options_changed, see Browser.install).
+    -- Opens the menu from the Mods manager. The options screen has no
+    -- buttons, so this is a one-choice row; any press fires
+    -- mod.options_changed (see Browser.install).
     { key = "openMenu", type = "choice", label = "OPEN TROPHIES", default = "go",
       choices = { { "PRESS A", "go" } } },
-    -- Off for players whose START menu is replaced by another mod.
+    -- Turn off when another mod replaces the START menu.
     { key = "startMenuEntry", type = "toggle", label = "START MENU ENTRY", default = true },
     { key = "toasts", type = "toggle", label = "UNLOCK POPUPS", default = true },
     { key = "popupStyle", type = "choice", label = "POPUP STYLE", default = "modern",
@@ -94,11 +87,10 @@ return function(mod)
   })
   toast.gameOf = function() return engine.game end -- popup accent colour
 
-  -- ----------------------------------------------------------------
-  -- Built-in content for the running generation.  Each generation has an
-  -- adapter (save -> facts), its RA-list detectors, its bonus rules and
-  -- the optional RA catalogs; rules/common.lua applies everywhere.
-  -- ----------------------------------------------------------------
+  -- ------------------ built-in content
+  -- Each generation gets an adapter (save to facts), its RA-list rules,
+  -- its bonus rules and the optional RA catalogs.
+  -- rules/common.lua applies to every generation.
   local function addRules(list, extra)
     for _, rule in ipairs(list) do
       if extra then rule.extra = true end
@@ -106,8 +98,8 @@ return function(mod)
     end
   end
   local function loadCatalogs(games)
-    -- Reference catalogs are optional files produced by
-    -- tools/fetch_ra_catalog.py.  Missing files are normal.
+    -- Catalogs come from tools/fetch_ra_catalog.py and are optional,
+    -- so a missing file is normal.
     for _, game in ipairs(games) do
       if mod:info("catalog/" .. game .. ".lua") then
         local ok, catalog = pcall(import, "catalog/" .. game .. ".lua")
@@ -123,8 +115,8 @@ return function(mod)
   local supported = true
   if mod.generation == 1 then
     engine:setAdapter(import("adapters/gen1.lua").new(mod, util))
-    -- Official RA-linked rules first (shown with RA's text when the
-    -- catalog is installed), then this mod's own bonus achievements.
+    -- RA-linked rules first (they show RA's text when the catalog is
+    -- installed), then this mod's own bonus achievements.
     addRules(import("rules/gen1_official.lua")(import("rules/gen1_lib.lua")))
     addRules(import("rules/gen1.lua"), true)
     loadCatalogs({ "red", "blue", "yellow" })
@@ -161,20 +153,17 @@ return function(mod)
     end
   end
 
-  -- ----------------------------------------------------------------
-  -- Public API.  Whatever sits in mod.exports when this function returns
-  -- is what other mods get from mod.find("recomp_achievements").exports.
-  -- ----------------------------------------------------------------
+  -- ------------------ public API
+  -- Whatever is in mod.exports when this returns is what other mods get
+  -- from mod.find("recomp_achievements").exports.
   Api.install(mod, engine, util, Share)
 
-  -- ----------------------------------------------------------------
-  -- Engine lifecycle.  See core/engine.lua for what each one does.
-  -- ----------------------------------------------------------------
+  -- ------------------ engine events
+  -- Save, battle and frame hooks; core/engine.lua explains each one.
   engine:wire()
 
-  -- ----------------------------------------------------------------
-  -- UI: the START menu row, the browser screen and toasts.
-  -- ----------------------------------------------------------------
+  -- ------------------ UI
+  -- The START menu row, the achievements screen and the popups.
   Browser.install(mod, engine, util, Text, Share, Modern, Native3)
   toast:install()
 end

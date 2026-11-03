@@ -1,17 +1,14 @@
 -- rules/gen3_lib.lua
--- ==================================================================
--- Building blocks for rules/gen3_official.lua, the Gen 3 counterpart of
--- rules/gen2_lib.lua.  Each constructor returns one rule table.
---
+-- Building blocks for rules/gen3_official.lua, the Gen 3 side of
+-- rules/gen2_lib.lua. Each constructor returns one rule table.
 --   ra    = { firered = <RA id>, leafgreen = <RA id> } links the rule to
---           RetroAchievements entries; it's only offered on those games.
---   extra = optional fields merged in last (points/category/goal/unit,
---           fidelity = "interpretation" + note for local readings).
---
--- Facts come from adapters/gen3.lua.  Flags, trainers, species and items
--- use pret's names ("FLAG_GOT_EEVEE", "TRAINER_LEADER_BROCK", "SNORLAX");
--- the adapter turns them into the save's numbers (data/gen3_frlg.lua).
--- ==================================================================
+--           RetroAchievements; it's only offered on those games.
+--   extra = optional fields merged in last (points, category, goal, unit,
+--           fidelity = "interpretation" plus a note for our own readings).
+-- Facts come from adapters/gen3.lua. Flags, trainers, species and items use pret
+-- names ("FLAG_GOT_EEVEE", "TRAINER_LEADER_BROCK", "SNORLAX"); the adapter maps
+-- them to the save's numbers (data/gen3_frlg.lua).
+-- ------------------
 
 local L = {}
 
@@ -57,7 +54,7 @@ function L.anyFlag(id, ra, title, flags, extra)
   return L.state(id, ra, title, function(f) return f.anyFlag(flags) end, extra)
 end
 
--- The same encounter under each starter the rival could have picked.
+-- One encounter under each starter the rival could have picked.
 function L.rival(stem)
   return { stem .. "_SQUIRTLE", stem .. "_BULBASAUR", stem .. "_CHARMANDER" }
 end
@@ -74,7 +71,7 @@ function L.var(id, ra, title, var, atLeast, extra)
   return L.state(id, ra, title, function(f) return f.var(var) >= atLeast end, extra)
 end
 
--- ---------------------------------------------------------- Pokemon
+-- ---------------------------------------------------------- Pokémon
 function L.owns(id, ra, title, species, extra)
   return L.state(id, ra, title, function(f) return f.owns(species) end,
     with({ category = "POKEMON" }, extra))
@@ -102,10 +99,8 @@ function L.tracker(id, ra, title, on, init, extra)
 end
 
 -- ---------------------------------------------------------- areas
--- Map matching: "MtMoon" matches MtMoon and MtMoon_<anything>.  Gyms are
--- left out (their trainers are marked beaten when the leader falls, and
--- they have achievements of their own), and so are rival battles (only
--- one of the three versions is ever fought).
+-- "MtMoon" matches MtMoon and MtMoon_<anything>. Gyms are left out: gym trainers
+-- are marked beaten when the leader falls, and gyms have their own achievements.
 local function inMaps(map, list, skip)
   for _, s in ipairs(skip or {}) do
     if map:sub(1, #s) == s then return false end -- plain prefix
@@ -118,7 +113,8 @@ local function inMaps(map, list, skip)
 end
 L.inMaps = inMaps
 
--- (Gabby and Ty move around Hoenn; each of their teams is its own trainer.)
+-- Never part of a sweep. Only one of the rival's three versions is ever fought,
+-- and Gabby and Ty move around Hoenn with each team as its own trainer.
 local NOT_SWEPT = { "TRAINER_RIVAL_", "TRAINER_CHAMPION_", "TRAINER_BRENDAN_", "TRAINER_MAY_",
                     "TRAINER_GABBY_AND_TY_" }
 local function sweepable(row)
@@ -127,12 +123,12 @@ local function sweepable(row)
   return true
 end
 
--- Every trainer beaten / item found in an area.  opts:
+-- Beat every trainer and find every item in an area. opts:
 --   maps     map names (prefix match, see inMaps)
 --   skip     map names to leave out
---   kinds    which lists count: { "trainers", "items", "hidden" } by default
+--   kinds    which lists count, { "trainers", "items", "hidden" } by default
 --   noItem   items that don't count ({ "TINY_MUSHROOM" = true })
--- Progress is in percent (the lists come from the game data at run time).
+-- Progress is a percentage, since the lists come from game data at run time.
 function L.area(id, ra, title, opts, extra)
   local kinds = opts.kinds or { "trainers", "items", "hidden" }
   local memo = setmetatable({}, { __mode = "k" }) -- rows never change
@@ -164,9 +160,9 @@ function L.area(id, ra, title, opts, extra)
               fidelity = "interpretation" }, extra))
 end
 
--- A gym's trainers, beaten before its leader.  The game marks them all
--- beaten when the leader falls, so wins are counted as they happen; a
--- save where every one is beaten while the leader isn't also counts.
+-- Beat a gym's trainers before its leader. The game marks them all beaten when
+-- the leader falls, so wins are counted as they happen. A save with every one
+-- beaten and the leader still standing also counts.
 function L.gymTrainers(id, ra, title, gym, leaderFlag, extra)
   local rule = L.tracker(id, ra, title, {
     ["battle.ended"] = function(s, ev, f, ctx)
@@ -207,7 +203,7 @@ local function partyCount(list)
 end
 L.partyCount = partyCount
 
--- Won a battle against one of `trainers` (a name or list) and cond holds.
+-- Win against one of `trainers` (a name or a list) with cond holding.
 function L.beatTrainer(id, ra, title, trainers, cond, extra)
   local want = set(type(trainers) == "table" and trainers or { trainers })
   return L.onEvent(id, ra, title, "battle.ended", function(ev, f, ctx)
@@ -217,8 +213,8 @@ function L.beatTrainer(id, ra, title, trainers, cond, extra)
   end, with({ category = "GYMS" }, extra))
 end
 
--- Challenge rules (RA's "Set mode"): the SET battle style from OPTION >
--- BATTLE STYLE, at most `count` Pokemon (party size at the start), none
+-- Challenge rules, RA's "Set mode": the SET battle style from OPTION >
+-- BATTLE STYLE, at most `count` Pokémon in the party at the start, and none
 -- above `cap` at the start or the end.
 L.CHALLENGE = "Challenge: set OPTION > BATTLE STYLE to SET"
 
@@ -229,9 +225,9 @@ function L.setCap(count, cap)
   end
 end
 
--- The Elite Four and the Champion in one go.  `elite` lists the four,
--- `champions` the champion's versions.  startOk(facts) must hold when each
--- league battle starts; a loss or a failed check ends the run.
+-- The Elite Four and the Champion in one go. `elite` lists the four and
+-- `champions` the champion's versions. startOk(facts) must hold as each League
+-- battle starts; a loss or a failed check breaks the run.
 function L.leagueRun(id, ra, title, elite, champions, startOk, extra)
   local league, champ = set(elite), set(champions)
   for k in pairs(champ) do league[k] = true end

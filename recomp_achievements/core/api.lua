@@ -1,27 +1,24 @@
 -- core/api.lua
--- ==================================================================
--- The public API other mods use.  It is published through mod.exports;
--- a provider reaches it with
+-- The public API other mods use, published through mod.exports. A provider
+-- gets it with:
 --
 --   local found = mod.find("recomp_achievements")
 --   local ach = found and found.exports
 --
--- Contract (full guide: docs/PROVIDER_API.md):
---   * Every call returns  true            on success
---                    or   nil, code, msg  on an expected failure.
---     Ordinary problems (unknown id, no save loaded yet, duplicate) never
---     throw; only a genuine bug inside this mod would.
---   * Providers write only inside their own namespace "mod:<provider>:".
---     That is enforced by giving each provider a HANDLE bound to its id,
---     not by trusting an id passed on every call.
---   * This is a cooperative, local API.  It cannot verify which mod is
---     really calling, so it is not anti-cheat.  Namespaces prevent
---     accidents, not malice.
+-- How it behaves (full guide: docs/PROVIDER_API.md):
+--   Every call returns true on success, or nil, code, msg when something
+--   expected goes wrong. Ordinary problems (unknown id, no save loaded
+--   yet, a duplicate) never throw; only a real bug in this mod would.
+--   Providers can only write inside their own "mod:<provider>:" space.
+--   Each provider gets a handle bound to its id, so it never passes an
+--   id that could be someone else's.
+--   It's a friendly local API, not anti-cheat: it can't tell which mod is
+--   really calling. Namespaces stop accidents, not bad intent.
 --
--- Versioning: API_VERSION follows semver.  Adding methods bumps minor;
--- changing what an existing method means bumps major.  Check it with
+-- Versioning: API_VERSION follows semver. New methods bump the minor
+-- number; changing what a method means bumps the major. Check it with
 -- ach.apiVersion or ach.supports("capability").
--- ==================================================================
+-- ------------------
 
 local Api = {}
 
@@ -32,9 +29,8 @@ Api.CAPABILITIES = {
   hidden = true, official_totals = true, leaderboard_card = true, provider_tabs = true,
 }
 
--- Writes per provider per second before calls start returning
--- "rate_limited".  Generous for real play, stops a runaway loop from
--- turning into a popup storm.
+-- Writes per provider per second before calls return "rate_limited".
+-- Plenty for real play, and stops a runaway loop becoming a popup storm.
 Api.RATE_LIMIT = 120
 
 local function clock()
@@ -62,13 +58,12 @@ function Api.install(mod, engine, util, Share)
     return fail(code, message)
   end
 
-  -- ---------------------------------------------------------------
-  -- Provider handle: everything a provider WRITES goes through here.
-  -- ---------------------------------------------------------------
+  -- ------------------ provider handle
+  -- Everything a provider writes goes through its handle.
   local function makeHandle(providerId)
-    -- `handle` holds the methods; `public` is the read-only face given to
-    -- the provider.  Methods compare their first argument with `public` so
-    -- both handle:unlock("x") and handle.unlock("x") work.
+    -- `handle` holds the methods and `public` is the read-only copy the
+    -- provider gets. Methods check their first argument against `public`,
+    -- so handle:unlock("x") and handle.unlock("x") both work.
     local handle = {}
     local public = util.readonly(handle)
     local window, writes = 0, 0
@@ -87,7 +82,7 @@ function Api.install(mod, engine, util, Share)
     handle.provider = providerId
 
     -- register(def) -> true | nil, code, msg
-    -- "already_registered" with identical content counts as success.
+    -- Registering the same content again ("already_registered") counts as success.
     handle.register = method(public, function(def)
       local out, code, message = registry:add("provider", providerId, def)
       if not out then return fail(code, message) end
@@ -95,7 +90,7 @@ function Api.install(mod, engine, util, Share)
     end)
 
     -- registerMany({def, def, ...}) -> okCount, { [index] = {code, msg} }
-    -- Best effort: good entries register even if some fail.
+    -- Good entries still register when others in the list fail.
     handle.registerMany = method(public, function(list)
       if type(list) ~= "table" then return 0, { { "invalid_definition", "expected a list" } } end
       local okCount, errors = 0, {}
@@ -158,9 +153,7 @@ function Api.install(mod, engine, util, Share)
     return public
   end
 
-  -- ---------------------------------------------------------------
-  -- Top-level exports
-  -- ---------------------------------------------------------------
+  -- ------------------ top-level exports
   exports.apiVersion = Api.VERSION
 
   exports.getVersion = method(exports, function()
@@ -172,12 +165,12 @@ function Api.install(mod, engine, util, Share)
   end)
 
   -- connect(providerId, { name = "...", version = "...", tab = "..." })
-  -- tab (since 1.3.0): a short label for your own filter tab in the menu.
-  -- providerId should be your own mod.id.  Returns a handle.
-  -- Calling twice with the same id returns the same handle.
+  -- Returns a handle. providerId should be your own mod.id, and calling
+  -- again with the same id gives back the same handle.
+  -- tab (since 1.3.0) is a short label for your own filter tab in the menu.
   exports.connect = method(exports, function(providerId, info)
     if type(providerId) == "table" and providerId.id then
-      -- convenience: ach.connect(mod) passes the whole mod object
+      -- ach.connect(mod) works too: id, name and version come from the mod
       local defaults = { name = providerId.manifest and providerId.manifest.name,
                          version = providerId.version }
       if type(info) == "table" then
@@ -197,8 +190,8 @@ function Api.install(mod, engine, util, Share)
     return handles[providerId]
   end)
 
-  -- Read-only queries by full key ("core:boulder_badge",
-  -- "mod:other_mod:thing").  Any mod may read any achievement.
+  -- Read-only queries by full key, like "core:boulder_badge" or
+  -- "mod:other_mod:thing". Any mod can read any achievement.
   exports.isUnlocked = method(exports, function(fullKey)
     return type(fullKey) == "string" and ledger:isUnlocked(fullKey)
   end)
@@ -231,21 +224,21 @@ function Api.install(mod, engine, util, Share)
     return util.plain(engine:officialTotals())
   end)
 
-  -- The leaderboard card shown on the browser's SELECT page, or nil
-  -- before a save is loaded: { game, name, points, earned, total,
-  -- maxPoints, saveId, code }.
+  -- The leaderboard card from the menu's SELECT page:
+  -- { game, name, points, earned, total, maxPoints, saveId, code }.
+  -- nil before a save is loaded.
   exports.leaderboardCard = method(exports, function()
     if not Share then return nil end
     local card = Share.card(engine)
     return card and util.plain(card) or nil
   end)
 
-  -- Which game the active save is, or nil before a save is loaded.
+  -- The active save's game, or nil before a save is loaded.
   exports.currentGame = method(exports, function()
     return engine.active and engine.game or nil
   end)
 
-  -- Event names, so providers don't hard-code strings.
+  -- Event names, so providers don't have to hard-code them.
   exports.events = util.readonly({
     unlocked = "mod.recomp_achievements.unlocked",
     progress = "mod.recomp_achievements.progress",

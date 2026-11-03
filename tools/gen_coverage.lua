@@ -1,9 +1,12 @@
 -- tools/gen_coverage.lua
--- Writes docs/COVERAGE.md: every official RA entry for Red, Blue,
--- Yellow, Gold, Silver, Crystal, FireRed and LeafGreen, the rule that tracks it, how (state / event / session tracker),
--- whether an old save gets credit, and any interpretation note.
+-- Writes docs/COVERAGE.md from the official rule files and the bundled catalogs.
+-- Lists every RetroAchievements entry for each game, the rule that tracks it,
+-- how it is tracked (save state, event or session), whether an old save gets
+-- credit, and any interpretation note.
+-- Only reads the rules and catalogs; it doesn't touch the mod itself.
 --
 --   luajit tools/gen_coverage.lua            (from the project folder)
+-- ------------------
 
 local root = (arg and arg[1]) or "."
 local mod = root .. "/recomp_achievements"
@@ -91,7 +94,7 @@ for _, game in ipairs({ "red", "blue", "yellow", "gold", "silver", "crystal", "r
   totals[#totals + 1] = ("| %s | %d | %d | %d | %d |"):format(c.title or game, #c.entries, n, exact, interp)
 end
 
--- the summary goes right before the first game section
+-- The summary table sits just above the first game section.
 local at = 1
 for i, line in ipairs(out) do if line:find("^## ") then at = i break end end
 local summary = { "## Summary", "", "| Game | RA entries | Tracked | Exact | Local reading |",

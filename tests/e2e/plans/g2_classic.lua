@@ -1,3 +1,9 @@
+-- tests/e2e/plans/g2_classic.lua
+-- Gen 2 menu run: pushes the achievements screen straight onto the stack and
+-- screenshots the list, an entry, its ABOUT page and the share card. CLASSIC=0
+-- switches to the modern menu.
+-- Run it with tests/e2e/run_e2e.sh, which hands it to the e2e_driver mod.
+-- ------------------
 return function(ctx)
   local mod = ctx.mod
   local function wait(s) local t0 return function(_, c) if not t0 then t0 = c.t end; if c.t - t0 >= s then t0 = nil return true end end end

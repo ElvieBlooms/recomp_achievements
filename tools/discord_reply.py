@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
+# tools/discord_reply.py
 """Post the leaderboard bot's reply back to Discord.
 
-The Action runs this after tools/leaderboard_ingest.py for submissions
-that came from the Discord bot.  It edits the bot's "checking your score"
-message using the interaction token the bot passed along, which Discord
-accepts for 15 minutes.  No Discord bot token is needed.
+The GitHub Action runs this after tools/leaderboard_ingest.py when a
+repository_dispatch submission came from the Discord bot. It edits the bot's
+"checking your score" message through the interaction webhook, using the
+interaction token the bot passed along. Discord accepts that token for
+15 minutes, so no bot token is needed.
 
     python3 tools/discord_reply.py --event "$GITHUB_EVENT_PATH" --reply reply.md
 
 The token is read from the event file, never from arguments or the
-environment, so it doesn't show up in the public Action log.
+environment, so it stays out of the public Action log.
 """
+# ------------------
 
 import argparse
 import json
@@ -50,7 +53,7 @@ def main(argv=None):
         with urllib.request.urlopen(req, timeout=20) as r:
             print("discord reply:", r.status)
     except urllib.error.HTTPError as err:
-        # 404 usually means the 15-minute window passed.
+        # A 404 usually means the 15-minute token window has passed.
         print("discord reply failed:", err.code, file=sys.stderr)
         return 1
     except urllib.error.URLError as err:

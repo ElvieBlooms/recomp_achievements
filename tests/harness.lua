@@ -1,18 +1,15 @@
 -- tests/harness.lua
--- ==================================================================
--- Boots the REAL Gen1Recomp mod loader (src/mods/Loader.lua from the
--- 0.3.97 package) headless under LuaJIT, with our mods installed in a
--- temporary folder.  Everything a mod touches -- the sandbox, manifest
--- validation, dependency order, mod.exports / mod.find, the API 3 event
--- boundary, hooks, mod.save, the content registry -- is the engine's own
--- code.  Only the game itself is faked: a save table, an input object and
--- a state stack, which is what Gen 1's Game object hands mods.
---
--- Drawing is captured as text: love.graphics and the tile Font are
--- replaced by recorders, so a test can assert "the screen shows 3/27".
+-- Boots the real Gen1Recomp mod loader (src/mods/Loader.lua from the 0.3.97
+-- package) headless under LuaJIT, with our mods copied into a temp folder.
+-- Everything a mod touches is the engine's own code: the sandbox, manifest
+-- validation, dependency order, mod.exports and mod.find, the API 3 event
+-- boundary, hooks, mod.save and the content registry.
+-- Only the game itself is faked: a save table, an input object and a state
+-- stack, which is what Gen 1's Game object hands to mods.
+-- Drawing is captured as text, so a test can check "the screen shows 3/27".
 --
 -- Run:  ENGINE=/path/to/extracted/love luajit tests/run.lua
--- ==================================================================
+-- ------------------
 
 local ENGINE = os.getenv("ENGINE") or "/home/claude/engine"
 local PROJECT = os.getenv("PROJECT") or (debug.getinfo(1, "S").source:match("^@(.*)/tests/") or ".")
@@ -21,14 +18,14 @@ package.path = ENGINE .. "/?.lua;" .. ENGINE .. "/?/init.lua;" .. package.path
 local H = {}
 H.PROJECT = PROJECT
 
--- ------------------------------------------------------------------
--- Recording love.graphics + Font, installed BEFORE engine UI modules load.
--- ------------------------------------------------------------------
+-- ------------------
+-- Recorders for love.graphics and the tile Font.
+-- They have to be in place before any engine UI module loads.
 local drawn = {}
 H.drawn = drawn
 local function noop() end
 _G.love = _G.love or {}
--- A fake font (6 px per character) so window-space UI can be measured.
+-- A fake font at 0.6 of its pixel size per character, so window-space UI can be measured.
 local function fakeFont(px)
   local f = { px = px }
   function f:getWidth(s) local n = 0 for _ in tostring(s):gmatch("[%z\1-\127\194-\244][\128-\191]*") do n = n + 1 end return n * px * 0.6 end
@@ -47,14 +44,14 @@ end
 love.graphics = setmetatable({
   getColor = function() return 1, 1, 1, 1 end,
   newFont = function(px) return fakeFont(px) end,
-  -- window-space text (the modern menu) is recorded like Font.draw text
+  -- Window-space text from the modern menu is recorded the same way as Font.draw.
   print = function(s, x, y) drawn[#drawn + 1] = { text = tostring(s), tx = (x or 0) / 8, ty = (y or 0) / 8, window = true } end,
 }, { __index = function() return noop end })
 local clockNow = 0
 love.timer = { getTime = function() return clockNow end }
 function H.advance(seconds) clockNow = clockNow + seconds end
 
--- Fake love.sound / love.audio: every play is recorded in H.sounds.
+-- Fake love.sound and love.audio. Every play lands in H.sounds.
 H.sounds = {}
 love.sound = { newSoundData = function(n, rate, bits, channels)
   return { n = n, rate = rate, setSample = function() end }
@@ -81,7 +78,7 @@ function FakeFont.split(text) local t = {} for c in text:gmatch(".") do t[#t + 1
 package.loaded["src.render.Font"] = FakeFont
 package.loaded["src.ui.Theme"] = { cursor = 0xED, cursorHollow = 0xEC, moreArrow = 0xEE }
 
--- the screen as a list of text lines, row by row
+-- Returns the screen as a list of text lines, top row first.
 function H.screenText()
   local rows = {}
   for _, d in ipairs(drawn) do
@@ -116,7 +113,7 @@ local Loader = require("src.mods.Loader")
 local SaveSerializer = require("src.core.SaveSerializer")
 local Logger = require("src.core.Logger")
 
--- capture engine log lines (warnings from mods land here)
+-- Engine log lines are kept, since that's where warnings from mods end up.
 H.logs = {}
 for _, level in ipairs({ "info", "warn", "error", "debug" }) do
   Logger[level] = function(fmt, ...)
@@ -129,9 +126,8 @@ function H.logHas(pattern)
   return false
 end
 
--- ------------------------------------------------------------------
--- A plain-Lua filesystem rooted at a temp dir (the engine's fs contract).
--- ------------------------------------------------------------------
+-- ------------------
+-- A plain-Lua filesystem rooted at a temp dir, matching the engine's fs contract.
 local function sh(cmd) local p = io.popen(cmd); local out = p:read("*a"); p:close(); return out end
 local function makeFs(root)
   local fs = {}
@@ -165,9 +161,8 @@ local function makeFs(root)
   return fs
 end
 
--- ------------------------------------------------------------------
--- Fake game: what mods see as mod.game on Gen 1.
--- ------------------------------------------------------------------
+-- ------------------
+-- The fake game, which is what mods see as mod.game on Gen 1.
 local function newInput()
   local input = { pressed = {} }
   function input:wasPressed(b) return self.pressed[b] == true end
@@ -193,9 +188,8 @@ function H.newSave(version)
   }
 end
 
--- ------------------------------------------------------------------
--- Boot: install the named mods into a fresh temp root and run the loader.
--- ------------------------------------------------------------------
+-- ------------------
+-- Booting: copy the named mods into a fresh temp root and run the loader.
 H.GAMEDATA = os.getenv("GAMEDATA") or "/home/claude/src_extract/pokemon-love2d"
 local dataCache = {}
 function H.loadData(version)
@@ -209,7 +203,7 @@ function H.loadData(version)
     end
     dataCache[version] = d
   end
-  -- a fresh shallow copy per boot: the loader merges mod content into it
+  -- Each boot gets a fresh shallow copy, since the loader merges mod content into it.
   local out = {}
   for k, v in pairs(dataCache[version]) do out[k] = v end
   return out
@@ -236,24 +230,23 @@ function H.boot(modIds, opts)
   end
   H.roots[#H.roots + 1] = root
   local loader = Loader.new({ fs = makeFs(root), generation = 1, version = version })
-  -- The real extracted game data for this version (maps, species, the
-  -- field tables, trainer headers...), so rules are tested against the
-  -- same tables they read in game.  GAMEDATA points at the folder that
-  -- holds red/ blue/ yellow/ (Gen1Recomp's data folder).
+  -- Uses the real extracted game data for this version, so rules are tested
+  -- against the same tables they read in game.
+  -- GAMEDATA is Gen1Recomp's data folder, the one holding red/ blue/ yellow/.
   local data = H.loadData(version)
   local game = {
     data = data, input = newInput(), stack = newStack(),
     save = H.newSave(version), mods = loader,
   }
-  loader.game = game -- what Loader:_game() hands to mod.game
+  loader.game = game -- Loader:_game() hands this to mod.game
   local ok = loader:load(data, {})
-  -- what Game:init does next: adopt the title-screen skeleton save, then
-  -- announce the game is ready (src/core/Game.lua:99-121)
+  -- Same as Game:init next: adopt the title-screen skeleton save, then
+  -- announce the game is ready (src/core/Game.lua:99-121).
   loader.modSave = game.save.modData
   Runtime.emit("save.created", { save = game.save })
   Runtime.emit("game.ready", { game = game })
   local env = { loader = loader, game = game, data = data, ok = ok, version = version }
-  -- Most screen tests read the classic menu's text; opts.modern opts out.
+  -- Most screen tests read the classic menu's text. opts.modern switches to the modern one.
   loader.modOptions.recomp_achievements = { classicMenu = not opts.modern,
                                             popupStyle = opts.modern and "modern" or "classic" }
   return setmetatable(env, { __index = H.Env })
@@ -266,7 +259,7 @@ function Env:mod(id) return self.loader.mods[id] end
 function Env:exports(id) return self.loader.exports[id] end
 function Env:emit(name, payload) Runtime.emit(name, payload or {}) end
 
--- Game:adoptSave + the event the engine fires (src/core/Game.lua:1348)
+-- Mirrors Game:adoptSave and the event the engine fires (src/core/Game.lua:1348).
 function Env:adopt(save, event)
   save.modData = save.modData or {}
   self.game.save = save
@@ -279,8 +272,8 @@ function Env:newGame()
   self:adopt(H.newSave(self.version), "created")
 end
 
--- What Save Sync does to a slot: the whole save is serialized to a blob
--- and decoded on the far side (src/sync/SyncEngine.lua list()/write()).
+-- Does what Save Sync does to a slot: the whole save is serialised to a blob
+-- and decoded on the far side (src/sync/SyncEngine.lua list() and write()).
 function Env:writeBlob()
   Runtime.emit("save.writing", { save = self.game.save })
   return SaveSerializer.encode(self.game.save)
@@ -293,7 +286,7 @@ function Env:loadBlob(blob)
   return save
 end
 
--- One game frame: core.update wraps the step (src/core/PlatformHooks.lua)
+-- One game frame, wrapped in the core.update hook (src/core/PlatformHooks.lua).
 function Env:frame(dt)
   Runtime.call("core.update", function() end, self.game, dt or 1 / 60)
 end
@@ -303,7 +296,7 @@ function Env:setFlag(name)
   Runtime.emit("flag.changed", { name = name, value = true })
 end
 
--- A minimal overworld for rules that look at the player's map/position.
+-- A minimal overworld, for rules that look at the player's map or position.
 function Env:place(mapId, x, y, facing)
   local data = self.game.data
   local def = data.maps and data.maps[mapId] or { id = mapId }
@@ -328,8 +321,8 @@ function Env:enter(mapId, fromMapId, x, y)
   Runtime.emit("map.entered", { mapId = mapId, fromMapId = fromMapId or before, via = "warp" })
 end
 
--- One battle, start to finish, with what the engine emits.
---   opts: kind, trainerId, lead (species), result, payDay, fainted, ...
+-- One battle from start to finish, emitting battle.started and battle.ended.
+--   opts: kind, trainerId, lead (species), species, result, during
 function Env:battle(opts)
   local raw = { player = { mon = { species = opts.lead or "PIKACHU", hp = 10, stats = { hp = 10 } } } }
   self:emit("battle.started", { battle = raw, kind = opts.kind or "trainer",
@@ -346,8 +339,8 @@ function Env:idle()
   if top and top.update then top:update(1 / 60) end
 end
 
--- A press is a frame with the button down between idle frames (menus
--- ignore the frame they open on and close the frame after B).
+-- A press is one frame with the button down between idle frames.
+-- Menus ignore the frame they open on and close the frame after B.
 function Env:press(button)
   self:idle()
   self.game.input.pressed = { [button] = true }
@@ -371,7 +364,7 @@ function Env:hud(vp)
   return H.screenText()
 end
 
--- Everything printed in window space by the last hud call, as one string.
+-- Returns everything the last hud call printed in window space, as one string.
 function H.windowText()
   local out = {}
   for _, d in ipairs(drawn) do if d.window then out[#out + 1] = d.text end end

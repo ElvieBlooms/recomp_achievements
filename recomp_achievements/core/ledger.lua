@@ -1,10 +1,9 @@
 -- core/ledger.lua
--- ==================================================================
--- The ledger is the ONLY persistent state this mod owns.  It lives in
--- mod.save under the key "ledger", which the engine stores at
--- save.modData.recomp_achievements.ledger.  Because Save Sync ships the
--- whole serialized save (src/sync/SyncEngine.lua), the ledger rides
--- along with no extra work.
+-- The ledger is the only thing this mod saves: what's unlocked, what's in
+-- progress, and a few private counters. It sits in mod.save under "ledger",
+-- which Gen1Recomp stores at save.modData.recomp_achievements.ledger, so
+-- Save Sync carries it with the rest of the save (src/sync/SyncEngine.lua).
+-- It never touches the game's own save fields.
 --
 -- Shape (schema 1):
 --   {
@@ -23,13 +22,11 @@
 --
 -- Keys look like "core:boulder_badge" or "mod:sandbox:first_steps".
 --
--- IMPORTANT: mod.save:get returns a reference INTO the live save table,
--- so editing the ledger edits the save.  It is written to disk the next
--- time the player saves; quitting without saving rolls it back, exactly
--- like the rest of the game.  We never cache the table across loads --
--- the engine swaps the backing table on Continue/New Game -- so every
--- access goes through Ledger:get().
--- ==================================================================
+-- mod.save:get hands back the live save table, so editing the ledger edits
+-- the save. It reaches disk when the player saves; quitting without saving
+-- rolls it back like the rest of the game. The engine swaps that table on
+-- Continue and New Game, so never cache it: always go through Ledger:get().
+-- ------------------
 
 local Ledger = {}
 Ledger.__index = Ledger
@@ -38,8 +35,8 @@ Ledger.SCHEMA = 1
 Ledger.KEY = "ledger"
 Ledger.TITLE_MAX = 40 -- bytes of last-known title kept per record
 
--- Each step upgrades from schema N to N+1.  They must be safe to run on a
--- partially upgraded table (a crash mid-migration can happen).
+-- Each step upgrades schema N to N+1. Steps must cope with a half-upgraded
+-- table, in case a crash lands mid-migration.
 local MIGRATIONS = {
   -- [1] = function(data) ... end   -- example: schema 1 -> 2 goes here
 }
@@ -53,9 +50,9 @@ local function validKey(key)
     and (key:match("^core:[a-z0-9_%-]+$") or key:match("^mod:[a-z0-9_%-]+:[a-z0-9_%-]+$"))
 end
 
--- Make sure every expected sub-table exists and each record has the right
--- shape.  Anything that does not fit moves to `quarantine` rather than
--- being deleted, so a bug never silently erases a player's history.
+-- Make sure every sub-table exists and each record has the right shape.
+-- Bad records move to `quarantine` instead of being deleted, so a bug
+-- never quietly wipes a player's history.
 function Ledger:repair(data)
   data.unlocked = type(data.unlocked) == "table" and data.unlocked or {}
   data.progress = type(data.progress) == "table" and data.progress or {}
@@ -80,8 +77,8 @@ function Ledger:repair(data)
   return data
 end
 
--- Returns the live ledger table for the active save, creating it on first
--- use.  `game` is the running version id, recorded on creation.
+-- The live ledger for the active save, created on first use.
+-- `game` is the running version id, stored when the ledger is made.
 function Ledger:get(game)
   local data = self.mod.save:get(Ledger.KEY)
   if type(data) ~= "table" then
@@ -90,8 +87,8 @@ function Ledger:get(game)
   end
   local schema = tonumber(data.schema) or 1
   if schema > Ledger.SCHEMA then
-    -- A NEWER version of this mod wrote this save (e.g. synced from a
-    -- device that updated first).  Read it, but don't migrate it down.
+    -- A newer version of this mod wrote this save, say synced from a
+    -- device that updated first. Read it, but don't migrate it down.
     self.newer = true
   else
     while schema < Ledger.SCHEMA do
@@ -105,8 +102,8 @@ function Ledger:get(game)
   return self:repair(data)
 end
 
--- Like get(), but never creates anything.  Used by read-only queries so
--- merely opening the browser on the title screen leaves no footprint.
+-- Like get(), but never creates anything.
+-- Read-only queries use it, so opening the menu on the title screen leaves no trace.
 function Ledger:peek()
   local data = self.mod.save:get(Ledger.KEY)
   if type(data) ~= "table" then return nil end
@@ -129,7 +126,7 @@ function Ledger:progress(key)
   return type(value) == "number" and value or 0
 end
 
--- Write an unlock.  Returns false if it was already there (idempotent).
+-- Write an unlock. Returns false if it was already there.
 function Ledger:unlock(game, key, fields)
   local data = self:get(game)
   if data.unlocked[key] then return false end
@@ -138,7 +135,7 @@ function Ledger:unlock(game, key, fields)
     how = fields.how or "event",
     source = fields.source,
     title = self.util.text(fields.title, Ledger.TITLE_MAX),
-    -- in-game play time (seconds) when it was earned, if the game has one
+    -- in-game play time in seconds when earned, if the game tracks one
     pt = tonumber(fields.pt) and math.floor(tonumber(fields.pt)) or nil,
   }
   data.progress[key] = nil -- the record supersedes partial progress
@@ -161,7 +158,7 @@ function Ledger:bumpCounter(game, name, by)
   return data.counters[name]
 end
 
--- Developer/test helper: forget one record.  Not exported to other mods.
+-- Forget one record, for testing. Other mods can't reach this.
 function Ledger:revoke(game, key)
   local data = self:get(game)
   local had = data.unlocked[key] ~= nil

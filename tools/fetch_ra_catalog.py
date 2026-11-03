@@ -1,32 +1,34 @@
 #!/usr/bin/env python3
+# tools/fetch_ra_catalog.py
 """
 fetch_ra_catalog.py: build Recomp Achievements' reference catalogs from
-RetroAchievements' public Web API.
+RetroAchievements' public Web API (API_GetGameExtended).
 
-This is a DEVELOPER tool, run once by you on your own machine. The mod
-itself never contacts RetroAchievements and needs no key. Only public
-metadata is written (title, description, points, author, display order,
-type, badge name and the logic *hash*). RA's trigger logic is not
-available from this endpoint and is not used.
+This is a developer tool you run on your own machine. The mod itself never
+contacts RetroAchievements and needs no key. Only public metadata is
+written: title, description, points, author, display order, type, badge
+name and the logic hash. RA's trigger logic isn't available from this
+endpoint and isn't used.
 
 Usage
 -----
   # key from an environment variable (never written anywhere)
   RA_API_KEY=xxxxxxxx python3 tools/fetch_ra_catalog.py
 
-  # or from a file that is NOT in the repo
+  # or from a file that is not in the repo
   python3 tools/fetch_ra_catalog.py --key-file ~/.ra_key
 
-  # pick games (default: red blue yellow)
+  # pick games (default: all of them)
   python3 tools/fetch_ra_catalog.py red blue
 
   # offline: convert JSON you saved from the endpoint yourself
   python3 tools/fetch_ra_catalog.py --from-json saved/ red
 
 Writes recomp_achievements/catalog/<game>.lua and prints a change report
-against any catalog already there. Get your key from your RA account's
+against any catalog already there. Your key is on your RA account's
 settings page ("Web API Key").
 """
+# ------------------
 
 import argparse
 import datetime
@@ -41,7 +43,7 @@ import urllib.request
 ENDPOINT = "https://retroachievements.org/API/API_GetGameExtended.php"
 USER_AGENT = "RecompAchievementsCatalogTool/1.0 (offline Gen1Recomp mod; metadata only)"
 
-# RA game ids for the base (core) sets.
+# RA game ids for the core sets, not subsets or hacks.
 GAMES = {
     "red": 724, "blue": 586, "yellow": 723,
     "gold": 576, "silver": 722, "crystal": 810,
@@ -54,7 +56,7 @@ DEFAULT_OUT = os.path.join(HERE, "..", "recomp_achievements", "catalog")
 
 
 def lua_str(value):
-    """A Lua string literal that round-trips any text safely."""
+    """Quote text as a Lua string literal that reads back exactly."""
     s = "" if value is None else str(value)
     out = ['"']
     for ch in s:
@@ -74,7 +76,7 @@ def lua_str(value):
         else:
             out.append(ch)
     out.append('"')
-    # Lua strings are byte strings; UTF-8 passes through as-is.
+    # Lua strings are bytes, so UTF-8 (Pokémon and all) passes through untouched.
     return "".join(out)
 
 
@@ -85,7 +87,7 @@ def fetch(game_id, key, timeout=20):
         with urllib.request.urlopen(req, timeout=timeout) as resp:
             body = resp.read(8 * 1024 * 1024 + 1)
     except urllib.error.HTTPError as e:
-        # never echo the URL: it contains the key
+        # The URL holds the key, so it is never printed.
         raise SystemExit("RA returned HTTP %d for game %d (check your key)" % (e.code, game_id))
     except urllib.error.URLError as e:
         raise SystemExit("could not reach RetroAchievements for game %d: %s" % (game_id, e.reason))
@@ -95,7 +97,7 @@ def fetch(game_id, key, timeout=20):
 
 
 def normalize(game, raw):
-    """Validate the response and reduce it to the fields the mod uses."""
+    """Check the response and keep only the fields the mod uses."""
     if not isinstance(raw, dict):
         raise SystemExit("%s: response is not a JSON object" % game)
     gid = int(raw.get("ID") or raw.get("id") or 0)
@@ -170,7 +172,7 @@ def to_lua(cat):
 
 
 def read_existing(path):
-    """Pull ids/titles/fingerprints out of an existing generated file (best effort)."""
+    """Read ids, titles and fingerprints back out of a catalog already on disk, best effort."""
     import re
     if not os.path.exists(path):
         return None
@@ -186,7 +188,7 @@ def report(game, old, cat):
     if old is None:
         print("  %s: new catalog, %d entries" % (game, len(cat["entries"])))
         return
-    # compare in escaped form, the same form read_existing() sees in the file
+    # Titles are compared escaped, since that's how read_existing() sees them.
     new = {e["id"]: (lua_str(e["title"])[1:-1], e["fingerprint"]) for e in cat["entries"]}
     added = sorted(set(new) - set(old))
     removed = sorted(set(old) - set(new))
@@ -220,7 +222,7 @@ def main():
         else:
             key = os.environ.get("RA_API_KEY", "").strip()
             if not key:
-                # forgive RA_API_Key / ra_api_key and friends
+                # Accept the name in any case, like ra_api_key.
                 for name, value in os.environ.items():
                     if name.upper() == "RA_API_KEY" and value.strip():
                         key = value.strip()
@@ -234,7 +236,7 @@ def main():
             raw = json.load(open(os.path.join(args.from_json, game + ".json"), encoding="utf-8"))
         else:
             if n:
-                time.sleep(1.0)  # be polite: one request per second
+                time.sleep(1.0)  # one request a second, to go easy on RA
             raw = fetch(GAMES[game], key)
         cat = normalize(game, raw)
         path = os.path.join(args.out, game + ".lua")

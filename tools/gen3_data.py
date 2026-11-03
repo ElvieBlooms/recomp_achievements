@@ -1,31 +1,38 @@
 #!/usr/bin/env python3
+# tools/gen3_data.py
 """Build recomp_achievements/data/gen3_<family>.lua from a pret Gen 3 repo.
 
     python3 tools/gen3_data.py <pokefirered dir>     -> data/gen3_frlg.lua
     python3 tools/gen3_data.py <pokeemerald dir>     -> data/gen3_emerald.lua
+    python3 tools/gen3_data.py <pokeruby dir>        -> data/gen3_rs.lua
 
-Gen1Recomp's FireRed and LeafGreen run the decompiled scripts, so the save's
-flag numbers are pret's (checked in game: FLAG_BADGE01_GET = 0x820 is set on
-a save with the Boulder Badge).  FireRed and LeafGreen share every flag and
-map, so one file serves both.  It lists:
+Gen1Recomp's Gen 3 games run the decompiled scripts, so the save's flag
+numbers are pret's (checked in game: FLAG_BADGE01_GET = 0x820 is set on a
+save with the Boulder Badge). FireRed and LeafGreen share every flag and map,
+so one file serves both, and the same goes for Ruby and Sapphire. It lists:
 
-  flags     FLAG_* name -> number, plus TRAINER_* -> its trainer flag
-            (TRAINER_FLAGS_START + the trainer's number)
+  flags       FLAG_* name -> number, plus TRAINER_* -> its trainer flag
+              (TRAINER_FLAGS_START + the trainer's number)
   trainerIds  trainer number -> TRAINER_* name (battle.started gives the number)
-  vars      VAR_* name -> number
-  species   SPECIES_* (no prefix) -> internal number (the save's numbering)
-  items     ITEM_* (no prefix) -> number
-  trainers  every map trainer: { flag number, TRAINER_*, map, region }
-  items     ... see `balls`: { flag, ITEM, map, region } for item balls
-  hidden    hidden items: { flag, ITEM, map, region }
-  gifts     a script gives an item then sets a flag: { flag, FLAG_*, ITEM, map, region }
-  rematches VS Seeker trainers: { flag of the strongest team, its TRAINER_*, the base TRAINER_* }
-  initial   flags EventScript_ResetAllMapFlags sets at New Game (true)
+  vars        VAR_* name -> number
+  species     SPECIES_* (no prefix) -> internal number, the save's numbering
+  itemIds     ITEM_* (no prefix) -> number
+  moves       MOVE_* (no prefix) -> number
+  decorations Emerald and Ruby/Sapphire only: DECOR_* -> { id, category }
+  trainers    every map trainer: { flag number, TRAINER_*, map, region }
+  items       item balls: { flag, FLAG_*, ITEM, map, region }
+  hidden      hidden items: { flag, FLAG_*, ITEM, map, region }
+  gifts       a script gives an item then sets a flag: { flag, FLAG_*, ITEM, map, region }
+  rematches   { flag of the strongest team, its TRAINER_*, the base TRAINER_* }
+  gymTrainers per gym, the trainers marked beaten along with the leader
+  initial     flags EventScript_ResetAllMapFlags sets at New Game (true)
 
-region is "kanto" or "sevii" from the map's region-map section (FireRed),
-"hoenn" for Emerald.  Emerald's rematches come from gRematchTable (the
-Match Call / gym leader rematch table) instead of the VS Seeker's.
+Region is "kanto" or "sevii" from the map's region-map section on FireRed,
+and "hoenn" everywhere on Emerald and Ruby/Sapphire. Rematches come from the
+VS Seeker's sRematches on FireRed, gRematchTable (Match Call) on Emerald and
+gTrainerEyeTrainers on Ruby/Sapphire.
 """
+# ------------------
 import json
 import os
 import re
@@ -38,7 +45,7 @@ DEFINE = re.compile(r"^\s*#define\s+(\w+)\s+(.+?)\s*(//.*)?$")
 
 
 def read_defines(paths, prefix):
-    """name -> int for every #define starting with prefix (expressions too)."""
+    """Map name -> int for every #define starting with prefix, working out expressions too."""
     raw = {}
     for path in paths:
         for line in open(path, encoding="utf-8"):
@@ -61,7 +68,7 @@ def read_defines(paths, prefix):
                 return tok
             return str(ev(tok, depth + 1))
         py = re.sub(r"\b[A-Za-z_]\w*\b|0[xX][0-9a-fA-F]+|\b\d+\b", sub, expr)
-        v = int(eval(py, {"__builtins__": {}}))  # numbers and + - * / ( ) only
+        v = int(eval(py, {"__builtins__": {}}))  # by now it's only numbers and arithmetic
         values[name] = v
         return v
 
@@ -76,7 +83,7 @@ def read_defines(paths, prefix):
 
 
 def read_enum_items(path, tmhm_path):
-    """Emerald's items.h is an enum; TMs/HMs get ITEM_TM_<MOVE> aliases."""
+    """Read Emerald's items.h, which is an enum, and add ITEM_TM_<MOVE> names for TMs and HMs."""
     out, value = {}, 0
     text = open(path, encoding="utf-8").read()
     m = re.search(r"enum\s*\{(.*?)\};", text, re.S)
@@ -106,7 +113,7 @@ def read_enum_items(path, tmhm_path):
 
 
 def label_bodies(repo):
-    """Script label -> list of instruction lines, from every .inc/.s file."""
+    """Map each script label to its instruction lines, across every .inc and .s file."""
     bodies, cur = {}, None
     roots = [os.path.join(repo, "data", "maps"), os.path.join(repo, "data", "scripts"),
              os.path.join(repo, "data")]
@@ -131,7 +138,7 @@ def label_bodies(repo):
 
 
 def follow(bodies, label, seen=None, depth=0):
-    """A label's lines plus the labels it falls through/branches to (one level)."""
+    """Return a label's own lines. Branches and fall-throughs aren't followed."""
     out = list(bodies.get(label, []))
     return out
 
@@ -183,15 +190,15 @@ def main():
     items = read_defines([os.path.join(inc, "items.h")], "ITEM_")
     if len(items) < 50:
         items = read_enum_items(os.path.join(inc, "items.h"), os.path.join(inc, "tms_hms.h"))
-    # Ruby/Sapphire name TMs ITEM_TM01_FOCUS_PUNCH: add the ITEM_TM_<MOVE> and ITEM_TM01 forms
+    # Ruby/Sapphire call TMs ITEM_TM01_FOCUS_PUNCH, so add the ITEM_TM_<MOVE> and ITEM_TM01 names.
     for name, v in list(items.items()):
         mm = re.match(r"ITEM_(TM|HM)(\d\d)_(\w+)$", name)
         if mm:
             items.setdefault(f"ITEM_{mm.group(1)}_{mm.group(3)}", v)
             items.setdefault(f"ITEM_{mm.group(1)}{mm.group(2)}", v)
     moves = read_defines([os.path.join(inc, "moves.h")], "MOVE_")
-    # Emerald decorations: DECOR_* -> { id, category } (categories 0..7:
-    # desk, chair, plant, ornament, mat, poster, doll, cushion)
+    # Decorations for Emerald and Ruby/Sapphire: DECOR_* -> { id, category }.
+    # Categories 0 to 7 are desk, chair, plant, ornament, mat, poster, doll, cushion.
     decor = {}
     header = os.path.join(repo, "src", "data", "decoration", "header.h")
     if not os.path.exists(header):
@@ -208,7 +215,7 @@ def main():
     bodies = label_bodies(repo)
     sections = map_sections(repo)
 
-    # New Game: EventScript_ResetAllMapFlags (and what it calls)
+    # Flags set at New Game by EventScript_ResetAllMapFlags, its own lines only.
     initial = set()
     for line in bodies.get("EventScript_ResetAllMapFlags", []):
         m = re.match(r"setflag\s+(FLAG_\w+)", line)
@@ -246,7 +253,7 @@ def main():
             if bg.get("type") == "hidden_item" and bg.get("flag") in flags:
                 it = str(bg.get("item", "")).replace("ITEM_", "")
                 hidden_rows.append((flags[bg["flag"]], bg["flag"], it, name, region))
-        # the map's own scripts: every label defined in its scripts.inc
+        # Also scan every label in the map's own scripts.inc.
         own = os.path.join(maps_dir, name, "scripts.inc")
         if os.path.exists(own):
             for line in open(own, encoding="utf-8", errors="replace"):
@@ -281,7 +288,7 @@ def main():
 
     gift_rows = dedupe(gift_rows)
 
-    # Rematches: each rematchable trainer's last (strongest) team
+    # For each rematchable trainer, keep the last and strongest team.
     rematch_rows = []
     if ruby:
         src = open(os.path.join(repo, "src", "battle_setup.c"), encoding="utf-8").read()
@@ -309,7 +316,7 @@ def main():
                 rematch_rows.append((flags[ids[-1]], ids[-1], ids[0]))
     ball_rows = dedupe(ball_rows)
 
-    # Gym trainers the game marks beaten when the leader falls (set_gym_trainers)
+    # Gym trainers the game marks beaten once the leader falls, from the SetGymTrainers script.
     gyms = {}
     switch = bodies.get("Common_EventScript_SetGymTrainers") or bodies.get("EventScript_SetGymTrainers") or []
     for line in switch:

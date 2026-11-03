@@ -1,17 +1,13 @@
 -- rules/gen3_emerald.lua
--- ==================================================================
--- Detectors for the RetroAchievements list of Emerald (197 entries),
--- built with rules/gen3_lib.lua.  Names (flags, vars, trainers, items,
--- species, moves, decorations) are pret's, turned into the save's numbers
--- by data/gen3_emerald.lua.
---
--- Most entries read story flags and vars from the save.  Battle-based ones
--- (gym trainers before the leader, stealing from rematches, the Battle
--- Tower apprentice) count wins as they happen.  Area sweeps are read from
--- the map data.  A few moments the save can't prove afterwards (Battle
--- Tent prizes, the Blend Master, a 5x5 Cut) are counted while you play and
--- say so on their "How it's checked" page.
--- ==================================================================
+-- Detectors for the RetroAchievements list of Emerald (197 entries).
+-- Built on rules/gen3_lib.lua. Names are pokeemerald's, and data/gen3_emerald.lua
+-- turns them into save numbers.
+-- Most entries read story flags and vars from the save. Battle ones (gym trainers
+-- before the leader, rematch steals, the Battle Tower apprentice) count wins as
+-- they happen, and area sweeps read the map data.
+-- Moments the save can't prove later (Battle Tent prizes, the Blend Master, a
+-- 5x5 Cut) are counted live and say so on their "How it's checked" page.
+-- ------------------
 
 return function(L)
   local out = {}
@@ -23,7 +19,7 @@ return function(L)
     extra.note = note
     return extra
   end
-  -- the rival is May or Brendan (the other gender), with any starter
+  -- The rival is whichever of May or Brendan you didn't pick, with any starter.
   local function rival(place)
     local list = {}
     for _, who in ipairs({ "BRENDAN", "MAY" }) do
@@ -34,7 +30,7 @@ return function(L)
     return list
   end
 
-  -- ------------------------------------------------ story
+  -- ------------------ story
   add(L.flag("em_birch", E(537183), "Professor Birch Rescued", "FLAG_RESCUED_BIRCH", { category = "STORY" }))
   add(L.flag("em_potion", E(537203), "Oldale Potion", "FLAG_RECEIVED_POTION_OLDALE", { category = "EVENTS" }))
   add(L.anyFlag("em_rival103", E(27592), "Rival: Route 103",
@@ -200,7 +196,7 @@ return function(L)
     return n >= #list or n
   end, { category = "COMPLETION", goal = 10, unit = "TUTORS" }))
 
-  -- ------------------------------------------------ Battle Frontier
+  -- ------------------ Battle Frontier
   add(L.state("em_scott_4bp", E(537198), "Scott's 4 BP", function(f)
     return f.flag("FLAG_SCOTT_GIVES_BATTLE_POINTS") and f.var("VAR_SCOTT_STATE") >= 13
   end, interp("Scott has given you Battle Points after meeting him every time (4 BP).", { category = "FRONTIER" })))
@@ -243,7 +239,7 @@ return function(L)
   add(L.dexAtLeast("em_dex", E(57275), "Hoenn and Beyond", 212,
     interp("Counted as 212 Pokemon marked caught in your Pokedex.")))
 
-  -- ------------------------------------------------ Trick House
+  -- ------------------ Trick House
   local PUZZLES = { { 1, 537241 }, { 2, 537242 }, { 3, 537243 }, { 4, 537244 }, { 6, 537245 }, { 7, 537246 },
                     { 8, 537247 } }
   for _, p in ipairs(PUZZLES) do
@@ -256,7 +252,7 @@ return function(L)
   add(L.flag("em_trick_nugget", E(537248), "Trick Master's Nugget", "FLAG_HIDDEN_ITEM_TRICK_HOUSE_NUGGET",
     { category = "EVENTS" }))
 
-  -- ------------------------------------------------ Trainer Hill, contests
+  -- ------------------ Trainer Hill, contests
   local HILL = { { 0, 57276, "Normal" }, { 1, 57277, "Variety" }, { 2, 57278, "Unique" }, { 3, 57279, "Expert" } }
   for _, h in ipairs(HILL) do
     add(L.state("em_hill_" .. h[3]:lower(), E(h[2]), "Trainer Hill: " .. h[3],
@@ -273,7 +269,7 @@ return function(L)
     "FLAG_RECEIVED_PINK_SCARF", "FLAG_RECEIVED_GREEN_SCARF", "FLAG_RECEIVED_YELLOW_SCARF" }, { category = "CONTESTS" }))
   add(L.flag("em_glass", E(537221), "Glass Ornament", "FLAG_RECEIVED_GLASS_ORNAMENT", { category = "CONTESTS" }))
 
-  -- ------------------------------------------------ collections
+  -- ------------------ collections
   add(L.state("em_flutes", E(537152), "Every Flute", function(f)
     local n = 0
     for _, it in ipairs({ "BLUE_FLUTE", "YELLOW_FLUTE", "RED_FLUTE", "WHITE_FLUTE", "BLACK_FLUTE" }) do
@@ -281,8 +277,8 @@ return function(L)
     end
     return n >= 5 or n
   end, { category = "COLLECTION", goal = 5, unit = "FLUTES" }))
-  -- people's item gifts (flags set right after giveitem), leaving out daily
-  -- and weekly gifts, Shoal Cave pickups, choices and story key items
+  -- NPC item gifts are the flags set right after giveitem. Daily and weekly
+  -- gifts, Shoal Cave pickups, choices and story key items are left out.
   local GIFT_SKIP = { "FLAG_DAILY_", "FLAG_TEMP_", "FLAG_RECEIVED_SHOAL_", "FLAG_CHOSE_", "FLAG_COLLECTED_",
     "FLAG_REGISTERED_", "FLAG_SYS_", "FLAG_RECOVERED_", "FLAG_RETURNED_", "FLAG_EXCHANGED_",
     "FLAG_RECEIVED_FANCLUB_TM_THIS_WEEK", "FLAG_RECEIVED_RED_OR_BLUE_ORB", "FLAG_RECEIVED_METEORITE",
@@ -309,7 +305,7 @@ return function(L)
     return f.knowsMove({ "PICHU", "PIKACHU", "RAICHU" }, "VOLT_TACKLE")
   end, interp("You have a Pichu (or its evolution) that knows Volt Tackle, which only comes from breeding.",
     { category = "POKEMON" })))
-  -- Cutting a 5x5 patch replaces 25 grass blocks in the same moment.
+  -- A 5x5 Cut replaces 25 grass blocks in the same moment.
   add(L.tracker("em_cut", E(537450), "Iai Mon", {
     ["world.block_replaced"] = function(s, ev, f, ctx)
       local t = (love and love.timer and love.timer.getTime and love.timer.getTime()) or os.clock()
@@ -338,8 +334,8 @@ return function(L)
     local n = f.roomDecorations()
     return n >= 12 or n
   end, { category = "COLLECTION", goal = 12, unit = "SLOTS" }))
-  -- decoration collections: every decoration of these categories (0 desk,
-  -- 1 chair, 2 plant, 3 ornament, 4 mat, 5 poster, 6 doll, 7 cushion)
+  -- Decoration sets: every decoration in the given categories (0 desk,
+  -- 1 chair, 2 plant, 3 ornament, 4 mat, 5 poster, 6 doll, 7 cushion).
   local function decor(id, ra, title, cats, skip, need, note)
     add(L.state(id, E(ra), title, function(f)
       local want, have = 0, 0
@@ -367,7 +363,7 @@ return function(L)
     { SEEDOT_DOLL = true, REGIROCK_DOLL = true, REGICE_DOLL = true, REGISTEEL_DOLL = true }, 0,
     "Every doll except the Seedot, Regirock, Regice and Registeel dolls.")
 
-  -- ------------------------------------------------ strongest teams (rematches)
+  -- ------------------ strongest teams (rematches)
   local REMATCH = {
     { "WALLY_VR", 537139, "Wally's Strongest" }, { "ROXANNE", 537140, "Roxanne's Strongest" },
     { "BRAWLY", 537141, "Brawly's Strongest" }, { "WATTSON", 537142, "Wattson's Strongest" },
@@ -380,7 +376,7 @@ return function(L)
       { category = "GYMS" }))
   end
 
-  -- ------------------------------------------------ gyms
+  -- ------------------ gyms
   local GYMS = {
     { 1, "Roxanne", 27596, 537116, "FLAG_DEFEATED_RUSTBORO_GYM", "Rustboro" },
     { 2, "Brawly", 27597, 537117, "FLAG_DEFEATED_DEWFORD_GYM", "Dewford" },
@@ -398,7 +394,7 @@ return function(L)
     }))
   end
 
-  -- ------------------------------------------------ Battle Tents
+  -- ------------------ Battle Tents
   local function tent(id, ra, title, field)
     add(L.tracker(id, E(ra), title, {
       tick = function(s, _, f)
@@ -414,7 +410,7 @@ return function(L)
   tent("em_tent_verdanturf", 537129, "Verdanturf Battle Tent", "verdanturfTentPrize")
   tent("em_tent_fallarbor", 537130, "Fallarbor Battle Tent", "fallarborTentPrize")
 
-  -- ------------------------------------------------ areas
+  -- ------------------ areas
   local AREAS = {
     { "littleroot", 537167, 537153, "Littleroot",
       { "LittlerootTown", "Route101", "OldaleTown", "Route103", "Route102" } },
@@ -438,7 +434,7 @@ return function(L)
       { "PacifidlogTown", "Route130", "Route131", "Route132", "Route133", "Route134" } },
     { "frontier", 537182, 537181, "S.S. Tidal & Frontier", { "SSTidalCorridor", "SSTidalLowerDeck", "SSTidalRooms", "BattleFrontier" } },
   }
-  -- the Trick House puzzles have achievements of their own
+  -- The Trick House puzzles have their own achievements.
   local SKIP = { "Route110_TrickHouse" }
   for _, a in ipairs(AREAS) do
     local list = table.concat(a[5], ", ")

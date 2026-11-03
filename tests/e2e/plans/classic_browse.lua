@@ -1,3 +1,9 @@
+-- tests/e2e/plans/classic_browse.lua
+-- A Gen 3 game with the classic menu: continues the save, opens TROPHIES from
+-- START and browses the list, the EARNED filter, an entry's pages and the share
+-- card, with screenshots along the way.
+-- Run it with tests/e2e/run_e2e.sh, which hands it to the e2e_driver mod.
+-- ------------------
 return function(ctx)
   local mod = ctx.mod
   local function wait(s) local t0 return function(_, c) if not t0 then t0 = c.t end; if c.t - t0 >= s then t0 = nil return true end end end
@@ -38,7 +44,7 @@ return function(ctx)
       L.modOptions.recomp_achievements = L.modOptions.recomp_achievements or {}
       L.modOptions.recomp_achievements.classicMenu = true
       return true end,
-    -- open START, find our row
+    -- Open START and work out how far down our row is.
     tap("start"), wait(1), shot("startmenu"),
     function(game) local SM = require("src.ui.game3.start_menu")
       ctx.downs = 0

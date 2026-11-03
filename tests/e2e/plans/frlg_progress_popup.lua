@@ -1,3 +1,8 @@
+-- tests/e2e/plans/frlg_progress_popup.lua
+-- FireRed/LeafGreen: marks two Pokémon caught and nudges a flag, then
+-- screenshots the progress popup that follows.
+-- Run it with tests/e2e/run_e2e.sh, which hands it to the e2e_driver mod.
+-- ------------------
 return function(ctx)
   local mod = ctx.mod
   local function wait(s) local t0 return function(_, c) if not t0 then t0 = c.t end; if c.t - t0 >= s then t0 = nil return true end end end

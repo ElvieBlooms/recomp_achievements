@@ -1,20 +1,20 @@
--- Achievement API Sandbox
--- ==================================================================
--- A deliberately small "provider" mod: the reference for how ANY mod can
--- add achievements to Recomp Achievements.  It exercises each part of
--- the public API once:
+-- achievement_sandbox/main.lua
+-- The Achievement API Sandbox, a small example provider mod.
+-- It shows how any mod can add its own achievements to Recomp Achievements,
+-- using each part of the public API once:
 --
 --   hello         instant unlock          handle:unlock
 --   walker        progress counter        handle:addProgress  (goal 500)
---   nurse_joy     hidden + counter        hidden = true       (goal 5)
+--   nurse_joy     hidden with a counter   hidden = true       (goal 5)
 --   yellow_guest  game filter             games = { "yellow" }
 --   overachiever  listening to events     mod.events:on(ach.events.unlocked)
 --
--- The framework is an OPTIONAL dependency (manifest.json): if it's
--- installed it loads first; if not, mod.find returns nil and this mod
--- quietly does nothing.  That "degrade, don't crash" rule is the most
--- important pattern in here.
--- ==================================================================
+-- Recomp Achievements is an optional dependency in manifest.json, so the
+-- engine's mod loader runs it first when it's there. When it isn't,
+-- mod.find returns nil and this mod quietly does nothing.
+-- Staying out of the way instead of crashing is the main pattern to copy from here.
+-- It never touches the save itself; the framework keeps the records.
+-- ------------------
 
 return function(mod)
   local found = mod.find("recomp_achievements")
@@ -24,24 +24,24 @@ return function(mod)
   end
   local ach = found.exports
 
-  -- Version handshake: we were written against API 1.x.
+  -- This was written against API 1.x, so anything else leaves the sandbox idle.
   local major = tonumber(tostring(ach.apiVersion or ""):match("^(%d+)"))
   if major ~= 1 or not ach.supports("progress") then
     mod.log:warn("unsupported achievements API %s; sandbox idle", tostring(ach.apiVersion))
     return
   end
 
-  -- connect() hands back a handle bound to OUR namespace
-  -- ("mod:achievement_sandbox:<id>").  Passing `mod` fills in name/version;
-  -- `tab` (API 1.3.0+) labels our own filter tab in the menu.
+  -- connect() hands back a handle bound to our own namespace, "mod:achievement_sandbox:<id>".
+  -- Passing `mod` fills in the name and version.
+  -- `tab` (API 1.3.0 on) labels our own filter tab in the menu.
   local handle, code, message = ach.connect(mod, { tab = "SANDBOX" })
   if not handle then
     mod.log:warn("connect failed: %s %s", tostring(code), tostring(message))
     return
   end
 
-  -- Definitions are registered every session.  They are not saved; the
-  -- framework saves only the unlock/progress records.
+  -- Definitions are registered every session and never saved.
+  -- The framework only saves the unlock and progress records.
   local okCount, errors = handle:registerMany({
     { id = "hello", title = "Hello, Framework", points = 1, category = "SANDBOX",
       description = "Load a save with the Achievement API Sandbox installed." },
@@ -63,9 +63,8 @@ return function(mod)
   end
   mod.log:info("registered %d sandbox achievements", okCount)
 
-  -- The framework's "ready" event fires once a save is attached, which is
-  -- the right moment for load-time unlocks (before it, unlock returns
-  -- nil, "no_save").
+  -- The framework's ready event fires once a save is attached, so that's the
+  -- moment for load-time unlocks. Before it, unlock returns nil, "no_save".
   mod.events:on(ach.events.ready, function(ev)
     handle:unlock("hello")
     if ev and ev.game == "yellow" then handle:unlock("yellow_guest") end
@@ -82,8 +81,8 @@ return function(mod)
     end
   end)
 
-  -- Listening: count unlocks that aren't this one.  Events are plain
-  -- copies; nothing we do here can alter the framework's records.
+  -- Counts every unlock except this one.
+  -- Events are plain copies, so nothing done here can change the framework's records.
   mod.events:on(ach.events.unlocked, function(ev)
     if ev and ev.key ~= "mod:achievement_sandbox:overachiever" then
       handle:addProgress("overachiever", 1)

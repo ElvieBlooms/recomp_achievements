@@ -1,3 +1,9 @@
+-- tests/e2e/plans/frlg_live_unlocks.lua
+-- FireRed/LeafGreen: checks unlocks that happen during play, by setting the
+-- Route 1 Potion flag and winning a battle against Camper Liam started through
+-- the battle bridge.
+-- Run it with tests/e2e/run_e2e.sh, which hands it to the e2e_driver mod.
+-- ------------------
 return function(ctx)
   local mod = ctx.mod
   local function wait(s) local t0 return function(_, c) if not t0 then t0 = c.t end; if c.t - t0 >= s then t0 = nil return true end end end
@@ -34,7 +40,7 @@ return function(ctx)
       local BB = require("src.core.game3.battle_bridge")
       LIAM = 414 + 0
       local d = dofile and nil
-      -- TRAINER_CAMPER_LIAM from our data table
+      -- ctx.liam is TRAINER_CAMPER_LIAM's trainer number, from our data table.
       local data = mod.find("recomp_achievements") and nil
       local foe = Trainers.foeFromId(ctx.liam)
       ctx.log("foe for %s: %s", tostring(ctx.liam), tostring(foe and foe.trainerId))

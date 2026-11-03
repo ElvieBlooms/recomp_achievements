@@ -1,23 +1,19 @@
 -- rules/gen3_official.lua
--- ==================================================================
--- Detectors for the RetroAchievements lists of FireRed (61) and
--- LeafGreen (128).  Titles here are the mod's own short names; when the
--- RA catalogs are installed the menu shows RA's text instead.  Ruby,
--- Sapphire and Emerald come in a later release.
---
--- Most entries read pret flags straight from the save (badges, gifts,
--- trades, rescues).  Battle rules (challenges, gym trainers, solo league
--- runs) count wins as they happen.  "Every trainer and item" sweeps are
--- read from the map data (data/gen3_frlg.lua) and noted as this mod's
--- reading of the area.
--- ==================================================================
+-- Detectors for the RetroAchievements lists of FireRed (61) and LeafGreen (128).
+-- Titles are the mod's own short names; with the RA catalogs installed the menu
+-- shows RA's text instead. Ruby, Sapphire and Emerald live in their own files.
+-- Most entries read pokefirered flags from the save (badges, gifts, trades, rescues).
+-- Battle rules (challenges, gym trainers, solo league runs) count wins as they happen.
+-- "Every trainer and item" sweeps read the map data in data/gen3_frlg.lua and say
+-- they're this mod's reading of the area.
+-- ------------------
 
 return function(L)
   local out = {}
   local function add(r) out[#out + 1] = r end
   local RIVAL = L.rival
 
-  -- ------------------------------------------------ story: rival
+  -- ------------------ story: rival
   add(L.anyFlag("g3o_rival_lab", { firered = 33592, leafgreen = 34776 }, "Rival: Oak's Lab",
     { "FLAG_BEAT_RIVAL_IN_OAKS_LAB", "TRAINER_RIVAL_OAKS_LAB_SQUIRTLE",
       "TRAINER_RIVAL_OAKS_LAB_BULBASAUR", "TRAINER_RIVAL_OAKS_LAB_CHARMANDER" }, { category = "RIVAL" }))
@@ -34,7 +30,7 @@ return function(L)
   add(L.anyFlag("g3o_rival_route22_late", { firered = 33598, leafgreen = 34782 }, "Rival: Road to the League",
     RIVAL("TRAINER_RIVAL_ROUTE22_LATE"), { category = "RIVAL" }))
 
-  -- ------------------------------------------------ gyms
+  -- ------------------ gyms
   local GYMS = {
     { "Brock", { firered = 33601, leafgreen = 34785 } },
     { "Misty", { firered = 33602, leafgreen = 34786 } },
@@ -49,8 +45,8 @@ return function(L)
     add(L.badge("g3o_badge" .. i, g[2], "Badge: " .. g[1], i))
   end
 
-  -- FireRed: Challenge rules (RA's "Set mode"): SET battle style, at most N
-  -- Pokemon, none above the level cap.
+  -- FireRed challenge rules (RA's "Set mode"): SET battle style, at most N
+  -- Pokémon, none above the level cap.
   local LEADERS = {
     { "TRAINER_LEADER_BROCK", 195143, 2, 14 },
     { "TRAINER_LEADER_MISTY", 195146, 2, 21 },
@@ -88,7 +84,7 @@ return function(L)
     }))
   end
 
-  -- ------------------------------------------------ Team Rocket and the islands
+  -- ------------------ Team Rocket and the islands
   add(L.flag("g3o_rocket_celadon", { firered = 33599, leafgreen = 34783 }, "Rocket Hideout",
     "TRAINER_BOSS_GIOVANNI", { category = "STORY" }))
   add(L.flag("g3o_rocket_silph", { firered = 33600, leafgreen = 34784 }, "Silph Co.",
@@ -102,7 +98,7 @@ return function(L)
   add(L.flag("g3o_warehouse", { firered = 33629, leafgreen = 34813 }, "Rocket Warehouse",
     "FLAG_DEFEATED_ROCKETS_IN_WAREHOUSE", { category = "STORY" }))
 
-  -- ------------------------------------------------ the League
+  -- ------------------ the League
   add(L.anyFlag("g3o_champion", { firered = 33613, leafgreen = 34797 }, "Champion",
     { "TRAINER_CHAMPION_FIRST_SQUIRTLE", "TRAINER_CHAMPION_FIRST_BULBASAUR",
       "TRAINER_CHAMPION_FIRST_CHARMANDER", "FLAG_SYS_GAME_CLEAR" }, { category = "LEAGUE" }))
@@ -118,7 +114,7 @@ return function(L)
       "TRAINER_ELITE_FOUR_LANCE_2" }, RIVAL("TRAINER_CHAMPION_REMATCH"), solo,
     { note = "One Pokemon in your party for every battle of the second League." }))
 
-  -- ------------------------------------------------ Trainer Tower
+  -- ------------------ Trainer Tower
   local TT = { { 0, 33630, 34814, "Single" }, { 1, 33631, 34815, "Double" },
                { 2, 33632, 34816, "Knockout" }, { 3, 33633, 34817, "Mixed" } }
   for _, t in ipairs(TT) do
@@ -127,7 +123,7 @@ return function(L)
       { category = "TOWER" }))
   end
 
-  -- ------------------------------------------------ catches
+  -- ------------------ catches
   add(L.owns("g3o_mewtwo", { firered = 33623, leafgreen = 34807 }, "Mewtwo", "MEWTWO"))
   add(L.owns("g3o_chansey", { firered = 33619, leafgreen = 34803 }, "Chansey", "CHANSEY"))
   add(L.owns("g3o_articuno", { firered = 33622, leafgreen = 34806 }, "Articuno", "ARTICUNO"))
@@ -141,7 +137,7 @@ return function(L)
   add(L.dexAtLeast("g3o_dex_lg", { leafgreen = 34809 }, "LeafGreen Pokedex", 171,
     { fidelity = "interpretation", note = "Counted as 171 Pokemon marked caught in your Pokedex." }))
 
-  -- ------------------------------------------------ gifts, finds and trades (both games)
+  -- ------------------ gifts, finds and trades (both games)
   local BOTH = {
     { "magikarp", 195144, 541905, "Magikarp Salesman", "FLAG_BOUGHT_MAGIKARP" },
     { "fossil", 195145, 541906, "Mt. Moon Fossil", "FLAG_GOT_FOSSIL_FROM_MT_MOON" },
@@ -169,7 +165,7 @@ return function(L)
     add(L.flag("g3o_" .. g[1], { firered = g[2] }, g[3], g[4], { category = "EVENTS" }))
   end
 
-  -- ------------------------------------------------ LeafGreen: items and errands
+  -- ------------------ LeafGreen: items and errands
   local LG = {
     { "pokedex", 541899, "Pokedex", "FLAG_SYS_POKEDEX_GET" },
     { "potion", 541901, "Free Potion", "FLAG_GOT_POTION_ON_ROUTE_1" },
@@ -245,8 +241,8 @@ return function(L)
     end
     return false
   end, { category = "EVENTS" }))
-  -- Selphy asks for a Pokemon (VAR_RESORT_GORGEOUS_REQUESTED_MON); the
-  -- request is cleared when her butler hands over the reward.
+  -- Selphy's request sits in VAR_RESORT_GORGEOUS_REQUESTED_MON and clears
+  -- when her butler hands over the reward.
   add(L.tracker("g3o_selphywish", { leafgreen = 541983 }, "Selphy's Wish", {
     tick = function(s, _, f)
       local v = f.var("VAR_RESORT_GORGEOUS_REQUESTED_MON")
@@ -279,7 +275,7 @@ return function(L)
   end, { category = "COMPLETION", goal = 100, unit = "PCT", fidelity = "interpretation",
          note = "Each VS Seeker trainer's strongest team beaten." }))
 
-  -- ------------------------------------------------ LeafGreen: areas swept
+  -- ------------------ LeafGreen: areas swept
   local MUSHROOMS = { TINY_MUSHROOM = true, BIG_MUSHROOM = true }
   local AREAS = {
     { "mtmoon", 541937, "Mt. Moon", { maps = { "MtMoon" }, noItem = MUSHROOMS } },

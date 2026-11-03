@@ -1,15 +1,11 @@
 -- rules/gen2.lua
--- ==================================================================
--- BONUS achievements for Gold, Silver and Crystal: goals made for this
--- mod, not from the RetroAchievements lists (those will live in
--- rules/gen2_official.lua).  main.lua marks them `extra`, so the BONUS
--- ACHIEVEMENTS option switches them off.
---
--- They only use facts that read the same way on all three versions
--- (badges, Pokedex, party, Unown, Hall of Fame), so none of them needs
--- Crystal's event-flag numbers.  Ids start with "g2_" so they can never
--- collide with a Gen 1 id.
--- ==================================================================
+-- Bonus achievements for Gold, Silver and Crystal. These are goals made for this
+-- mod, not taken from the RetroAchievements lists (those go in rules/gen2_official.lua).
+-- main.lua marks them `extra`, so the BONUS ACHIEVEMENTS option switches them off.
+-- They only use facts that read the same on all three versions (badges, Pokédex,
+-- party, Unown, Hall of Fame), so none of them needs Crystal's event flag numbers.
+-- Ids start with "g2_" so they never clash with a Gen 1 id.
+-- ------------------
 
 local function state(id, title, description, points, category, check, extra)
   local rule = { id = id, title = title, description = description, points = points,

@@ -1,17 +1,19 @@
 -- core/util.lua
--- Small, dependency-free helpers shared by every other file.
+-- Small helpers the rest of the mod shares: copying plain data, read-only
+-- views, number and id checks, and UTF-8 safe text trimming.
+-- It touches nothing in the engine or the save on its own.
+-- ------------------
 
 local util = {}
 
--- Deep copy of plain data.  Functions and userdata are dropped, which is
--- exactly what we want for anything handed to another mod or written to
--- a save: the result is always safe to serialize.
+-- Deep copy of plain data. Functions and userdata are dropped, so the
+-- result is always safe to hand to another mod or write to the save.
 function util.plain(value, depth)
   depth = depth or 6
   local t = type(value)
   if t == "string" or t == "boolean" then return value end
   if t == "number" then
-    -- NaN and infinity cannot round-trip through the save writer
+    -- NaN and infinity can't round-trip through the save writer.
     if value ~= value or value == math.huge or value == -math.huge then return nil end
     return value
   end
@@ -26,8 +28,8 @@ function util.plain(value, depth)
   return out
 end
 
--- A read-only view: indexing works, writes raise an error.  Handed to
--- other mods so they cannot reach in and edit our registry by accident.
+-- A read-only view: reads work, writes raise an error.
+-- Other mods get these so they can't edit our tables by accident.
 function util.readonly(t)
   return setmetatable({}, {
     __index = t,
@@ -47,16 +49,14 @@ function util.isInteger(n)
     and n ~= math.huge and n ~= -math.huge
 end
 
--- Identifier rule for provider ids and local ids: lowercase letters,
--- digits, underscore, dash; 1..48 chars.  Keeps keys readable in the save
--- and impossible to confuse with the "provider:local" separator.
+-- Provider ids and local ids: 1 to 48 of a-z, 0-9, _ and -.
+-- Keeps save keys readable and stops an id clashing with the ":" separator.
 function util.validId(s)
   return type(s) == "string" and #s >= 1 and #s <= 48 and s:match("^[a-z0-9_%-]+$") ~= nil
 end
 
--- Keep only well-formed UTF-8: a stray byte (a Latin-1 "é" from another
--- mod, say) becomes "?".  LÖVE refuses to draw invalid UTF-8, so one bad
--- title from a provider would otherwise break the menu.
+-- Swap any bad UTF-8 byte for "?", such as a Latin-1 "é" from another mod.
+-- LÖVE won't draw invalid UTF-8, so one bad title would break the menu.
 function util.utf8Clean(s)
   local out, i, n = {}, 1, #s
   while i <= n do
@@ -74,15 +74,14 @@ function util.utf8Clean(s)
   return table.concat(out)
 end
 
--- Characters (not bytes) in a UTF-8 string.
+-- Length in characters, not bytes.
 function util.len(s)
   local _, n = tostring(s or ""):gsub("[^\128-\191]", "")
   return n
 end
 
--- Trim a display string to `max` characters (not bytes, so "é" counts
--- once and is never cut in half).  Control chars are removed and bad
--- UTF-8 is replaced.
+-- Clean a display string and trim it to `max` characters.
+-- Counts characters, not bytes, so "é" is never cut in half.
 function util.text(s, max)
   if type(s) ~= "string" then return nil end
   s = util.utf8Clean((s:gsub("%c", " ")))
@@ -113,7 +112,7 @@ function util.sortedKeys(t)
   return keys
 end
 
--- Word-wrap to a column width.  Returns a list of lines.
+-- Word-wrap to a column width. Returns a list of lines.
 function util.wrap(text, width)
   local lines, line = {}, ""
   for word in tostring(text or ""):gmatch("%S+") do

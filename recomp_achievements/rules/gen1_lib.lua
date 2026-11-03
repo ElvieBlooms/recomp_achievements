@@ -1,18 +1,15 @@
 -- rules/gen1_lib.lua
--- ==================================================================
 -- Small constructors for the official Gen 1 rules, so each entry in
 -- rules/gen1_official.lua reads like its RetroAchievements description.
---
--- Every constructor returns a plain rule table (see rules/gen1.lua for
--- the field reference).  `ra` maps a game to the RA achievement id that
--- rule tracks; with official = true the rule only exists on those games
--- and shows RA's own title/description/points when the catalog is
--- installed.  title/description here are the fallback text.
--- ==================================================================
+-- Each one returns a plain rule table (field list in rules/gen1.lua).
+-- `ra` maps a game to the RA achievement id the rule tracks. Official rules
+-- only exist on those games, and show RA's own title, description and points
+-- when the catalog is installed; the text here is the fallback.
+-- ------------------
 
 local L = {}
 
--- Shallow-merge extra fields into a rule.
+-- Merges extra fields in last. Rules built here are official unless told otherwise.
 local function with(rule, extra)
   for k, v in pairs(extra or {}) do rule[k] = v end
   if rule.official == nil then rule.official = true end
@@ -41,7 +38,7 @@ function L.anyFlag(id, ra, title, flags, extra)
     end }, extra)
 end
 
--- all flags, with progress n/#flags
+-- Needs every flag; progress shows how many are set.
 function L.allFlags(id, ra, title, flags, extra)
   return with({ id = id, ra = ra, title = title, kind = "state", goal = #flags,
     check = function(f) return f.flags(flags, true) end }, extra)
@@ -74,8 +71,8 @@ function L.item(id, ra, title, item, extra)
     check = function(f) return f.hasItem(item) end }, extra)
 end
 
--- Clear areas: maps is a list of map ids or a function(f) -> list.
--- what = "trainers" | "items" | "both".  Progress is a percentage, since
+-- Clear an area. `maps` is a list of map ids or a function(f) returning one.
+-- what = "trainers", "items" or "both". Progress is a percentage, since the
 -- totals come from the game's own data.
 function L.sweep(id, ra, title, maps, what, opts, extra)
   opts = opts or {}
@@ -103,7 +100,7 @@ function L.onEvent(id, ra, title, event, test, extra)
     test = test }, extra)
 end
 
--- Caught a species (optionally only on maps matching a pattern).
+-- Catch one of a set of species, optionally only on maps matching a pattern.
 function L.caught(id, ra, title, speciesSet, mapPattern, extra)
   return L.onEvent(id, ra, title, "pokemon.caught", function(ev, _, ctx)
     if not (ev and speciesSet[ev.species]) then return false end
@@ -118,7 +115,7 @@ function L.tracker(id, ra, title, on, init, extra)
     init = init }, extra)
 end
 
--- Did every Pokemon the player sent out in battle `b` satisfy pred?
+-- True when every Pokémon the player sent out in battle `b` passes pred.
 function L.usedOnly(b, pred)
   if not (b and b.used and #b.used > 0) then return false end
   for _, species in ipairs(b.used) do
@@ -127,9 +124,10 @@ function L.usedOnly(b, pred)
   return true
 end
 
--- A gym leader beaten under conditions read from the battle that just
--- ended.  Fires on the leader's story flag, which the engine sets in the
--- battle's onFinish (after battle.ended), so ctx.lastBattle is that fight.
+-- Beat a gym leader under conditions read from that battle. It fires on the
+-- leader's story flag (EVENT_BEAT_BROCK and friends) via flag.changed. The
+-- engine sets that flag in the battle's onFinish, after battle.ended, so
+-- ctx.lastBattle is the leader fight.
 function L.leaderChallenge(id, ra, title, leaderFlag, trainerId, cond, extra)
   return L.tracker(id, ra, title, {
     ["flag.changed"] = function(_, ev, f, ctx)
@@ -141,15 +139,14 @@ function L.leaderChallenge(id, ra, title, leaderFlag, trainerId, cond, extra)
   }, nil, with({ category = "GYMS" }, extra))
 end
 
--- Challenge rules (RA calls these "Set mode"): the SET battle style from
--- OPTION > BATTLE STYLE, no items in battle, no Pokemon above level N at
--- the start.
 -- "OPP_LT_SURGE" -> "Lt Surge"
 function L.prettyName(id)
   local s = tostring(id):gsub("^OPP_", ""):lower():gsub("_", " ")
   return (s:gsub("(%a)(%w*)", function(a, b) return a:upper() .. b end))
 end
 
+-- Challenge rules, RA's "Set mode": the SET battle style from OPTION >
+-- BATTLE STYLE, no items in battle, and no Pokémon above `cap` at the start.
 L.CHALLENGE = "Challenge: set OPTION > BATTLE STYLE to SET"
 
 function L.setModeCap(cap)
@@ -158,7 +155,7 @@ function L.setModeCap(cap)
   end
 end
 
--- "while only using <type> Pokemon"
+-- For "while only using <type> Pokémon".
 function L.onlyType(typeId)
   return function(b, f)
     return L.usedOnly(b, function(s) return f.hasType(s, typeId) end)
@@ -183,17 +180,16 @@ L.GYMS = {
   { map = "VIRIDIAN_GYM",  flag = "EVENT_BEAT_GIOVANNI", opp = "OPP_GIOVANNI" },
 }
 
--- Pokemon League rooms, in order.  The champion fight is OPP_RIVAL3 in
--- CHAMPIONS_ROOM.
+-- Pokémon League rooms, in order. The champion fight is OPP_RIVAL3 in CHAMPIONS_ROOM.
 L.LEAGUE_MAPS = set({ "LORELEIS_ROOM", "BRUNOS_ROOM", "AGATHAS_ROOM", "LANCES_ROOM",
   "CHAMPIONS_ROOM" })
 
--- A whole League run under a party condition.  The run starts when the
--- player walks into Lorelei's room, fails on a blackout, a lost battle,
--- or leaving the League, and is won when the champion falls.
+-- A whole League run under a party condition. It starts on entering Lorelei's
+-- room, fails on a blackout, a lost battle or leaving the League, and is won
+-- when the champion falls.
 --   partyOk(party, f)    checked at the start and before every battle
---   battleOk(b, f)       checked after every League battle (optional)
---   startOk(party, f)    checked once when the run starts (optional)
+--   battleOk(b, f)       optional, checked after every League battle
+--   startOk(party, f)    optional, checked once when the run starts
 function L.leagueRun(id, ra, title, partyOk, battleOk, startOk, extra)
   local function fail(state) state.run = nil end
   return L.tracker(id, ra, title, {

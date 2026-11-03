@@ -1,3 +1,9 @@
+-- tests/e2e/plans/continue_and_browse.lua
+-- Restores the saved game through SaveData, logs the totals and what's
+-- unlocked, opens the browser from the START menu and an entry's detail page,
+-- then writes the save.
+-- Run it with tests/e2e/run_e2e.sh, which hands it to the e2e_driver mod.
+-- ------------------
 return function(ctx)
   local mod = ctx.mod
   local function wait(s) local t0 return function(_, c) if not t0 then t0 = c.t end; if c.t - t0 >= s then t0 = nil return true end end end

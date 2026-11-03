@@ -33,15 +33,24 @@ and each achievement's author, and are credited in the game. See
 
 ## Install
 
-1. Download `recomp_achievements-2.6.1.zip` and unzip it into Gen1Recomp's
-   `mods/` folder, so you have `mods/recomp_achievements/`.
+1. In the launcher, open **MODS** and find Recomp Achievements under
+   **Find mods**, or download `recomp_achievements-2.6.2.zip` from
+   Releases and use **Import mod .zip** (dropping the zip on the launcher
+   window works too). Unzipping by hand also works: put the files in
+   `mods/recomp_achievements/`.
 2. Start Red, Blue, Yellow, Gold, Silver, Crystal, Ruby, Sapphire, Emerald,
    FireRed or LeafGreen (Gen1Recomp 0.3.97 or newer).
 3. Open the START menu and choose **TROPHIES** (**TROPHY** in Gen 1 and
    Gen 2, so their START menus keep their original width).
 
 To keep achievements in step across devices, install the mod on each one.
-Save Sync carries your progress but doesn't install mods.
+Save Sync carries your progress but doesn't install mods. Once it's
+installed, the launcher's **Update** and **Versions** keep it current.
+
+The Mods manager lists the `engine_internals` permission ("PATCHES ENGINE
+CODE"). Nothing is patched: the Gen 3 **CLASSIC MENU** borrows the game's
+own window and font drawing, which the modding API doesn't offer yet. If a
+Gen1Recomp update moves those, that menu falls back to the modern one.
 
 ## Using it
 
@@ -55,7 +64,7 @@ on-screen pad).
 | UP / DOWN | move (hold to scroll) |
 | LEFT / RIGHT | change filter: All, Earned, Missing, In progress, Missable, RA list, Bonus, From mods (plus a tab for each mod that adds achievements), Archived |
 | A | switch the details between the description and how it's checked |
-| SELECT | leaderboard card (RIGHT for About) |
+| SELECT | leaderboard card (RIGHT for Extra Credit, then About) |
 | B / START | back |
 
 A gold disc with a tick means earned, a ring means locked, a partly green

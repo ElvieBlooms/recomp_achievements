@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.6.2
+
+Getting ready for the gen1recomp mod index.
+
+### Fixed
+- Golem on the slots, Triple seven and x24 Card Flip (Crystal) never
+  unlocked while you played: they looked for the Gen 1 slot machine and
+  card flip screens, and Gold, Silver and Crystal name theirs
+  Gen2SlotMachine and Gen2CardFlip. Found with modkit gen2check.
+
+### Changed
+- The release zip has the mod's files at its root, the layout the mod
+  index and the launcher's **Update** and **Versions** expect.
+- The manifest declares `engine_internals`: the Gen 3 **CLASSIC MENU**
+  borrows the game's window and font drawing.
+- Every code comment rewritten to be shorter and plainer.
+
+### Also
+- `README.md` and `DIFFERENCES.md` now ship inside the mod folder.
+- `tools/build_release.sh` runs modkit validate --strict and lint when
+  `$G1R_ROOT` points at a Gen1Recomp checkout.
+
 ## 2.6.1
 
 Fixes found while checking Shane McGovern's Emerald Lens fixes for the

@@ -1,3 +1,8 @@
+-- tests/e2e/plans/rs_open_from_mods.lua
+-- Ruby/Sapphire: opens TROPHIES from the engine's mod manager (START > MODS,
+-- then our options) and backs out again.
+-- Run it with tests/e2e/run_e2e.sh, which hands it to the e2e_driver mod.
+-- ------------------
 return function(ctx)
   local mod = ctx.mod
   local function wait(s) local t0 return function(_, c) if not t0 then t0 = c.t end; if c.t - t0 >= s then t0 = nil return true end end end

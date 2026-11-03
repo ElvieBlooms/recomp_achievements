@@ -1,7 +1,12 @@
-// Tests for discord/worker.js.   node tests/test_discord_worker.mjs
-// Signs requests with a throwaway Ed25519 key the way Discord does, fakes
-// GitHub and Discord with a stubbed fetch, and hands the dispatched
-// payload to the real tools/leaderboard_ingest.py.
+// tests/test_discord_worker.mjs
+// Tests for the Discord bot in discord/worker.js.
+// Requests are signed with a throwaway Ed25519 key the way Discord signs
+// interactions, and GitHub and Discord are faked with a stubbed fetch.
+// The dispatched payload then goes through the real tools/leaderboard_ingest.py,
+// which also checks the JS and Python checksums agree.
+//
+//   node tests/test_discord_worker.mjs
+// ------------------
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
@@ -270,7 +275,7 @@ await test("if GitHub is down, the Discord message says so", async () => {
 await test("the dispatched payload goes through the real ingest script", () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lb-"));
   const event = path.join(dir, "event.json"), board = path.join(dir, "board.json"), reply = path.join(dir, "reply.md");
-  // GitHub delivers repository_dispatch with action = event_type.
+  // GitHub delivers a repository_dispatch event with its event_type as the action.
   fs.writeFileSync(event, JSON.stringify({ action: "discord-score", client_payload: dispatched.client_payload }));
   execFileSync("python3", [path.join(ROOT, "tools", "leaderboard_ingest.py"), "--event", event,
     "--board", board, "--reply", reply, "--now", "2026-10-29T00:00:00Z"]);

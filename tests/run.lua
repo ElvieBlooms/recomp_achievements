@@ -1,14 +1,13 @@
 -- tests/run.lua
--- ==================================================================
--- End-to-end tests for Recomp Achievements + the sandbox provider,
--- running inside the real Gen1Recomp 0.3.97 mod loader (see harness.lua).
+-- The main test suite for Recomp Achievements and the sandbox provider.
+-- It runs inside the real Gen1Recomp 0.3.97 mod loader through tests/harness.lua,
+-- so nothing here needs the game window.
+-- Each test is a short story: set up a save, do what a player would do,
+-- then check what the framework says through its public API.
 --
 --   luajit tests/run.lua            (from the project folder)
 --   ENGINE=/path/to/unzipped/gen1recomp-0.3.97.love luajit tests/run.lua
---
--- Each test is a short story: set up a save, do something a player would
--- do, check what the framework says through its PUBLIC API.
--- ==================================================================
+-- ------------------
 
 local H = dofile((os.getenv("PROJECT") or ".") .. "/tests/harness.lua")
 
@@ -40,7 +39,7 @@ local function ledgerOf(save)
     and save.modData.recomp_achievements.ledger
 end
 
--- ------------------------------------------------------------------
+-- ------------------ Loading and the START menu
 test("both mods load in dependency order with no errors", function()
   local env = H.boot(BOTH)
   check(env.ok, "loader:load returned false: " .. table.concat(env.loader.errors, "; "))
@@ -153,7 +152,7 @@ test("Save Sync round trip: device B sees everything, no repeat popups", functio
   for _ = 1, 7 do a:emit("world.stepped", { mapId = "ROUTE_1" }) end
   local blob = a:writeBlob()
 
-  local b = H.boot(BOTH)          -- a second install = a second device
+  local b = H.boot(BOTH)          -- a second install stands in for a second device
   b:loadBlob(blob)
   check(ach(b).isUnlocked("core:off_boulderbadge"), "boulder synced")
   check(ach(b).isUnlocked("core:first_partner"), "first partner synced")
@@ -163,7 +162,7 @@ test("Save Sync round trip: device B sees everything, no repeat popups", functio
   check(not H.screenHas("ACHIEVEMENT!") and not H.screenHas("WELCOME BACK"),
     "nothing re-awarded on load, so no popup")
 
-  -- B earns more and syncs back to A
+  -- B earns more and syncs back to A.
   b.game.save.inventory.CASCADEBADGE = 1
   b:setFlag("EVENT_BEAT_MISTY"); b:frame()
   a:loadBlob(b:writeBlob())
@@ -182,10 +181,10 @@ test("loading an older save rolls achievements back with it", function()
 end)
 
 test("old save without a ledger is backfilled quietly with one summary popup", function()
-  -- framework only: the sandbox's own load-time unlocks would add popups
+  -- Framework only, since the sandbox's own load-time unlocks would add popups.
   local env = H.boot({ "recomp_achievements" })
   local old = H.newSave("red")
-  old.modData = nil -- predates the mod entirely
+  old.modData = nil -- a save from before the mod was installed
   old.flags.EVENT_GOT_STARTER = true
   old.flags.EVENT_GOT_POKEDEX = true
   old.flags.EVENT_BEAT_CHAMPION_RIVAL = true
@@ -206,7 +205,7 @@ test("provider missing on the other device: records archived, not lost", functio
   a:newGame()
   local blob = a:writeBlob()
 
-  local b = H.boot({ "recomp_achievements" }) -- no sandbox here
+  local b = H.boot({ "recomp_achievements" }) -- this device has no sandbox
   b:loadBlob(blob)
   local row = ach(b).get("mod:achievement_sandbox:hello")
   check(row and row.archived, "shown as archived")
@@ -220,7 +219,7 @@ test("provider missing on the other device: records archived, not lost", functio
   end
   check(earned == 0, "archived records don't inflate earned totals")
 
-  -- B saves (record must survive), A loads it back with the provider present
+  -- B saves and the record has to survive, then A loads it back with the provider present.
   a:loadBlob(b:writeBlob())
   local back = ach(a).get("mod:achievement_sandbox:hello")
   check(back and back.unlocked and not back.archived, "reattached when provider is back")
@@ -231,7 +230,7 @@ test("save stays intact when the mod is uninstalled entirely", function()
   a:newGame()
   a:setFlag("EVENT_GOT_STARTER"); a:frame()
   local blob = a:writeBlob()
-  local plain = H.boot({}) -- vanilla install
+  local plain = H.boot({}) -- a vanilla install with no mods
   plain:loadBlob(blob)
   local blob2 = plain:writeBlob()
   local again = H.boot(BOTH)
@@ -288,14 +287,14 @@ test("provider API contract", function()
   for _, r in ipairs(api.list()) do if r.key == "mod:probe_mod:yel" then listed = true end end
   check(not listed, "other-game definitions are not listed")
 
-  -- returned rows are copies
+  -- Rows handed back are copies.
   local row = api.get("mod:probe_mod:one")
   row.unlocked = false
   check(api.isUnlocked("mod:probe_mod:one"), "mutating a returned row changes nothing")
   local writeOk = pcall(function() p.unlock = nil end)
   check(not writeOk, "handle is read-only")
 
-  -- two providers with the same local id stay separate
+  -- Two providers using the same local id stay separate.
   local q = api.connect("other_mod")
   check(q:register({ id = "one", title = "Other One" }), "same local id, other provider")
   check(not q:isUnlocked("one"), "separate namespaces")
@@ -375,7 +374,7 @@ test("browser: open from START, filter, details, hidden, close", function()
   env:press("b"); env:draw()
   check(H.screenHas("EARNED"), "back to list")
 
-  -- BONUS filter holds this mod's own achievements, hidden ones masked
+  -- The BONUS filter holds this mod's own achievements, with hidden ones masked.
   for _ = 1, 5 do env:press("right") end
   env:draw()
   check(H.screenHas("BONUS"), "bonus filter")
@@ -463,14 +462,14 @@ test("catalog files are optional: without them rules show local text", function(
   eq(row.official, false, "not shown as official without the catalog")
 end)
 
--- ---------------------------------------------------------- leaderboard
+-- ------------------ Leaderboard
 local function loadShare()
   return assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/share.lua"))()
 end
 
 test("check code matches tools/leaderboard_ingest.py", function()
   local Share = loadShare()
-  -- values printed by tools/leaderboard_ingest.py check_code()
+  -- Expected codes come from tools/leaderboard_ingest.py check_code(), so Lua and Python stay in step.
   eq(Share.code({ game = "red", name = "ASH", points = 120, earned = 20, saveId = "ABC123" }), "DHC0-HH32", "red")
   eq(Share.code({ game = "yellow", name = "red ", points = 0, earned = 0, saveId = "ZZZZZZ" }), "1F4B-5EVD", "spaces + case")
   eq(Share.code({ game = "blue", name = "Gary\226\153\130", points = 678, earned = 90, saveId = "0K3M9Q" }), "1AB3-YHC5", "utf-8 name")
@@ -552,12 +551,12 @@ end)
 test("card TIME is the play time when the score was reached", function()
   local env = H.boot({ "recomp_achievements" })
   env:newGame()
-  env.game.save.playTime = 3600 + 125            -- 1:02 when the badge is earned
+  env.game.save.playTime = 3600 + 125            -- 1:02 when the badge comes
   env.game.save.inventory.BOULDERBADGE = 1
   env:setFlag("EVENT_BEAT_BROCK"); env:frame()
   local key = "core:off_boulderbadge"
   eq(ach(env).isUnlocked(key), true, "badge earned")
-  env.game.save.playTime = 5 * 3600               -- playing on doesn't change it
+  env.game.save.playTime = 5 * 3600               -- playing on must not change it
   local card = ach(env).leaderboardCard()
   eq(card.time, 62, "minutes at the last official unlock")
   eq(card.code, loadShare().code(card), "v2 code over the shown fields")
@@ -576,14 +575,14 @@ test("a new game's card has 0:00 and old records fall back to the current time",
   eq(ach(env).leaderboardCard().time, 0, "nothing earned yet")
   env.game.save.inventory.BOULDERBADGE = 1
   env:setFlag("EVENT_BEAT_BROCK"); env:frame()
-  -- simulate a record written by 1.1.0 (no play time)
+  -- Fake a record from 1.1.0, which had no play time.
   local ledger = env.game.save.modData.recomp_achievements.ledger
   for _, rec in pairs(ledger.unlocked) do rec.pt = nil end
   env.game.save.playTime = 7200
   eq(ach(env).leaderboardCard().time, 120, "falls back to the play time now")
 end)
 
--- ---------------------------------------------------------- unlock sound
+-- ------------------ Unlock sound
 local function clearSounds() for i = #H.sounds, 1, -1 do H.sounds[i] = nil end end
 local function earnBadge(env)
   env.game.save.inventory.BOULDERBADGE = 1
@@ -640,7 +639,7 @@ test("unlock sound respects its option, SFX VOL 0, and works without popups", fu
   eq(#H.sounds, 1, "popups off: sound plays at the unlock")
 end)
 
--- ---------------------------------------------------------- modern menu
+-- ------------------ Modern menu
 local function openMenu(env)
   for _, item in ipairs(env:startMenu()) do
     if (item.label == "TROPHIES" or item.label == "TROPHY") then item.onSelect() end
@@ -701,8 +700,8 @@ test("modern menu fits Gen 2 and Gen 3 screen shapes and hides spoilers", functi
   env:newGame()
   openMenu(env)
   for _, vp in ipairs({
-    { gameX = 0, gameY = 0, gameWidth = 960, gameHeight = 640, scale = 4 },   -- 240x160 (GBA)
-    { gameX = 0, gameY = 0, gameWidth = 160, gameHeight = 144, scale = 1 },   -- tiny window
+    { gameX = 0, gameY = 0, gameWidth = 960, gameHeight = 640, scale = 4 },   -- 240x160, the GBA screen
+    { gameX = 0, gameY = 0, gameWidth = 160, gameHeight = 144, scale = 1 },   -- the smallest window
     { gameX = 100, gameY = 0, gameWidth = 1440, gameHeight = 1296, scale = 9 },
   }) do
     env:hud(vp)
@@ -725,7 +724,7 @@ test("CLASSIC MENU option brings back the Game Boy menu", function()
   check(H.screenHas("ALL"), "classic filter label")
 end)
 
--- ---------------------------------------------------------- show and tell + themes
+-- ------------------ Show and tell, and themes
 test("Show and Tell: opening the leaderboard card earns 1 bonus point", function()
   for _, modern in ipairs({ true, false }) do
     local env = H.boot({ "recomp_achievements" }, { modern = modern })
@@ -816,7 +815,7 @@ test("modern menu fills the window (landscape and portrait) or just the game are
   check(H.windowText():find("Achievements", 1, true), "game-area mode draws")
 end)
 
--- ---------------------------------------------------------- gen 2 adapter
+-- ------------------ Gen 2 adapter
 test("Gen 2 adapter reads Gold/Silver/Crystal saves", function()
   local Gen2 = assert(loadfile(H.PROJECT .. "/recomp_achievements/adapters/gen2.lua"))()
   local save = {
@@ -830,7 +829,7 @@ test("Gen 2 adapter reads Gold/Silver/Crystal saves", function()
     unownDex = { "A", "B", "C" },
     hallOfFame = { count = 1 },
     playTime = { hours = 3, minutes = 4, seconds = 5 },
-    events = { [151] = 4 }, -- flag 1210 = byte 151, bit 2
+    events = { [151] = 4 }, -- flag 1210 is byte 151, bit 2
   }
   local mod = { game = { save = save }, world = nil }
   local a = Gen2.new(mod, {})
@@ -849,7 +848,7 @@ test("Gen 2 adapter reads Gold/Silver/Crystal saves", function()
   eq(f.flag(1210), true, "saved flag bit decoded without a live world")
   eq(f.flag(1209), false, "neighbouring bit")
   eq(Gen2.new({ game = { save = { version = "red" } } }, {}):version(), nil, "not a Gen 2 save")
-  -- battle de-duplication key: both copies of a battle report agree
+  -- The engine reports a battle twice, so both copies have to give the same de-duplication key.
   local core = { trainer = { classId = "FALKNER" } }
   local first, second = a:battleInfo({ battle = core }), a:battleInfo({ battle = { battle = core } })
   check(first.key == second.key, "same key for both reports")
@@ -930,7 +929,7 @@ test("Gen 2 data: flag numbers match the engine's Gold table and New-Game flags 
 end)
 
 
--- ---------------------------------------------------------------- Gen 3
+-- ------------------ Gen 3
 local function gen3Save(over)
   local save = {
     version = "leafgreen", name = "ELVIE",
@@ -1009,7 +1008,7 @@ test("Gen 3 RA rules: every FireRed/LeafGreen entry linked once, every name real
   local save = gen3Save({ dex = { caught = { [1] = true }, seen = {} },
                          bag = { pockets = {} }, storage = { boxes = {}, items = {} } })
   local f = gen3Adapter(save):facts()
-  -- every name a rule asks the adapter about must exist in the data
+  -- Every name a rule asks the adapter about has to exist in the data.
   local asked = {}
   local function spy(name) return function(x, ...)
     if type(x) == "string" then asked[x] = name end
@@ -1061,7 +1060,7 @@ test("Gen 3 rules: areas, gym trainers, challenges and solo league runs", functi
   local a = gen3Adapter(save)
   local d = a:data()
   local function facts() return a:facts() end
-  -- an area: Viridian Forest trainers + item balls (not hidden items)
+  -- An area goal: Viridian Forest's trainers and item balls, but not its hidden items.
   local forest = rules.g3o_area_forest
   local pct = forest.check(facts())
   eq(pct, 0, "nothing done yet")
@@ -1070,7 +1069,7 @@ test("Gen 3 rules: areas, gym trainers, challenges and solo league runs", functi
   check(type(pct) == "number" and pct > 0 and pct < 100, "trainers alone are part of it: " .. tostring(pct))
   for _, row in ipairs(d.items) do if row[4] == "ViridianForest" then save.flags[row[1]] = true end end
   eq(forest.check(facts()), true, "trainers and item balls: done")
-  -- gym trainers count only while the leader stands
+  -- Gym trainers only count while the leader is still standing.
   local pewter = rules.g3o_gymtrainers1
   eq(pewter.check(facts()), false, "Liam not beaten")
   save.flags[d.flags.TRAINER_CAMPER_LIAM] = true
@@ -1081,7 +1080,7 @@ test("Gen 3 rules: areas, gym trainers, challenges and solo league runs", functi
   local s = {}
   save.flags[d.flags.FLAG_DEFEATED_BROCK] = nil
   eq(pewter.on["battle.ended"](s, { result = "win" }, facts(), ctx), true, "a live win counts")
-  -- FireRed challenge: SET style, two Pokemon at most, level 14 cap
+  -- FireRed challenge: SET style, two Pokémon at most, level 14 cap.
   local brock = rules.g3o_challenge1
   local b = { trainerId = "TRAINER_LEADER_BROCK", style = "set", partyMaxAtStart = 12,
               partyAtStart = { { species = "IVYSAUR", level = 12 }, { species = "PIDGEY", level = 9 } } }
@@ -1093,7 +1092,7 @@ test("Gen 3 rules: areas, gym trainers, challenges and solo league runs", functi
   eq(brock.test({ result = "win" }, facts(), { battle = b }), false, "three Pokemon is too many")
   b.partyAtStart[3] = nil; save.party = { { species = 2, level = 15 } }
   eq(brock.test({ result = "win" }, facts(), { battle = b }), false, "levelled past the cap mid-fight")
-  -- solo league: one Pokemon in the party for all five battles
+  -- Solo league: one Pokémon in the party for all five battles.
   local solo = rules.g3o_solo1
   local st = {}
   solo.init(st)
@@ -1130,11 +1129,11 @@ test("Gen 2: a New Game's opening script doesn't unlock the flag-rise achievemen
       or (id == "g2o_suicune_42" and "EVENT_SAW_SUICUNE_ON_ROUTE_42" or "EVENT_SAW_SUICUNE_ON_ROUTE_36")
     flags = {}
     eq(r.on.tick(s, nil, f), nil, id .. ": new save, nothing set")
-    flags[flag] = true; flags.EVENT_INITIALIZED_EVENTS = true -- the opening script
+    flags[flag] = true; flags.EVENT_INITIALIZED_EVENTS = true -- as the opening script does
     eq(r.on.tick(s, nil, f), nil, id .. ": set by the opening script")
-    flags[flag] = nil -- the story clears it...
+    flags[flag] = nil -- the story clears it,
     eq(r.on.tick(s, nil, f), nil, id .. ": cleared")
-    flags[flag] = true -- ...and the real moment sets it again
+    flags[flag] = true -- then the real moment sets it again
     eq(r.on.tick(s, nil, f), true, id .. ": the real moment counts")
   end
 end)
@@ -1160,7 +1159,7 @@ test("progress notes: a small card for each step forward, none for a loaded save
   env:newGame()
   env.game.save.inventory.BOULDERBADGE = 1
   env:setFlag("EVENT_BEAT_BROCK"); env:frame()
-  -- the badge unlock pops first; the note waits its turn
+  -- The badge unlock pops first and the progress note waits its turn.
   env:hud()
   check(H.screenHas("ACHIEVEMENT!") or H.windowText():find("unlocked", 1, true), "unlock popup first")
   check(not H.windowText():find("1 / 8", 1, true), "note waits for the unlock popup")
@@ -1168,13 +1167,13 @@ test("progress notes: a small card for each step forward, none for a loaded save
   check(H.windowText():find("1 / 8", 1, true), "then the badge case note: " .. H.windowText())
   H.advance(3); env:hud()
   check(not H.windowText():find("1 / 8", 1, true), "and it goes away")
-  -- switched off
+  -- With PROGRESS POPUPS switched off.
   env.loader.modOptions.recomp_achievements.progressPopups = false
   env.game.save.inventory.CASCADEBADGE = 1
   env:setFlag("EVENT_BEAT_MISTY"); env:frame()
   H.advance(4); env:hud(); H.advance(0.5); env:hud()
   check(not H.windowText():find("2 / 8", 1, true), "PROGRESS POPUPS off")
-  -- a loaded save's progress arrives as backfill: no notes
+  -- A loaded save's progress arrives as backfill, so no notes.
   local env2 = H.boot({ "recomp_achievements" })
   local old = H.newSave("red")
   old.modData = nil
@@ -1190,10 +1189,10 @@ test("progress cards: same count shows only the nearest goal; up to three stack"
   local opts = {}
   local T = Toast.new({ options = { get = function(_, k) return opts[k] end } }, {}, {}, nil)
   local function def(key, unit) return { key = key, title = key, unit = unit } end
-  -- one catch moves three Pokedex goals at once
+  -- One catch moves three Pokédex goals at once.
   T:pushProgress(def("dex50", "POKEMON"), nil, 12, 50)
   T:pushProgress(def("dex100", "POKEMON"), nil, 12, 100)
-  T:pushProgress(def("dex10", "POKEMON"), nil, 12, 151) -- the RA list's full dex
+  T:pushProgress(def("dex10", "POKEMON"), nil, 12, 151) -- the full dex goal from the RA list
   T:pushProgress(def("badges", "BADGES"), nil, 3, 8)
   T:pushProgress(def("steps", "STEPS"), nil, 400, 1000)
   T:pushProgress(def("money", "COINS"), nil, 50, 100)
@@ -1207,7 +1206,7 @@ test("progress cards: same count shows only the nearest goal; up to three stack"
   cards = T:tickProgress()
   eq(#cards, 1, "the fourth card follows once the first ones go")
   eq(cards[1][1].key, "money", "the waiting card")
-  -- a nearer goal arriving later takes over the card
+  -- A nearer goal that turns up later takes over the card.
   T:clear()
   T:pushProgress(def("dex100", "POKEMON"), nil, 9, 100)
   T:pushProgress(def("dex10", "POKEMON"), nil, 9, 10)
@@ -1237,14 +1236,14 @@ test("Emerald: every RA entry linked once, every name real, checks run on a fres
   local src = assert(io.open(H.PROJECT .. "/tools/leaderboard_ingest.py")):read("*a")
   local mp, tot = src:match('"emerald":%s*{[^}]-"maxPoints":%s*(%d+),%s*"total":%s*(%d+)')
   eq(tonumber(mp), pts, "leaderboard max points"); eq(tonumber(tot), #c.entries, "leaderboard total")
-  -- every quoted pret name in the rules exists
+  -- Every quoted pret name in the rules has to exist.
   local text = assert(io.open(P .. "rules/gen3_emerald.lua")):read("*a")
   for name in text:gmatch('"([A-Z][A-Z0-9_]+)"') do
-    if name:match("_$") then -- a prefix, not a name
+    if name:match("_$") then -- a prefix rather than a full name
     elseif name:match("^FLAG_") or (name:match("^TRAINER_") and name:match("_%d$")) then check(d.flags[name] ~= nil, "flag " .. name)
     elseif name:match("^VAR_") then check(d.vars[name] ~= nil, "var " .. name) end
   end
-  -- checks run against a blank save without errors and claim nothing
+  -- Checks run on a blank save without errors and claim nothing.
   local a = gen3Adapter({ version = "emerald", flags = {}, vars = {}, dex = { caught = {}, seen = {} },
     party = {}, storage = { boxes = {}, items = {} }, bag = { pockets = {} } })
   local f = a:facts()
@@ -1255,7 +1254,7 @@ test("Emerald: every RA entry linked once, every name real, checks run on a fres
       check(v ~= true, r.id .. " not done on a blank save")
     end
   end
-  -- names and numbers agree with the engine's own Emerald tables, when available
+  -- Names and numbers match the engine's own Emerald tables, when the engine is there.
   local ENGINE = os.getenv("ENGINE") or "/home/claude/engine"
   local okF, ft = pcall(dofile, ENGINE .. "/src/core/game3/constants/emerald/flags.lua")
   if okF then
@@ -1352,7 +1351,7 @@ test("browser: MISSABLE filter holds RA's missable entries and says so", functio
   local want = 0
   for _, e in ipairs(cat.entries) do if e.type == "missable" then want = want + 1 end end
   check(want > 0, "Red has missables")
-  -- open the menu and step to MISSABLE
+  -- Open the menu and step across to MISSABLE.
   for _, item in ipairs(env:startMenu()) do
     if item.label == "TROPHIES" or item.label == "TROPHY" then item.onSelect() end
   end
@@ -1362,7 +1361,7 @@ test("browser: MISSABLE filter holds RA's missable entries and says so", functio
   env:press("a"); env:draw()
   check(H.screenHas("RA LIST: MISSABLE"), "details say missable")
   env:press("b"); env:press("b")
-  -- the view model: every missable rule row passes, nothing else
+  -- The view model holds every missable rule and nothing else.
   local n = 0
   for _, r in ipairs(rows) do
     if r.raType == "missable" then n = n + 1 end
@@ -1384,7 +1383,7 @@ test("START MENU ENTRY off hides the row; OPEN TROPHIES opens the menu from the 
   env.loader.modOptions.recomp_achievements.startMenuEntry = false
   check(not hasRow(), "row gone when the option is off")
   check(env.game.stack:top() == nil, "nothing open yet")
-  -- the manager emits this when the OPEN TROPHIES row is pressed
+  -- The engine's mod manager emits this when the OPEN TROPHIES row is pressed.
   env.loader.events:emit("mod.options_changed", { mod = "recomp_achievements", key = "openMenu", value = "go" })
   local top = env.game.stack:top()
   check(top ~= nil and top.isMenu, "menu opened")
@@ -1392,7 +1391,7 @@ test("START MENU ENTRY off hides the row; OPEN TROPHIES opens the menu from the 
   check(H.screenHas("ALL"), "menu draws")
   env:press("b")
   check(env.game.stack:top() == nil, "B closes it")
-  -- other keys and other mods don't open it
+  -- Other keys and other mods don't open it.
   env.loader.events:emit("mod.options_changed", { mod = "recomp_achievements", key = "toasts", value = false })
   env.loader.events:emit("mod.options_changed", { mod = "someone_else", key = "openMenu", value = "go" })
   check(env.game.stack:top() == nil, "only our OPEN TROPHIES row opens it")
@@ -1432,7 +1431,7 @@ test("each mod with achievements gets its own filter tab", function()
   local env = H.boot(BOTH)
   env:newGame(); env:frame()
   local Browser = dofile(H.PROJECT .. "/recomp_achievements/ui/browser.lua")
-  -- step through every filter of the real (classic) menu and note labels
+  -- Step through every filter of the real classic menu and note the labels.
   local function tabsShown(want)
     for _, item in ipairs(env:startMenu()) do
       if item.label == "TROPHY" then item.onSelect() end
@@ -1448,7 +1447,7 @@ test("each mod with achievements gets its own filter tab", function()
   end
   local before = tabsShown({ "FROM MODS", "Achievement API Sandbox", "NAVIPLAY" })
   check(not before["FROM MODS"], "one mod: no separate FROM MODS tab")
-  -- a second provider, with its own tab label
+  -- A second provider, with its own tab label.
   local h = ach(env).connect("navi_test", { name = "NaviPlay Test", tab = "NAVIPLAY" })
   h:register({ id = "first_punch", title = "First Punch", description = "Punch the bag." })
   env:frame()
@@ -1474,7 +1473,7 @@ test("extra credit card: bonus and mod sources, check code vectors", function()
   eq(Share.extraPayload(f), "x1|red|ASH|ABC123|bonus:3:9:20,naviplay:12:25:85", "payload sorted by id")
   eq(Share.extraCode(f), "G519-TP8B", "code vector (shared with Python and JS)")
   eq(Share.extraLine(f.sources[2]), "bonus 3/9 20", "card line")
-  -- from a real engine: the sandbox's achievements and this mod's bonus ones
+  -- From a real boot: the sandbox's achievements and this mod's bonus ones.
   local env = H.boot(BOTH)
   env:newGame(); env:frame()
   local Browser = dofile(H.PROJECT .. "/recomp_achievements/ui/browser.lua")
@@ -1493,7 +1492,7 @@ test("provider text: cut on a character boundary, bad bytes replaced", function(
   eq(util.text("ok\226\130", 32), "ok??", "truncated sequence replaced")
   eq(util.text("emoji \240\159\142\174!", 32), "emoji \240\159\142\174!", "4-byte characters kept")
   eq(util.text(123, 8), nil, "non-text stays nil")
-  -- a provider registering a title with a cut multibyte char still draws
+  -- A provider title with a multibyte character cut in half still draws.
   local env = H.boot(BOTH)
   env:newGame(); env:frame()
   local h = ach(env).connect("utf_test", { name = "UTF \255 Test" })
@@ -1529,6 +1528,26 @@ test("odd field types from a provider are refused or ignored, never thrown", fun
   end
   for _ = 1, 12 do local ok, err = pcall(env.draw, env); check(ok, "menu draws: " .. tostring(err)); env:press("right") end
   env:press("b")
+end)
+
+
+test("Gen 2 Game Corner rules see the engine's Gen2SlotMachine and Gen2CardFlip screens", function()
+  local P = H.PROJECT .. "/recomp_achievements/"
+  local rules = dofile(P .. "rules/gen2_official.lua")(dofile(P .. "rules/gen2_lib.lua"))
+  local byId = {}
+  for _, r in ipairs(rules) do byId[r.id] = r end
+  local function tick(id, top, coins, state)
+    local ctx = { engine = { mod = { game = { stack = { states = { top } } } } } }
+    local f = { coins = function() return coins or 0 end }
+    return byId[id].on.tick(state or {}, nil, f, ctx)
+  end
+  eq(tick("g2o_slots_golem", { screenId = "Gen2SlotMachine", reel3Action = "golem", matchingSevens = true }), true, "Golem")
+  eq(tick("g2o_slots_777", { screenId = "Gen2SlotMachine", matched = 0 }), true, "triple seven")
+  eq(tick("g2o_slots_777", { screenId = "Gen2SlotMachine", matched = -1 }), nil, "no match")
+  local s = {}
+  tick("g2o_card_flip", { screenId = "Gen2CardFlip" }, 100, s)
+  eq(tick("g2o_card_flip", { screenId = "Gen2CardFlip" }, 172, s), true, "x24 Card Flip")
+  eq(tick("g2o_slots_777", { screenId = "Gen2CardFlip", matched = 0 }), nil, "other screens don't count")
 end)
 
 print(("\n%d passed, %d failed"):format(passed, failed))

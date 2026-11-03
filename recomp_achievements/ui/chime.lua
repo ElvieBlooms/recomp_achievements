@@ -1,22 +1,20 @@
 -- ui/chime.lua
--- ==================================================================
--- The unlock sound: a short square-wave jingle in the Game Boy's style,
--- generated in code when it's first needed.  Nothing is copied from the
--- games or from RetroAchievements, and there's no audio file to ship.
+-- The unlock sound: a short square-wave jingle in Game Boy style, built in
+-- code the first time it's needed. Nothing is copied from the games or
+-- from RetroAchievements, and there's no audio file to ship.
 --
--- Mods have no engine SFX call, so this plays through love.audio, which
--- the sandbox allows.  It follows the game's SFX VOL option.
+-- Mods have no engine SFX call, so it plays through love.audio, which the
+-- sandbox allows. It follows the game's SFX VOL option.
 --
--- Two jingles:
 --   unlock   a quick rising arpeggio and a held top note
---   summary  the same idea, lower and slower (WELCOME BACK)
--- ==================================================================
+--   summary  the same idea, lower and slower, for WELCOME BACK
+-- ------------------
 
 local Chime = {}
 Chime.__index = Chime
 
 Chime.RATE = 22050
-Chime.VOLUME = 0.45     -- under the game's own SFX at full SFX VOL
+Chime.VOLUME = 0.45     -- sits under the game's own SFX at full SFX VOL
 Chime.MIN_GAP = 0.25    -- seconds; a burst of unlocks plays once
 
 -- Note frequencies (Hz).
@@ -46,7 +44,7 @@ local function now()
   return os.clock()
 end
 
--- Sample values (-1..1) for a song; pure Lua so tests can check it.
+-- Sample values (-1..1) for a song, in plain Lua so tests can check it.
 function Chime.render(song, rate)
   rate = rate or Chime.RATE
   local length = 0
@@ -64,7 +62,7 @@ function Chime.render(song, rate)
       if i > count then break end
       local phase = (k * freq / rate) % 1
       local wave = phase < duty and 1 or -1
-      -- short attack, then a linear fade: no clicks, and a bell-like tail
+      -- short attack then a linear fade, so no clicks and a bell-like tail
       local env = k < attack and k / attack or 1 - (k - attack) / (samples - attack)
       out[i] = out[i] + wave * level * env * 0.5
     end
@@ -81,10 +79,10 @@ function Chime:enabled()
   return self.mod.options:get("unlockSound") ~= false
 end
 
--- 0..1 from the game's SFX VOL (0-7); full if the option isn't there.
+-- 0..1 from the game's SFX VOL (0-7), or full if the option isn't there.
 function Chime:gameVolume()
   local game = self.mod.game
-  -- Gen 1 keeps options in the save; Gen 2 on the game (same table)
+  -- Gen 1 keeps options in the save, Gen 2 on the game (same table)
   local options = game and ((game.save and game.save.options) or game.options)
   local level = options and tonumber(options.sfxVol)
   if not level then return 1 end
@@ -99,11 +97,11 @@ function Chime:source(kind)
     for i, v in ipairs(samples) do data:setSample(i - 1, v) end
     return love.audio.newSource(data, "static")
   end)
-  self.sources[kind] = ok and src or false -- no audio device: stay quiet
+  self.sources[kind] = ok and src or false -- false means no audio device, so stay quiet
   return ok and src or nil
 end
 
--- kind: "unlock" or "summary".  Returns true if a sound started.
+-- kind is "unlock" or "summary". Returns true if a sound started.
 function Chime:play(kind)
   if not self:enabled() then return false end
   if not (love and love.audio and love.sound) then return false end

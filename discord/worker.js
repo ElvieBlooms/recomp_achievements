@@ -1,33 +1,33 @@
-// Recomp Achievements leaderboard bot for Discord.
-// =====================================================================
-// A Cloudflare Worker (free tier is plenty) that answers Discord slash
-// commands.  It has no database and keeps nothing: a /score command is
-// checked for typos, then handed to the GitHub Action through a
-// repository_dispatch event.  The Action runs the same checks as an issue
-// submission (tools/leaderboard_ingest.py), updates the board and edits
-// the bot's reply in Discord with the result.
+// discord/worker.js
+// The Recomp Achievements leaderboard bot, a Cloudflare Worker that answers
+// Discord slash commands sent to its interactions endpoint. The free tier is plenty.
+// It has no database and keeps nothing. A /score or /extra is checked for
+// typos, then handed to the GitHub Action as a repository_dispatch event.
+// The Action runs the same checks as an issue submission
+// (tools/leaderboard_ingest.py), updates the board and edits the bot's reply
+// in Discord with the result. The bot never writes to the board itself.
 //
 // Commands (registered by tools/discord_register.py):
 //   /score game name points earned save_id code [time]
 //   /leaderboard            link to the page
-//   /check game [extra]     the top 3 for a game, posted as a small embed
-//                           (read from the public leaderboard.json);
-//                           extra:all for Extra Credit, extra:<mod> for one mod
+//   /check game [extra]     the top 3 for a game as a small embed, read from
+//                           the public leaderboard.json; extra:all for
+//                           Extra Credit, extra:<mod> for one mod
 //   /extra game name save_id lines code
 //                           an Extra Credit score (bonus and mod achievements)
 //
 // Secrets (wrangler secret put ...):
 //   DISCORD_PUBLIC_KEY  from the Discord developer portal
 //   GITHUB_TOKEN        fine-grained token, this repo only, Contents: write
-//   OWNER_SALT          any long random string; never change it
+//   OWNER_SALT          any long random string; changing it orphans every Discord entry
 // Vars (wrangler.toml):
 //   GITHUB_REPO         e.g. ElvieBlooms/recomp_achievements
 //   BOARD_URL           the GitHub Pages address
 //
-// The Discord user id is never sent to GitHub: the bot sends a keyed hash
-// of it (OWNER_SALT), so only the same Discord account can update a save
-// and nobody can work out who submitted from the public board file.
-// =====================================================================
+// The Discord user id is never sent to GitHub. The bot sends an HMAC of it
+// keyed with OWNER_SALT instead, so only the same Discord account can update
+// a save, and nobody can work out who submitted from the public board file.
+// ------------------
 
 const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const GAMES = { red: "Pokemon Red", blue: "Pokemon Blue", yellow: "Pokemon Yellow",
@@ -35,13 +35,14 @@ const GAMES = { red: "Pokemon Red", blue: "Pokemon Blue", yellow: "Pokemon Yello
                 firered: "Pokemon FireRed", leafgreen: "Pokemon LeafGreen", emerald: "Pokemon Emerald",
                 ruby: "Pokemon Ruby", sapphire: "Pokemon Sapphire" };
 const EPHEMERAL = 64;
-// Embed colours, the light-theme ones from docs/index.html.
+// Embed colours, taken from the light theme in docs/index.html.
 const COLORS = { red: 0xc0392b, blue: 0x2c5aa0, yellow: 0xc79a00, gold: 0xa8801a, silver: 0x6f7a86,
                  crystal: 0x2b8fa8, firered: 0xd9622b, leafgreen: 0x4f9a3a, emerald: 0x1f8f6a,
                  ruby: 0xb0233a, sapphire: 0x2a4fb0 };
 
 // ---------------------------------------------------------- check code
-// Same as recomp_achievements/ui/share.lua and tools/leaderboard_ingest.py.
+// These must match recomp_achievements/ui/share.lua and tools/leaderboard_ingest.py exactly.
+// The code is a checksum to catch typos, not a security measure.
 export function normName(name) {
   let out = "";
   for (const ch of String(name)) {
@@ -63,7 +64,7 @@ function base32(n, digits) {
   return out;
 }
 
-// minutes: play time from the card (mod 1.2.0+), or null for a 1.1.0 card.
+// minutes is the card's play time (mod 1.2.0 on), or null for a 1.1.0 card.
 export function checkCode(game, name, points, earned, saveId, minutes = null) {
   const parts = [minutes === null ? "v1" : "v2", game, normName(name), String(points), String(earned),
                  saveId.toUpperCase()];
@@ -74,7 +75,7 @@ export function checkCode(game, name, points, earned, saveId, minutes = null) {
   return s.slice(0, 4) + "-" + s.slice(4);
 }
 
-// Extra Credit: "bonus 3/9 20" lines from the card's Extra Credit page.
+// Extra Credit's code covers the "bonus 3/9 20" lines from the Extra Credit page.
 export function extraCheckCode(game, name, saveId, sources) {
   const parts = sources.map(([i, e, t, p]) => `${i}:${e}:${t}:${p}`).sort();
   const p = ["x1", game, normName(name), String(saveId).toUpperCase(), parts.join(",")].join("|");
@@ -83,7 +84,7 @@ export function extraCheckCode(game, name, saveId, sources) {
   return s.slice(0, 4) + "-" + s.slice(4);
 }
 
-// -> [[id, earned, total, points], ...] or a string saying what's wrong.
+// Returns [[id, earned, total, points], ...], or a string saying what's wrong.
 // Same rules as parse_extra_lines in tools/leaderboard_ingest.py.
 export function parseExtraLines(raw) {
   const out = [], seen = new Set();
@@ -126,12 +127,12 @@ export function normalizeCode(code) {
   return c.length === 8 ? c.slice(0, 4) + "-" + c.slice(4) : c;
 }
 
-// Save IDs use the same alphabet as codes: read O as 0 and I/L as 1.
+// Save IDs share the codes' alphabet, so O reads as 0 and I or L as 1.
 export function normalizeSaveId(raw) {
   return String(raw || "").replace(/\s/g, "").toUpperCase().replace(/O/g, "0").replace(/[IL]/g, "1");
 }
 
-// "12:34" -> 754 minutes; "" -> null; anything else -> undefined.
+// "12:34" gives 754 minutes, a blank gives null, anything else undefined.
 export function parseTime(raw) {
   const t = String(raw == null ? "" : raw).trim().toLowerCase();
   if (!t) return null;
@@ -186,8 +187,8 @@ function options(interaction) {
   return out;
 }
 
-// Quick checks so a typo gets an instant answer.  The Action checks
-// everything again (limits, name filter, ownership) before saving.
+// Quick checks so a typo gets an instant answer.
+// The Action checks everything again (limits, name filter, ownership) before saving.
 export function precheck(o) {
   const game = String(o.game || "").toLowerCase();
   if (!GAMES[game]) return "Pick the game from the list (red, blue, yellow, gold, silver, crystal, ruby, sapphire, firered, leafgreen or emerald).";
@@ -245,8 +246,7 @@ async function dispatch(env, interaction, o, kind = "score") {
 
 // ---------------------------------------------------------- /check
 // Same order as rank() in tools/leaderboard_ingest.py: most points, then
-// the shorter play time (untimed entries after timed ones), then the
-// earlier submission.
+// shortest play time with untimed entries last, then earliest submission.
 export function topEntries(entries, n = 3) {
   const list = (Array.isArray(entries) ? entries : []).filter(e => e && typeof e.name === "string");
   list.sort((a, b) => {
@@ -263,7 +263,7 @@ function clock(minutes) {
   return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
 }
 
-// Trainer names are shown as written; Markdown and mentions are escaped.
+// Shows trainer names as written, with Markdown and mentions escaped.
 function plain(s) {
   return String(s).replace(/[\\*_~`|>#\[\]()-]/g, "\\$&").replace(/@/g, "@\u200b");
 }
@@ -292,9 +292,9 @@ export function boardEmbed(game, slot, boardUrl) {
   };
 }
 
-// Extra Credit ranking (rank_extra in tools/leaderboard_ingest.py): most
-// points, then most achievements, then the earliest.  `source` narrows
-// it to one mod's line ("bonus", "naviplay"), or null for the total.
+// Extra Credit ranking, same as rank_extra in tools/leaderboard_ingest.py:
+// most points, then most achievements, then earliest.
+// `source` narrows it to one line ("bonus", "naviplay"), or null for the total.
 export function topExtra(entries, source = null, n = 3) {
   const list = [];
   for (const e of Array.isArray(entries) ? entries : []) {
@@ -377,9 +377,9 @@ export default {
     let interaction;
     try { interaction = JSON.parse(body); } catch (e) { return new Response("bad json", { status: 400 }); }
 
-    if (interaction.type === 1) return json({ type: 1 }); // PING
+    if (interaction.type === 1) return json({ type: 1 }); // Discord PING, answered with PONG
 
-    if (interaction.type === 2) {
+    if (interaction.type === 2) { // APPLICATION_COMMAND, a slash command
       const name = interaction.data && interaction.data.name;
       if (name === "leaderboard") {
         return say(`The leaderboard: ${env.BOARD_URL}\nSubmit with \`/score\` and the card from START > TROPHIES > SELECT.`);
@@ -395,7 +395,7 @@ export default {
           return say("extra: is `all`, `bonus`, or a mod's name as it appears on the Extra Credit page.");
         }
         ctx.waitUntil(postCheck(env, interaction, game, extra));
-        return json({ type: 5 }); // "thinking…", then the embed replaces it (public)
+        return json({ type: 5 }); // deferred reply: "thinking" until the public embed replaces it
       }
       if (name === "extra") {
         const o = options(interaction);

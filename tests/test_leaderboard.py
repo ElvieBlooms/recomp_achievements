@@ -1,7 +1,14 @@
-"""Tests for tools/leaderboard_ingest.py.   python3 tests/test_leaderboard.py
+# tests/test_leaderboard.py
+"""Tests for tools/leaderboard_ingest.py and tools/discord_reply.py.
 
-Lua/Python checksum parity is checked from the Lua side in tests/run.lua.
+    python3 tests/test_leaderboard.py
+
+Issue submissions go in through the ISSUE_BODY variables and Discord ones
+as a fake repository_dispatch event file. Each test then checks the board
+and the reply the player would see.
+Lua and Python checksum parity is checked from the Lua side, in tests/run.lua.
 """
+# ------------------
 import json
 import os
 import subprocess
@@ -67,7 +74,7 @@ class Ingest(unittest.TestCase):
         self.assertEqual([e["name"] for e in self.entries()], ["GARY", "ASH"])
 
     def test_lenient_typing(self):
-        # lower case, no dash, O for 0, spaces around values, "Pokemon Red"
+        # Lower case, no dash, O for 0, spaces around values and "Pokemon Red" all pass.
         code = L.check_code("red", "ASH", 120, 20, "ABC123").replace("-", "").lower().replace("0", "o")
         rc, reply = self.run_ingest(body(game="Pokemon Red", save="abc123", code=f"  {code} "))
         self.assertEqual(rc, 0, reply)
@@ -160,7 +167,7 @@ class Ingest(unittest.TestCase):
         rc, reply = self.run_event(ev)
         self.assertEqual(rc, 0, reply)
         self.assertIn("/score", reply)
-        # same Discord account updates; a different one can't take the save
+        # The same Discord account can update, but a different one can't take the save.
         discord_event(ev, card(points=300, earned=40))
         self.assertEqual(self.run_event(ev)[0], 0)
         discord_event(ev, card(points=400, earned=50), owner="cd" * 16)
@@ -229,7 +236,7 @@ class Ingest(unittest.TestCase):
         self.assertEqual(rc, 0, reply)
         self.assertIn("12:34", reply)
         self.assertEqual(self.entries()[0]["time"], 754)
-        # a typo in the time breaks the code
+        # The time is part of the code, so a typo in it breaks the check.
         b = body(time="12:34").replace("12:34", "12:43")
         rc, reply = self.run_ingest(b, author="alice")
         self.assertEqual(rc, 1)
@@ -251,7 +258,7 @@ class Ingest(unittest.TestCase):
         self.assertEqual(self.entries()[0]["saveId"], "3N0S2H")
 
     def test_old_cards_without_time_still_work(self):
-        rc, reply = self.run_ingest(body())  # v1 code, no TIME line
+        rc, reply = self.run_ingest(body())  # a v1 code, from a card with no TIME line
         self.assertEqual(rc, 0, reply)
         self.assertIsNone(self.entries()[0]["time"])
 
@@ -326,7 +333,7 @@ class ExtraCredit(unittest.TestCase):
         e = self.extra()[0]
         self.assertEqual((e["points"], e["earned"]), (105, 15))
         self.assertEqual(e["sources"]["naviplay"], {"earned": 12, "total": 25, "points": 85})
-        # a second player with fewer points goes below; the main board is untouched
+        # A second player with fewer points goes below, and the main board stays untouched.
         src = [("bonus", 9, 9, 50)]
         rc, _ = self.run_ingest(extra_body(name="BRENDAN", save="ZZZ999", sources=src), author="bob", issue=2)
         self.assertEqual(rc, 0)
@@ -383,7 +390,7 @@ class ExtraCredit(unittest.TestCase):
 
 
 class DiscordReply(unittest.TestCase):
-    """tools/discord_reply.py against a fake Discord API."""
+    """Run tools/discord_reply.py against a fake Discord API."""
 
     def test_edits_the_original_message(self):
         import http.server

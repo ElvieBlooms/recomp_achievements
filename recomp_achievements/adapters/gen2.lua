@@ -1,28 +1,24 @@
 -- adapters/gen2.lua
--- ==================================================================
--- Gold, Silver and Crystal state as plain "facts" for the rules, the
--- same idea as adapters/gen1.lua.  Engine 0.3.97 Gen 2 layout
--- (src/core/gen2/Save.lua):
---
+-- Turns Gold, Silver and Crystal state into plain "facts" for the rules, the same
+-- way adapters/gen1.lua does for Gen 1. It reads through mod.game and never writes
+-- to the save. Gen 2 layout in engine 0.3.97 (src/core/gen2/Save.lua):
 --   save.version                    "gold" | "silver" | "crystal"
 --   save.player.{name,id,money,coins,badges,kantoBadges}
---       badges / kantoBadges keyed by name ("ZEPHYR" = true); older
---       saves key by index, so both are accepted
---   save.inventory[ITEM] = count    every pocket; pocket from data.items
+--       badges keyed by name ("ZEPHYR" = true); older saves key by index,
+--       so both work
+--   save.inventory[ITEM] = count    every pocket; data.items says which
 --   save.pcItems[ITEM] = count
 --   save.pokedex.caught / seen[SPECIES] = true
---   save.party, save.boxes[1..14]   mon records { species, level, shiny, isEgg, ... }
+--   save.party, save.boxes[1..14]   Pokémon records { species, level, shiny, isEgg, ... }
 --   save.unownDex                   list of Unown letters caught
 --   save.hallOfFame.count           Hall of Fame entries
 --   save.phoneContacts[id] = true
 --   save.playTime = { hours, minutes, seconds }
---
--- Event flags: the live copy is game.world.events (save.events is only
--- refreshed when the game saves).  Gold/Silver also accept symbolic names
--- through mod.world:getFlag; Crystal numbers its flags differently and
--- the engine has no name table for it, so name lookups return nil there
--- until we ship one.
--- ==================================================================
+-- Event flags are read live from game.world.events, since save.events only
+-- updates when the game saves. Crystal numbers its flags differently from
+-- Gold and Silver, and the engine's name lookup (mod.world:getFlag) only knows
+-- Gold and Silver, so names go through our generated data first.
+-- ------------------
 
 local Gen2 = {}
 Gen2.__index = Gen2
@@ -32,13 +28,13 @@ Gen2.KANTO = { "BOULDER", "CASCADE", "THUNDER", "RAINBOW", "SOUL", "MARSH", "VOL
 
 local VERSIONS = { gold = true, silver = true, crystal = true }
 
--- loadData(version) returns data/gen2_<version>.lua (flag numbers, map
--- trainers and items, Johto species); see tools/gen2_data.py.
+-- loadData(version) returns data/gen2_<version>.lua: flag numbers, map trainers
+-- and items, Johto species. Built by tools/gen2_data.py.
 function Gen2.new(mod, util, loadData)
   return setmetatable({ mod = mod, util = util, loadData = loadData, cache = {} }, Gen2)
 end
 
--- The generated tables for the running game, or an empty shell.
+-- The generated tables for the running game, or empty ones.
 function Gen2:data()
   local v = self:version()
   if not v then return { flags = {}, trainers = {}, items = {}, hidden = {}, gifts = {}, johto = {} } end
@@ -61,7 +57,7 @@ function Gen2:version()
   if type(save) ~= "table" then return nil end
   local v = save.version
   if not VERSIONS[v] then
-    -- the boot placeholder or something we don't understand: no ledger
+    -- The boot placeholder or a version we don't know, so no ledger.
     return nil
   end
   return v
@@ -82,7 +78,7 @@ local function count(t)
   return n
 end
 
--- Badge tables key by name, or (older saves) by 1-based index.
+-- Badge tables key by name, or by 1-based index on older saves.
 local function hasBadge(tbl, list, name)
   if type(tbl) ~= "table" then return false end
   if tbl[name] then return true end
@@ -96,7 +92,7 @@ local function badgeCount(tbl, list)
   return n
 end
 
--- Every stored Pokemon, eggs excluded unless asked.
+-- Every stored Pokémon, party and boxes. Eggs only with withEggs.
 function Gen2:eachMon(fn, withEggs)
   local save = self:save()
   if type(save) ~= "table" then return end
@@ -112,7 +108,7 @@ function Gen2:eachMon(fn, withEggs)
   end
 end
 
--- A live event flag by numeric id, or by name on Gold/Silver.
+-- A live event flag by number or pret name.
 function Gen2:flag(id)
   local game = self:game()
   if type(id) == "number" then
@@ -121,7 +117,7 @@ function Gen2:flag(id)
       local ok, v = pcall(events.get, events, id)
       if ok then return v == true or v == 1 end
     end
-    -- no live world (title screen): decode the saved bit array
+    -- No live world on the title screen, so read the saved bit array.
     local save = self:save()
     local bytes = save and save.events
     if type(bytes) == "table" then
@@ -141,7 +137,7 @@ function Gen2:flag(id)
   return nil
 end
 
--- ENGINE_* flags (daily events, the Unown dex, ...) by name.
+-- ENGINE_* flags by name, like daily events and the Unown dex.
 function Gen2:engineFlag(name)
   local game = self:game()
   local world = game and game.world
@@ -159,14 +155,14 @@ function Gen2:engineFlag(name)
   return false
 end
 
--- Species data from the game (types, evolutions).
+-- The game's species data: types, evolutions.
 function Gen2:species(name)
   local game = self:game()
   local mons = game and game.data and game.data.pokemon
   return type(mons) == "table" and mons[name] or nil
 end
 
--- Johto Pokemon (data/gen2_*.lua `johto`) and anything they evolve into.
+-- Johto Pokémon (`johto` in data/gen2_*.lua) and anything they evolve into.
 function Gen2:isJohto(species)
   local set = self:data().johto or {}
   if set[species] then return true end
@@ -205,10 +201,9 @@ function Gen2:bagSnapshot()
   return out
 end
 
--- Gen 2 sends battle.started and battle.ended twice per battle (once from
--- the battle itself, once from the battle screen).  This gives both
--- copies the same key so the engine can keep one, plus the trainer class
--- (e.g. "FALKNER") the second copy leaves out.
+-- Gen 2 sends battle.started and battle.ended twice per battle, once from the
+-- battle and once from the battle screen. This gives both copies the same key so
+-- the engine keeps one, and adds the trainer class ("FALKNER") the second copy lacks.
 function Gen2:battleInfo(ev)
   local raw = type(ev) == "table" and ev.battle or nil
   if type(raw) ~= "table" then return {} end
@@ -263,7 +258,7 @@ function Gen2:facts()
     return type(h) == "table" and (tonumber(h.count) or (type(h.teams) == "table" and #h.teams) or 0) or 0
   end
   f.phoneContacts = function() return count(save.phoneContacts) end
-  -- story and sidequest facts
+  -- Story and sidequest facts.
   f.engineFlag = function(name) return self_:engineFlag(name) end
   f.allFlags = function(list) for _, id in ipairs(list) do if not f.flag(id) then return false end end return true end
   f.countFlags = function(list) local n = 0 for _, id in ipairs(list) do if f.flag(id) then n = n + 1 end end return n end
@@ -292,8 +287,8 @@ function Gen2:facts()
   end
   f.isJohto = function(species) return self_:isJohto(species) end
   f.data = function() return self_:data() end
-  -- How many rows of a generated list (trainers/items/hidden/gifts) are done.
-  -- keep(row) filters; rows are { flagId, flagName, ..., region }.
+  -- How many rows of a generated list (trainers, items, hidden, gifts) are done.
+  -- keep(row) filters. Rows are { flagId, flagName, ..., region }.
   f.sweep = function(kind, keep)
     local done, total = 0, 0
     for _, row in ipairs(self_:data()[kind] or {}) do

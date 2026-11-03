@@ -1,30 +1,35 @@
 #!/usr/bin/env python3
+# tools/leaderboard_ingest.py
 """Read one leaderboard submission and update docs/leaderboard.json.
 
 Submissions come from two places, both handled by the GitHub Action in
 .github/workflows/leaderboard.yml:
 
-  * a GitHub issue made from the "Submit a leaderboard score" form, and
+  * an issues event, from the "Submit a leaderboard score" or
+    "Submit an Extra Credit score" issue form, and
   * the Discord bot (discord/worker.js), which sends a repository_dispatch
-    event of type "discord-score".
+    event of type "discord-score" or "discord-extra".
 
-The Action passes --event "$GITHUB_EVENT_PATH"; the script reads whichever
-kind of event it is.  For a quick manual run you can use environment
-variables instead:
+The Action passes --event "$GITHUB_EVENT_PATH" and the script works out
+which kind of event it is. The submission is read from that file, so
+nothing a player typed ever goes on a command line. For a quick manual run
+you can use environment variables instead:
 
     ISSUE_BODY="$(cat body.md)" ISSUE_NUMBER=7 ISSUE_AUTHOR=someone \
         python3 tools/leaderboard_ingest.py --board docs/leaderboard.json
 
-It never talks to the network.  It writes a short Markdown reply to
---reply (the Action posts it on the issue or in Discord) and exits 0 when
-the entry was accepted, 1 when it was rejected and 2 on a bug.
+It never talks to the network. It writes a short Markdown reply to --reply
+(the Action posts it on the issue or back in Discord) and exits 0 when the
+entry was accepted, 1 when it was rejected and 2 on a bug.
 
-The CHECK CODE is a checksum, not a signature.  It catches typos; it does
-not stop anyone who reads the mod's source from making up a score.  The
-board is an honor system and says so.
+The check code is a checksum, not a signature. It catches typos, but it
+can't stop anyone who reads the mod's source from making up a score. The
+board is an honour system and says so.
 
-The checksum must match recomp_achievements/ui/share.lua exactly.
+The checksum must match recomp_achievements/ui/share.lua and
+discord/worker.js exactly.
 """
+# ------------------
 
 import argparse
 import datetime
@@ -35,9 +40,9 @@ import sys
 
 ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 
-# Official RetroAchievements totals per game, as counted by the mod (see
-# docs/COVERAGE.md).  Submissions above these are rejected.  Update them
-# when the catalogs change; tests/run.lua checks they match the mod.
+# Official RetroAchievements totals per game, as the mod counts them (see
+# docs/COVERAGE.md). Anything above these is rejected.
+# Update them when the catalogs change; tests/run.lua checks they match the mod.
 GAMES = {
     "red":    {"title": "Pokemon Red",    "maxPoints": 745, "total": 93},
     "blue":   {"title": "Pokemon Blue",   "maxPoints": 678, "total": 90},
@@ -52,14 +57,15 @@ GAMES = {
     "sapphire":  {"title": "Pokemon Sapphire",  "maxPoints": 485, "total": 49},
 }
 
-NAME_MAX = 12  # Gen 1 names are 7 characters; leave room for imports
+NAME_MAX = 12  # Gen 1 names are 7 characters, but later games and imports need more room
 BLOCKLIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), "name_blocklist.txt")
 
 
 # ---------------------------------------------------------------- checksum
 def norm_name(name):
-    """Drop ASCII whitespace and upper-case ASCII letters only, like Lua's
-    gsub("%s", "") and string.upper."""
+    """Drop ASCII whitespace and upper-case ASCII letters only.
+
+    Matches Lua's gsub("%s", "") and string.upper, so non-ASCII letters stay as they are."""
     out = []
     for ch in name:
         if ch in " \t\n\v\f\r":
@@ -84,7 +90,9 @@ def _base32(n, digits):
 
 
 def payload(game, name, points, earned, save_id, minutes=None):
-    """v2 (mod 1.2.0+) includes the play time in minutes; v1 (1.1.0) doesn't."""
+    """Build the text the check code is taken from.
+
+    v2 (mod 1.2.0 on) adds the play time in minutes. v1 cards from 1.1.0 have no time."""
     parts = ["v1" if minutes is None else "v2", game, norm_name(name), str(points),
              str(earned), save_id.upper()]
     if minutes is not None:
@@ -100,14 +108,14 @@ def check_code(game, name, points, earned, save_id, minutes=None):
     return s[:4] + "-" + s[4:]
 
 
-# Extra Credit: bonus and mod achievements, one line per source.
+# Extra Credit covers bonus and mod achievements, one line per source.
 EXTRA_MAX_SOURCES = 20
-EXTRA_MAX_TOTAL = 200      # Registry.LIMITS.maxPerProvider
-EXTRA_MAX_POINTS = 100     # per achievement (Registry.LIMITS.maxPoints)
+EXTRA_MAX_TOTAL = 200      # matches Registry.LIMITS.maxPerProvider
+EXTRA_MAX_POINTS = 100     # per achievement, matches Registry.LIMITS.maxPoints
 
 
 def extra_payload(game, name, save_id, sources):
-    """sources: [(id, earned, total, points)]; sorted by id like the mod."""
+    """Build the Extra Credit checksum text from [(id, earned, total, points)], sorted like the mod."""
     parts = sorted(f"{i}:{e}:{t}:{p}" for i, e, t, p in sources)
     return "|".join(["x1", game, norm_name(name), save_id.upper(), ",".join(parts)])
 
@@ -121,7 +129,9 @@ def extra_check_code(game, name, save_id, sources):
 
 
 def parse_extra_lines(raw):
-    """'bonus 3/9 20' per line (or separated by , or ;) -> [(id, e, t, p)]."""
+    """Turn lines like 'bonus 3/9 20' into [(id, earned, total, points)].
+
+    Lines can be split by newlines, commas or semicolons."""
     out, seen = [], set()
     for chunk in re.split(r"[\n,;]+", raw or ""):
         chunk = chunk.strip().strip("`").strip()
@@ -150,7 +160,7 @@ def parse_extra_lines(raw):
 
 
 def normalize_code(code):
-    """Accept lower case, missing dash, and the usual Crockford look-alikes."""
+    """Accept lower case, a missing dash, and O, I or L typed for 0 and 1."""
     c = re.sub(r"[\s\-]", "", code.upper())
     c = c.replace("O", "0").replace("I", "1").replace("L", "1")
     return c[:4] + "-" + c[4:] if len(c) == 8 else c
@@ -181,8 +191,9 @@ def _squash(s):
 
 
 def name_forms(name):
-    """(letters, squashed) spellings of a name to test against the blocklist:
-    1 is tried as both i and l."""
+    """Spell a name out as (letters, squashed) pairs to test against the blocklist.
+
+    A 1 could be an i or an l, so both are tried."""
     out = set()
     low = name.lower()
     for one in ("i", "l"):
@@ -228,7 +239,7 @@ EXTRA_FIELDS = {
 
 
 def parse_time(raw):
-    """'12:34' (hours:minutes, as on the card) -> minutes; '' -> None."""
+    """Turn the card's H:MM play time into minutes, or None when it's left blank."""
     raw = raw.strip()
     if not raw:
         return None
@@ -256,7 +267,7 @@ def issue_sections(body):
 
 
 def parse_issue(body, fields=None):
-    """GitHub issue forms render as '### Label\\n\\nvalue' blocks."""
+    """Pull the fields out of an issue form body, which GitHub writes as '### Label' blocks."""
     sections = issue_sections(body)
     out = {}
     for key, label in (fields or FIELDS).items():
@@ -297,8 +308,8 @@ def check_name(raw):
 
 
 def check_save_id(raw):
-    # Same alphabet as the code: no O, I or L, so read those as 0 and 1
-    # (the Gen 1 font's 0 looks a lot like an O).
+    # Uses the check code's alphabet, which has no O, I or L, so those read as 0 and 1.
+    # The Gen 1 font's 0 looks a lot like an O.
     save_id = re.sub(r"\s", "", raw).upper().replace("O", "0").replace("I", "1").replace("L", "1")
     if not re.fullmatch(r"[0-9A-Z]{6}", save_id):
         raise Rejected("The save ID is the 6 characters shown on the card.")
@@ -375,9 +386,9 @@ def load_board(path):
 
 
 def rank(entries):
-    """Most points first; on equal points the shorter play time wins (entries
-    without a time, from mod 1.1.0, go after timed ones), then the earlier
-    submission."""
+    """Sort by most points, then shortest play time, then earliest submission.
+
+    Entries with no time, from mod 1.1.0, go after the timed ones on equal points."""
     def key(e):
         t = e.get("time")
         return (-e["points"], t is None, t if t is not None else 0, e.get("first", ""))
@@ -385,7 +396,7 @@ def rank(entries):
 
 
 def rank_extra(entries):
-    """Extra Credit: most points, then most achievements, then earliest."""
+    """Sort Extra Credit by most points, then most achievements, then earliest."""
     entries.sort(key=lambda e: (-e["points"], -e["earned"], e.get("first", "")))
 
 
@@ -415,7 +426,9 @@ def upsert_extra(board, entry, sub, now):
 
 
 def owner_of(e):
-    """Who may update an entry: "gh:<login>" or "discord:<hash>"."""
+    """Return who may update an entry: "gh:<login>" or "discord:<hash>".
+
+    Old entries without an owner fall back to their GitHub login."""
     if e.get("owner"):
         return e["owner"]
     return "gh:" + str(e.get("github") or "").lower()
@@ -448,7 +461,7 @@ def upsert(board, entry, sub, now):
 
 # ------------------------------------------------------------- submission
 class Submission:
-    """Where a score came from: fields to validate plus who sent it."""
+    """One score to check: its fields, where it came from and who sent it."""
 
     def __init__(self, source, fields, owner, login=None, issue=None, kind="score"):
         self.source, self.fields, self.owner = source, fields, owner
@@ -462,8 +475,8 @@ def read_submission(event_path=None):
             event = json.load(f)
     payload = event.get("client_payload")
     if "issue" not in event and isinstance(payload, dict):
-        # repository_dispatch from the Discord bot.  The bot has already
-        # replaced the Discord user id with a keyed hash.
+        # A repository_dispatch from the Discord bot. The bot has already swapped
+        # the Discord user id for a keyed hash, so the raw id never reaches GitHub.
         kind = "extra" if isinstance(payload.get("extra"), dict) else "score"
         data = payload.get(kind) if isinstance(payload.get(kind), dict) else {}
         fields = {k: str(data.get(k, "")) for k in (EXTRA_FIELDS if kind == "extra" else FIELDS)}
@@ -509,7 +522,7 @@ def main(argv=None):
             f.write(f"Couldn't add this score: {err}\n")
         print(f"rejected: {err}")
         return 1
-    except Exception as err:  # noqa: BLE001 - the player still gets a reply
+    except Exception as err:  # noqa: BLE001 - so the player still gets a reply
         with open(args.reply, "w", encoding="utf-8") as f:
             f.write("Something went wrong updating the board. The maintainer "
                     "will take a look; you don't need to do anything.\n")
