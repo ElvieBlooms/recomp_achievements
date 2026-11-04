@@ -62,7 +62,9 @@ on Discord" button.
   signature, so it only catches typos.
 - One row per save ID per game. Only the account that first submitted a
   save ID (the same GitHub account, or the same Discord account) can update
-  it.
+  it. The mod keeps the save ID in the save from the first time the card is
+  opened, so a save synced to another device keeps its ID and its row.
+  Before 2.6.3 a synced save could show a different ID on each device.
 
 Extra Credit submissions (`extra.yml`, or `/extra` on Discord) go through
 the same Action. It checks the game, name and save ID the same way, then

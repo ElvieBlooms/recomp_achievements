@@ -526,6 +526,10 @@ test("leaderboard card: official points only, stable save id, shown on SELECT", 
   check(card.saveId:match("^[0-9A-Z]+$") and #card.saveId == 6, "6-char save id")
   eq(ach(env).leaderboardCard().saveId, card.saveId, "save id is stable")
   eq(card.code, loadShare().code(card), "code over the shown fields")
+  -- Save Sync onto a device that maps the save to another playthroughId
+  env.game.save.meta = env.game.save.meta or {}
+  env.game.save.meta.playthroughId = "other-device-id"
+  eq(ach(env).leaderboardCard().saveId, card.saveId, "save id survives a new playthroughId")
   for _, item in ipairs(env:startMenu()) do
     if (item.label == "TROPHIES" or item.label == "TROPHY") then item.onSelect() end
   end

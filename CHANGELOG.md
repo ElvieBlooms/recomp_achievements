@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.6.3
+
+### Fixed
+- A save synced to another device could show a different save ID there,
+  so a score sent from that device made a second leaderboard row instead
+  of updating the first. The ID is now kept in the save the first time the
+  card is opened, and every device shows that one. The engine numbers
+  playthroughs per device, which is what made the IDs drift.
+
+### Upgrading
+- Update on every device, then open the card on the device you've been
+  submitting from first, and save. That keeps the ID your row already has.
+- A duplicated save slot keeps the original's ID, so submitting both
+  updates the same row.
+
 ## 2.6.2
 
 Getting ready for the gen1recomp mod index.

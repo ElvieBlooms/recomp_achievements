@@ -72,23 +72,34 @@ function Share.code(f)
 end
 
 -- A short id per playthrough, so the leaderboard keeps one row for each.
--- It comes from the engine's save.meta.playthroughId, which survives saving
--- and Save Sync and changes with a New Game. Saves without one get a random
--- id kept in the ledger.
+-- Worked out once, then kept in the ledger as cardId. The ledger rides in
+-- the save, so every device that syncs it shows the same id. Working it out
+-- fresh each time didn't hold up: the engine maps playthroughId per device
+-- (options.playthroughIds) and re-keys imports, so a synced save could get a
+-- different id on each device and a second row on the board.
+-- The first value is the one this device already showed: playthroughId
+-- hashed, else the old random saveId, else a new random one.
+local function validId(id)
+  return type(id) == "string" and id:match("^[0-9A-Z]+$") ~= nil
+end
+
 function Share.saveId(save, ledgerData)
+  if validId(ledgerData.cardId) then return ledgerData.cardId end
   local meta = type(save) == "table" and save.meta
   local pid = type(meta) == "table" and meta.playthroughId
+  local id
   if pid ~= nil and tostring(pid) ~= "" then
-    return base32(hash("pid|" .. tostring(pid), 5381) % 1073741824, 6)
+    id = base32(hash("pid|" .. tostring(pid), 5381) % 1073741824, 6)
+  elseif validId(ledgerData.saveId) then
+    id = ledgerData.saveId
+  else
+    local rand = (love and love.math and love.math.random) or math.random
+    local n = 0
+    for _ = 1, 6 do n = n * 32 + rand(0, 31) end
+    id = base32(n, 6)
   end
-  if type(ledgerData.saveId) == "string" and ledgerData.saveId:match("^[0-9A-Z]+$") then
-    return ledgerData.saveId
-  end
-  local rand = (love and love.math and love.math.random) or math.random
-  local n = 0
-  for _ = 1, 6 do n = n * 32 + rand(0, 31) end
-  ledgerData.saveId = base32(n, 6)
-  return ledgerData.saveId
+  ledgerData.cardId = id
+  return id
 end
 
 -- Everything the card shows, or nil when no save is loaded.
