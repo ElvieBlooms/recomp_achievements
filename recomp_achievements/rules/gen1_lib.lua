@@ -124,16 +124,24 @@ function L.usedOnly(b, pred)
   return true
 end
 
--- Beat a gym leader under conditions read from that battle. It fires on the
--- leader's story flag (EVENT_BEAT_BROCK and friends) via flag.changed. The
--- engine sets that flag in the battle's onFinish, after battle.ended, so
--- ctx.lastBattle is the leader fight.
+-- Beat a gym leader under conditions read from that battle. The first win
+-- fires on the leader's story flag (EVENT_BEAT_BROCK and friends) via
+-- flag.changed. The engine sets that flag in the battle's onFinish, after
+-- battle.ended, so ctx.lastBattle is the leader fight.
+-- The flag only changes once, so a rematch from another mod is caught on
+-- battle.ended instead, when the flag is already set.
 function L.leaderChallenge(id, ra, title, leaderFlag, trainerId, cond, extra)
   return L.tracker(id, ra, title, {
     ["flag.changed"] = function(_, ev, f, ctx)
       if not (ev and ev.name == leaderFlag and ev.value) then return end
       local b = ctx.lastBattle
       if not (b and b.trainerId == trainerId and b.result == "win") then return end
+      return cond(b, f) == true
+    end,
+    ["battle.ended"] = function(_, ev, f, ctx)
+      if not (ev and ev.result == "win" and f.flag(leaderFlag)) then return end
+      local b = ctx.battle
+      if not (b and b.trainerId == trainerId) then return end
       return cond(b, f) == true
     end,
   }, nil, with({ category = "GYMS" }, extra))

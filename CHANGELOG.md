@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.6.4
+
+### Fixed
+- The Red gym challenges (Set mode, level cap) and the Blue type
+  challenges only counted your first win against each leader. A rematch
+  from another mod that keeps to the rules now counts too. Gold, Silver,
+  Crystal and FireRed already worked this way.
+
 ## 2.6.3
 
 ### Fixed

@@ -223,6 +223,20 @@ test("Red gym leader: Set mode, no items, level cap", function()
   shift:battle({ trainerId = "OPP_BROCK" })
   shift:setFlag("EVENT_BEAT_BROCK")
   check(not has(shift, "off_setcap_opp_brock"), "shift mode")
+
+  -- a rematch from another mod, with Brock already beaten
+  local again = boot("red")
+  setParty(again, { { "PIKACHU", 30 } })
+  again:setFlag("EVENT_BEAT_BROCK")
+  check(not has(again, "off_setcap_opp_brock"), "first win missed")
+  setParty(again, { { "PIKACHU", 12 } })
+  again.game.save.options.battleStyle = "set"
+  again:battle({ trainerId = "OPP_BROCK", result = "lose" })
+  check(not has(again, "off_setcap_opp_brock"), "a lost rematch")
+  again:battle({ trainerId = "OPP_MISTY" })
+  check(not has(again, "off_setcap_opp_brock"), "another leader")
+  again:battle({ trainerId = "OPP_BROCK" })
+  check(has(again, "off_setcap_opp_brock"), "rematch counts")
 end)
 
 test("Blue gym leader: only one type sent out", function()
