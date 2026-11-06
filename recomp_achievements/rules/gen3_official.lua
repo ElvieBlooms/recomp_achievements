@@ -80,7 +80,7 @@ return function(L)
   }
   for _, g in ipairs(GYM_SWEEPS) do
     add(L.gymTrainers("g3o_gymtrainers" .. g[1], { leafgreen = g[2] }, g[3], g[1], g[4], {
-      note = "Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten.",
+      note = "Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts.",
     }))
   end
 

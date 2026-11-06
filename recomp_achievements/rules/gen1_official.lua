@@ -99,32 +99,39 @@ return function(L)
       { fidelity = "interpretation",
         note = "Counts every Pokemon you sent out in the leader battle." }))
   end
-  -- Blue: every trainer and the leader in one visit.
+  -- Blue: every trainer and the leader in one visit. Wins are counted by the
+  -- fight itself (class#party from the raw BattleState), not by trainer
+  -- flags: the engine sets the leftover trainers' flags right after the
+  -- leader's (victories.lua deactivate), and rematch mods fight trainers
+  -- whose flags stay set. Checked on the leader's battle.ended.
   local blueClears = { 540306, 540307, 540308, 540309, 540310, 540311, 540312, 540313 }
   for i, raId in ipairs(blueClears) do
     local gym = L.GYMS[i]
     add(L.tracker("off_gymclear_" .. gym.map:lower(), { blue = raId }, "Gym sweep", {
-      ["map.entered"] = function(state, ev, f)
+      ["map.entered"] = function(state, ev)
         if ev and ev.mapId == gym.map then
-          if not state.inside then
-            local beaten = f.trainersBeaten(gym.map)
-            state.inside, state.fresh = true, beaten == 0 and not f.flag(gym.flag)
-          end
+          state.won = state.won or {}
         else
-          state.inside = false
+          state.won = nil
         end
       end,
-      ["flag.changed"] = function(state, ev, f)
-        if not (state.inside and state.fresh and ev and ev.value) then return end
-        local beaten, total = f.trainersBeaten(gym.map)
-        if f.flag(gym.flag) and beaten >= total then return true end
+      ["battle.ended"] = function(state, ev, f, ctx)
+        if not (state.won and ev and ev.result == "win") then return end
+        local raw, b = ev.battle, ctx.battle
+        if type(raw) == "table" and raw.oppClass then
+          state.won[tostring(raw.oppClass) .. "#" .. tostring(raw.partyIndex or 1)] = true
+        end
+        if not (b and b.trainerId == gym.opp) then return end
+        local won = state.won
+        state.won = nil
+        for _, key in ipairs(f.mapContents(gym.map).trainerKeys) do
+          if not won[key] then return end
+        end
+        return true
       end,
     }, function(state, f, ctx)
       -- Loading a save inside the gym counts as walking in.
-      if ctx.map == gym.map then
-        state.inside = true
-        state.fresh = f.trainersBeaten(gym.map) == 0 and not f.flag(gym.flag)
-      end
+      if ctx.map == gym.map then state.won = {} end
     end, { category = "GYMS" }))
   end
 

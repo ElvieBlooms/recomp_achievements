@@ -213,13 +213,16 @@ function Gen1:facts()
   local function mapContents(mapId)
     if static.maps[mapId] then return static.maps[mapId] end
     local def = tbl(data.maps)[mapId]
-    local out = { trainers = {}, items = {}, hidden = {}, statics = {} }
+    local out = { trainers = {}, trainerKeys = {}, items = {}, hidden = {}, statics = {} }
     local headers = def and def.label and tbl(data.trainer_headers)[def.label]
     for _, obj in ipairs(tbl(def and def.objects)) do
       local key = mapId .. "_obj_" .. tostring(obj.index)
       local header = headers and headers[obj.index]
       if obj.trainerClass and type(header) == "table" and header.event then
         out.trainers[#out.trainers + 1] = header.event
+        -- class#party, the key BattleState and victories.lua use for a fight
+        out.trainerKeys[#out.trainerKeys + 1] = tostring(obj.trainerClass) .. "#"
+          .. tostring(obj.trainerParty or 1)
       end
       if obj.item and obj.item ~= "0" and obj.item ~= 0 then
         out.items[#out.items + 1] = { key = key, item = obj.item, name = obj.name }

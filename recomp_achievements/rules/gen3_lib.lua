@@ -163,17 +163,27 @@ end
 -- Beat a gym's trainers before its leader. The game marks them all beaten when
 -- the leader falls, so wins are counted as they happen. A save with every one
 -- beaten and the leader still standing also counts.
+-- Once the leader is beaten, wins against the gym's trainers go in s.again,
+-- so a mod that resets the gym for rematches can still get it.
 function L.gymTrainers(id, ra, title, gym, leaderFlag, extra)
   local rule = L.tracker(id, ra, title, {
     ["battle.ended"] = function(s, ev, f, ctx)
       local b = ctx.battle
       if not (b and ev and ev.result == "win" and b.trainerId) then return end
       local list = f.data().gymTrainers and f.data().gymTrainers[gym] or {}
+      if f.flag(leaderFlag) then
+        s.again = s.again or {}
+        local n = 0
+        for _, name in ipairs(list) do
+          if name == b.trainerId then s.again[name] = true end
+          if s.again[name] then n = n + 1 end
+        end
+        return #list > 0 and n >= #list or nil
+      end
       s.beaten = s.beaten or {}
       for _, name in ipairs(list) do
         if name == b.trainerId then s.beaten[name] = true end
       end
-      if f.flag(leaderFlag) then return end
       local n = 0
       for _, name in ipairs(list) do if s.beaten[name] or f.flag(name) then n = n + 1 end end
       return #list > 0 and n >= #list or nil

@@ -2,11 +2,21 @@
 
 ## 2.6.4
 
+Gym rematches, from Trainer Rematch or any mod that fights the same trainers.
+
 ### Fixed
 - The Red gym challenges (Set mode, level cap) and the Blue type
   challenges only counted your first win against each leader. A rematch
-  from another mod that keeps to the rules now counts too. Gold, Silver,
-  Crystal and FireRed already worked this way.
+  that keeps to the rules now counts too. Gold, Silver, Crystal and
+  FireRed already worked this way.
+- Blue's gym sweeps (every trainer and the leader in one visit) count
+  rematches: beat the gym's trainers and then the leader again without
+  leaving.
+- Blue's gym sweeps also unlocked if you walked past the trainers and
+  beat the leader, since the game marks the rest beaten when the leader
+  falls. Wins are now counted fight by fight.
+- Emerald and LeafGreen gym trainer achievements count once you've beaten
+  every gym trainer again in rematches after the leader.
 
 ## 2.6.3
 

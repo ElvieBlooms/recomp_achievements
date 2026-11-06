@@ -256,18 +256,54 @@ end)
 
 test("Blue gym sweep in one visit", function()
   local env = boot("blue")
-  local headers = env.game.data.trainer_headers[env.game.data.maps.PEWTER_GYM.label]
+  local maps = env.game.data.maps
+  local headers = env.game.data.trainer_headers[maps.PEWTER_GYM.label]
+  local gymTrainers = {}
+  for _, obj in ipairs(maps.PEWTER_GYM.objects) do
+    if obj.trainerClass and headers[obj.index] then gymTrainers[#gymTrainers + 1] = obj end
+  end
+  check(#gymTrainers >= 1, "Pewter Gym has a trainer")
+  local function beatTrainers(e)
+    for _, obj in ipairs(gymTrainers) do
+      e:battle({ trainerId = obj.trainerClass, partyIndex = obj.trainerParty })
+      e:setFlag(headers[obj.index].event)
+    end
+  end
+  local function beatBrock(e)
+    e:battle({ trainerId = "OPP_BROCK" })
+    e:setFlag("EVENT_BEAT_BROCK")
+    for _, h in pairs(headers) do e:setFlag(h.event) end -- victories.lua deactivate
+  end
   env:enter("PEWTER_GYM", "PEWTER_CITY")
-  for _, h in pairs(headers) do env:setFlag(h.event) end
-  env:setFlag("EVENT_BEAT_BROCK")
+  beatTrainers(env)
+  beatBrock(env)
   check(has(env, "off_gymclear_pewter_gym"), "swept")
+
   local miss = boot("blue")
-  local h1 = next(headers)
-  miss:setFlag(headers[h1].event) -- this one was beaten on an earlier visit
   miss:enter("PEWTER_GYM", "PEWTER_CITY")
-  for _, h in pairs(headers) do miss:setFlag(h.event) end
-  miss:setFlag("EVENT_BEAT_BROCK")
+  beatTrainers(miss)
+  miss:enter("PEWTER_CITY")
+  miss:enter("PEWTER_GYM", "PEWTER_CITY")
+  beatBrock(miss)
   check(not has(miss, "off_gymclear_pewter_gym"), "not in one visit")
+
+  local skip = boot("blue")
+  skip:enter("PEWTER_GYM", "PEWTER_CITY")
+  beatBrock(skip)
+  check(not has(skip, "off_gymclear_pewter_gym"), "walked past the trainers")
+
+  -- rematches (Trainer Rematch): every flag already set, the fights happen anyway
+  local again = boot("blue")
+  again:enter("PEWTER_GYM", "PEWTER_CITY")
+  beatBrock(again)
+  again:enter("PEWTER_CITY")
+  again:enter("PEWTER_GYM", "PEWTER_CITY")
+  check(not has(again, "off_gymclear_pewter_gym"), "first time missed")
+  for _, obj in ipairs(gymTrainers) do
+    again:battle({ trainerId = obj.trainerClass, partyIndex = obj.trainerParty })
+  end
+  again:battle({ trainerId = "OPP_BROCK" })
+  check(has(again, "off_gymclear_pewter_gym"), "rematch sweep")
 end)
 
 test("League run: solo, and a blackout ends the run", function()

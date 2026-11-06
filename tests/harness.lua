@@ -324,7 +324,8 @@ end
 -- One battle from start to finish, emitting battle.started and battle.ended.
 --   opts: kind, trainerId, lead (species), species, result, during
 function Env:battle(opts)
-  local raw = { player = { mon = { species = opts.lead or "PIKACHU", hp = 10, stats = { hp = 10 } } } }
+  local raw = { player = { mon = { species = opts.lead or "PIKACHU", hp = 10, stats = { hp = 10 } } },
+                oppClass = opts.trainerId, partyIndex = opts.partyIndex }
   self:emit("battle.started", { battle = raw, kind = opts.kind or "trainer",
     trainerId = opts.trainerId, species = opts.species })
   if opts.during then opts.during(raw) end

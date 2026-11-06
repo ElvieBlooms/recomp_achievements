@@ -1084,6 +1084,13 @@ test("Gen 3 rules: areas, gym trainers, challenges and solo league runs", functi
   local s = {}
   save.flags[d.flags.FLAG_DEFEATED_BROCK] = nil
   eq(pewter.on["battle.ended"](s, { result = "win" }, facts(), ctx), true, "a live win counts")
+  -- After Brock, a rematch mod that resets the gym: every trainer again.
+  save.flags[d.flags.FLAG_DEFEATED_BROCK] = true
+  local again = {}
+  eq(pewter.on["battle.ended"](again, { result = "win" }, facts(),
+    { battle = { trainerId = "TRAINER_LEADER_BROCK" } }), nil, "Brock is not a gym trainer")
+  eq(pewter.on["battle.ended"](again, { result = "win" }, facts(), ctx), true, "rematch win counts")
+  save.flags[d.flags.FLAG_DEFEATED_BROCK] = nil
   -- FireRed challenge: SET style, two Pokémon at most, level 14 cap.
   local brock = rules.g3o_challenge1
   local b = { trainerId = "TRAINER_LEADER_BROCK", style = "set", partyMaxAtStart = 12,

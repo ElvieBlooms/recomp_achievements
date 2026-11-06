@@ -390,7 +390,7 @@ return function(L)
   for _, g in ipairs(GYMS) do
     add(L.badge("em_badge" .. g[1], E(g[3]), "Badge: " .. g[2], g[1]))
     add(L.gymTrainers("em_gymtrainers" .. g[1], E(g[4]), g[6] .. " Gym Trainers", g[1], g[5], {
-      note = "Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten.",
+      note = "Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts.",
     }))
   end
 

@@ -701,13 +701,13 @@ logic is this mod's own.
 | 537126 | **Gardening Pro** - Receive a Wailmer Pail at the Pretty Petal flower shop on Route 104 | 1 | save state | yes | Exact |  |
 | 537204 | **Good Student** - Receive a Quick Claw for attending the Trainer School | 1 | save state | yes | Exact |  |
 | 537133 | **Even the Mightiest Oak** - Trade a Ralts for a Seedot in Rustboro City | 3 | save state | yes | Exact |  |
-| 537116 | **Battle Addict - Rustboro** - Defeat every trainer in Rustboro gym | 2 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 537116 | **Battle Addict - Rustboro** - Defeat every trainer in Rustboro gym | 2 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 27596 | **Rockin' Whiz** - Defeat Roxanne to earn the Stone Badge | 10 | save state | yes | Exact |  |
 | 537186 | **Amazing Tech in the Palm of Your Hand** - Receive the PokéNav from the Devon Corporation president | 1 | save state | yes | Exact |  |
 | 537115 | **How About a Little Battle?** - Defeat your rival at Rustboro City or Route 104 | 3 | save state | yes | Exact |  |
 | 537205 | **Everyone Knows** - Set a new trendy phrase | 1 | save state | yes | Exact |  |
 | 537206 | **Fishing Trainee** - Receive the Old Rod in Dewford Town | 2 | save state | yes | Exact |  |
-| 537117 | **Battle Addict - Dewford** - Defeat every trainer in Dewford gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 537117 | **Battle Addict - Dewford** - Defeat every trainer in Dewford gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 27597 | **The Big Hit** - Defeat Brawly to earn the Knuckle Badge | 10 | save state | yes | Exact |  |
 | 537187 | **Rocky Courier** - Deliver the Letter to Steven | 4 | save state | yes | Exact |  |
 | 537214 | **Devon Delivery** - Receive the Exp. Share | 3 | save state | yes | Exact |  |
@@ -720,7 +720,7 @@ logic is this mod's own.
 | 537211 | **Rydel Rydel Rydel Rydel Rydel Rydel Rydel Rydel** - Receive a bike of your choice at Rydel's Cycles | 1 | save state | yes | Exact |  |
 | 537212 | **Aw Dang It** - Exchange a Harbor Mail for a Coin Case | 2 | save state | yes | Exact |  |
 | 537189 | **Still a Novice** - Defeat Wally at the entrance to the Mauville Gym | 2 | save state | yes | Exact |  |
-| 537118 | **Battle Addict - Mauville** - Defeat every trainer in Mauville gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 537118 | **Battle Addict - Mauville** - Defeat every trainer in Mauville gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 27598 | **Swell Shock** - Defeat Wattson to earn the Dynamo Badge | 10 | save state | yes | Exact |  |
 | 537213 | **Didn't See It Coming** - Attempt to return some lost glasses | 1 | save state | yes | Local reading | Counted once you've found the Black Glasses and the man on Route 116 has gone off looking. |
 | 537129 | **Trainer Extraordinaire - Verdanturf** - Win at the Verdanturf Battle Tent and receive a prize | 5 | session | no | Local reading | Counted when the Battle Tent hands over your prize while you're playing. |
@@ -733,10 +733,10 @@ logic is this mod's own.
 | 537217 | **I Found This Rock and Thought About You** - Return the stolen meteor to Professor Cozmo | 3 | save state | yes | Local reading | Professor Cozmo has given you TM27 Return for the Meteorite. |
 | 537201 | **Amoonguss Would Debut 6 Years Later** - Defeat the suspicious Magma grunt on Jagged Pass | 1 | save state | yes | Exact |  |
 | 537131 | **Why Not?** - Receive an Egg from the old lady at the Lavaridge Springs | 1 | save state | yes | Exact |  |
-| 537119 | **Battle Addict - Lavaridge** - Defeat every trainer in Lavaridge gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 537119 | **Battle Addict - Lavaridge** - Defeat every trainer in Lavaridge gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 27599 | **Passion Burn** - Defeat Flannery to earn the Heat Badge | 10 | save state | yes | Exact |  |
 | 57267 | **Amateur Archaeologist** - Acquire a fossil in the Mirage Tower | 1 | save state | yes | Exact |  |
-| 537120 | **Battle Addict - Petalburg** - Defeat every trainer in Petalburg gym | 10 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 537120 | **Battle Addict - Petalburg** - Defeat every trainer in Petalburg gym | 10 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 27600 | **Reliable One** - Defeat Norman to earn the Balance Badge | 10 | save state | yes | Exact |  |
 | 537218 | **Growing Stronger Every Day** - Receive a special prize from your Mom for defeating your Dad | 3 | save state | yes | Exact |  |
 | 57271 | **New Mauville Maintenance** - Disable the generator in New Mauville and obtain your reward | 5 | save state | yes | Exact |  |
@@ -748,7 +748,7 @@ logic is this mod's own.
 | 537134 | **Positively Charged** - Trade a Volbeat for a Plusle in Fortree City | 3 | save state | yes | Exact |  |
 | 537220 | **Right or Left?** - Receive the TM10 Hidden Power from playing a guessing game with an old woman | 3 | save state | yes | Exact |  |
 | 537191 | **Who You Gonna Call?** - Defeat the invisible obstacle with the help of the Devon Scope | 2 | save state | yes | Exact |  |
-| 537121 | **Battle Addict - Fortree** - Defeat every trainer in Fortree gym | 10 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 537121 | **Battle Addict - Fortree** - Defeat every trainer in Fortree gym | 10 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 27601 | **Sky Tamer** - Defeat Winona to earn the Feather Badge | 10 | save state | yes | Exact |  |
 | 27595 | **I'll Battle with You** - Defeat your Rival in Lilycove City | 5 | save state | yes | Exact |  |
 | 537192 | **Orbs of Power** - Witness the events on Mt. Pyre's summit | 5 | save state | yes | Exact |  |
@@ -759,7 +759,7 @@ logic is this mod's own.
 | 537222 | **Fishing Master** - Receive the Super Rod in Mossdeep City | 4 | save state | yes | Exact |  |
 | 537223 | **Wingull Postal Service** - Receive a Mental Herb for checking on the successful return of Wingull | 4 | save state | yes | Exact |  |
 | 57272 | **Chime of the Sea** - Craft a Shell Bell in Shoal Cave | 5 | save state | yes | Local reading | You hold a Shell Bell in your Bag (made from 4 Shoal Salt and 4 Shoal Shells). |
-| 537122 | **Battle Addict - Mossdeep** - Defeat every trainer in Mossdeep gym | 10 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 537122 | **Battle Addict - Mossdeep** - Defeat every trainer in Mossdeep gym | 10 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 27602 | **Mystic Duo** - Defeat Tate and Liza to earn the Mind Badge | 10 | save state | yes | Exact |  |
 | 537202 | **Not the Space, Not the Time** - Defeat every grunt at the Space Center | 4 | save state | yes | Local reading | Every Team Magma grunt in the Mossdeep Space Center. |
 | 27608 | **The Planet from Above** - Help Steven Stone in the Mossdeep Space Center | 5 | save state | yes | Exact |  |
@@ -769,7 +769,7 @@ logic is this mod's own.
 | 537233 | **Found Machines** - Obtain every Hidden Machine | 5 | save state | yes | Exact |  |
 | 537226 | **Size Matters** - Break the records of both size-obsessed brothers in Sootopolis City | 10 | save state | yes | Local reading | Both brothers' size records (Seedot and Lotad) have been beaten. |
 | 57270 | **Salvaging Mission** - Retrieve the Scanner from the Abandoned Ship and deliver it to Captain Stern | 5 | save state | yes | Exact |  |
-| 537123 | **Battle Addict - Sootopolis** - Defeat every trainer in Sootopolis gym | 10 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 537123 | **Battle Addict - Sootopolis** - Defeat every trainer in Sootopolis gym | 10 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 27603 | **Dandy Charm** - Defeat Juan to earn the Rain Badge | 10 | save state | yes | Exact |  |
 | 537135 | **Dragon Charity** - Trade a Bagon for a Horsea in Pacifidlog Town | 4 | save state | yes | Exact |  |
 | 537224 | **Ferocious Fiend** - Receive the TM21 Frustration by showing a wild and untamable Pokémon to a man in Pacifidlog Town | 3 | save state | yes | Local reading | TM21 Frustration is in your TM Case. |
@@ -967,12 +967,12 @@ logic is this mod's own.
 | 541901 | **Poké Mart's New Advertising Campaign** - Obtain a free Potion from the Poké Mart worker on Route 1 | 1 | save state | yes | Exact |  |
 | 541902 | **Teaching Through TV** - Obtain the Teachy TV after being taught how to catch Pokémon | 1 | save state | yes | Exact |  |
 | 34777 | **You Just Lucked Out!** - Win the optional battle against your rival on Route 22. | 5 | save state | yes | Exact |  |
-| 541904 | **Spawn Camping** - Defeat the trainer in Pewter City Gym | 1 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 541904 | **Spawn Camping** - Defeat the trainer in Pewter City Gym | 1 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 34785 | **A Stone Gray City** - Defeat Brock in Pewter City and earn the Boulder Badge. | 10 | save state | yes | Exact |  |
 | 541906 | **Prehistoric Pickup** - Pick either the Dome or Helix Fossil in Mt. Moon | 3 | save state | yes | Exact |  |
 | 541937 | **Over the Moon** - Defeat every trainer and find every item in Mt. Moon (Except hidden Mushrooms) | 10 | save state | yes | Local reading | Counted over these maps (gyms and rival battles aside): MtMoon. |
 | 34778 | **Always One Step Behind** - Defeat your rival in Cerulean City. | 5 | save state | yes | Exact |  |
-| 541907 | **Completely Washed Out** - Defeat every trainer in Cerulean City Gym | 3 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 541907 | **Completely Washed Out** - Defeat every trainer in Cerulean City Gym | 3 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 34786 | **A Mysterious Blue Aura** - Defeat Misty in Cerulean City and earn the Cascade Badge. | 10 | save state | yes | Exact |  |
 | 541908 | **Reverse Fusion** - Obtain the S.S. Anne Pass from Bill | 5 | save state | yes | Exact |  |
 | 541915 | **Cleaning Down the Boat** - Defeat every trainer and find every item on the S.S. Anne before it leaves | 10 | save state | yes | Local reading | Counted over these maps (gyms and rival battles aside): SSAnne. |
@@ -980,13 +980,13 @@ logic is this mod's own.
 | 541909 | **A Stick, Some String, and Some Glue to Hold It Together** - Obtain the Old Rod in Vermillion City | 1 | save state | yes | Exact |  |
 | 541910 | **Hearing the Old Man Out** - Obtain the Bike Voucher in Vermillion City | 1 | save state | yes | Exact |  |
 | 541913 | **Ridin' Around** - Obtain the Bicycle in Cerulean City | 1 | save state | yes | Exact |  |
-| 541916 | **Shock and Awe** - Defeat every trainer in Vermilion City Gym | 4 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 541916 | **Shock and Awe** - Defeat every trainer in Vermilion City Gym | 4 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 34787 | **The Port of Exquisite Sunsets** - Defeat Lt. Surge in Vermillion City and earn the Thunder Badge. | 10 | save state | yes | Exact |  |
 | 34780 | **I Took It Easy on You!** - Defeat your rival in Lavender Town. | 5 | save state | yes | Exact |  |
 | 541921 | **Choose Your Own Eeveelution** - Obtain the gift Eevee in Celadon City | 2 | save state | yes | Exact |  |
 | 541922 | **Let's Go Gambling!** - Obtain the Coin Case in Celadon City | 2 | save state | yes | Exact |  |
 | 541923 | **Searching for Handouts** - Obtain all of the hidden and gift coins in the Celadon City Game Corner | 5 | save state | yes | Exact |  |
-| 541924 | **Smelling the Roses** - Defeat every trainer in Celadon City Gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 541924 | **Smelling the Roses** - Defeat every trainer in Celadon City Gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 34788 | **The City of Rainbow Dreams** - Defeat Erika in Celadon City and earn the Rainbow Badge. | 10 | save state | yes | Exact |  |
 | 541926 | **Tea Time** - Gain access to Saffron City by giving the Guards tea | 2 | save state | yes | Exact |  |
 | 34783 | **What a Great Secret Entrance** - Stop Team Rocket in Celadon City. | 5 | save state | yes | Exact |  |
@@ -994,20 +994,20 @@ logic is this mod's own.
 | 541930 | **Returning to Normal** - Defeat every trainer and find every item in the Pokémon Tower | 5 | save state | yes | Local reading | Counted over these maps (gyms and rival battles aside): PokemonTower. |
 | 541931 | **Rise and Shine** - Obtain the Poké Flute in Lavender Town | 2 | save state | yes | Exact |  |
 | 541932 | **Sleeping on the Job** - Catch a Wild Snorlax | 5 | save state | yes | Exact |  |
-| 541944 | **Poisoned Minds, Agile Bodies** - Defeat every trainer in Fuchsia City Gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 541944 | **Poisoned Minds, Agile Bodies** - Defeat every trainer in Fuchsia City Gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 34789 | **Behold! It's Passion Pink!** - Defeat Koga in Fuchsia City and earn the Soul Badge. | 10 | save state | yes | Exact |  |
 | 34781 | **What Kept You?** - Defeat your rival in Saffron City. | 5 | save state | yes | Exact |  |
 | 541953 | **Silph Management** - Defeat every trainer and find every item in Silph Co. | 10 | save state | yes | Local reading | Counted over these maps (gyms and rival battles aside): SilphCo. |
 | 541959 | **Aquatic Beast** - Obtain the Gift Lapras in Silph Co. | 1 | save state | yes | Exact |  |
 | 34784 | **Use It Wisely...** - Stop Team Rocket in Saffron City. | 10 | save state | yes | Exact |  |
 | 541954 | **Dojo Beatdown** - Defeat every trainer in the Saffron City Dojo and obtain either Hitmonlee or Hitmonchan | 5 | save state | yes | Exact |  |
-| 541955 | **Foretelling Defeat** - Defeat every trainer in the Saffron City Gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 541955 | **Foretelling Defeat** - Defeat every trainer in the Saffron City Gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 34790 | **Shining Golden Land of Commerce** - Defeat Sabrina in Saffron City and earn the Marsh Badge. | 10 | save state | yes | Exact |  |
 | 541956 | **A Secret to Everybody** - Obtain the Secret Key | 5 | save state | yes | Exact |  |
-| 541957 | **Smartest Tool in the Shed** - Defeat every trainer in the Cinnabar Island Gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 541957 | **Smartest Tool in the Shed** - Defeat every trainer in the Cinnabar Island Gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 34791 | **The Fiery Town of Burning Desire** - Defeat Blaine on Cinnabar Island and earn the Volcano Badge. | 10 | save state | yes | Exact |  |
 | 34810 | **You're So Cool!** - Rescue Lostelle on Island 3. | 5 | save state | yes | Exact |  |
-| 541958 | **Straight from the Underground** - Defeat every trainer in the Viridian City Gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. |
+| 541958 | **Straight from the Underground** - Defeat every trainer in the Viridian City Gym | 5 | session | yes | Exact | Beat them before the Gym Leader: once the leader falls, the game marks the rest as beaten. After that, beating every one again in rematches also counts. |
 | 34792 | **The Eternally Green Paradise** - Defeat Giovanni in Viridian City and earn the Earth Badge. | 10 | save state | yes | Exact |  |
 | 34782 | **I Was Just Careless!** - Defeat your rival on your way to the Pokémon League. | 5 | save state | yes | Exact |  |
 | 34797 | **The Real Champion!** - Become the League Champion. | 25 | save state | yes | Exact |  |
