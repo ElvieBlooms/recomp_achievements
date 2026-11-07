@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-07T17:21:44Z",
+ "updated": "2026-11-07T17:21:49Z",
  "banned": [],
  "games": {
   "red": {
@@ -59,6 +59,18 @@
   },
   "crystal": {
    "entries": [
+    {
+     "name": "Theeohn",
+     "points": 92,
+     "earned": 21,
+     "saveId": "VVTY95",
+     "time": 1063,
+     "owner": "online:fc537e27847b0f952d00d94ae8f4dbab",
+     "via": "online",
+     "date": "2026-11-07T17:21:49Z",
+     "first": "2026-11-07T17:21:49Z",
+     "src": "online:fc537e27847b0f952d00d94ae8f4dbab"
+    },
     {
      "name": "THIAGO",
      "points": 20,
