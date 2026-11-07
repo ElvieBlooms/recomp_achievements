@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-07T01:51:34Z",
+ "updated": "2026-11-07T03:40:40Z",
  "banned": [],
  "games": {
   "red": {
@@ -20,6 +20,18 @@
    "maxPoints": 458,
    "total": 76,
    "entries": [
+    {
+     "name": "ELVIE",
+     "points": 4,
+     "earned": 4,
+     "saveId": "RF14J2",
+     "time": 34,
+     "owner": "online:f41888d43a2004a669ca64dd7a4b07db",
+     "via": "online",
+     "date": "2026-11-07T03:40:40Z",
+     "first": "2026-11-07T03:40:40Z",
+     "src": "online:f41888d43a2004a669ca64dd7a4b07db"
+    },
     {
      "name": "FALLON",
      "points": 2,
