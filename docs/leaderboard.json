@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-10-31T18:28:25Z",
+ "updated": "2026-11-07T01:48:36Z",
  "banned": [],
  "games": {
   "red": {
@@ -19,7 +19,19 @@
    "title": "Pokemon Yellow",
    "maxPoints": 458,
    "total": 76,
-   "entries": []
+   "entries": [
+    {
+     "name": "FALLON",
+     "points": 2,
+     "earned": 2,
+     "saveId": "B0DRGX",
+     "time": 17,
+     "owner": "discord:19f7e31d3cc343740b10454a66371bc1",
+     "via": "discord",
+     "date": "2026-11-07T01:48:36Z",
+     "first": "2026-11-07T01:48:36Z"
+    }
+   ]
   },
   "gold": {
    "entries": [],
