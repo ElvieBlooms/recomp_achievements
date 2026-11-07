@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-07T17:17:49Z",
+ "updated": "2026-11-07T17:21:44Z",
  "banned": [],
  "games": {
   "red": {
@@ -181,6 +181,39 @@
   },
   "crystal": {
    "entries": [
+    {
+     "name": "Theeohn",
+     "points": 233,
+     "earned": 33,
+     "sources": {
+      "bonus": {
+       "earned": 5,
+       "total": 17,
+       "points": 20
+      },
+      "emerald_lens": {
+       "earned": 4,
+       "total": 9,
+       "points": 23
+      },
+      "facets": {
+       "earned": 0,
+       "total": 10,
+       "points": 0
+      },
+      "play_nav": {
+       "earned": 24,
+       "total": 62,
+       "points": 190
+      }
+     },
+     "saveId": "VVTY95",
+     "owner": "online:fc537e27847b0f952d00d94ae8f4dbab",
+     "via": "online",
+     "date": "2026-11-07T17:21:44Z",
+     "first": "2026-11-07T17:21:44Z",
+     "src": "online:fc537e27847b0f952d00d94ae8f4dbab"
+    },
     {
      "name": "THIAGO",
      "points": 45,
