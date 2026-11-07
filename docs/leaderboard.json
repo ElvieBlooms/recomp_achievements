@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-07T16:55:33Z",
+ "updated": "2026-11-07T16:56:37Z",
  "banned": [],
  "games": {
   "red": {
@@ -65,7 +65,7 @@
      "earned": 6,
      "saveId": "WQZ72K",
      "time": 56,
-     "owner": "online:ba3e635dd7059c3b5e9e024e54945059",
+     "owner": "discord:e8a2cf49696d151350a5d7a92073697c",
      "via": "online",
      "date": "2026-11-07T16:55:25Z",
      "first": "2026-11-07T16:55:25Z",
@@ -203,7 +203,7 @@
       }
      },
      "saveId": "WQZ72K",
-     "owner": "online:ba3e635dd7059c3b5e9e024e54945059",
+     "owner": "discord:e8a2cf49696d151350a5d7a92073697c",
      "via": "online",
      "date": "2026-11-07T16:55:33Z",
      "first": "2026-11-07T16:55:33Z",
