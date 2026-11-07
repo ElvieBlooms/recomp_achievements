@@ -15,6 +15,12 @@ In the launcher, **MODS > Import mod .zip** (or **Find mods**), then enable
 it for the games you play. Gen1Recomp 0.3.97 or newer. Open the START menu
 and choose **TROPHIES** (**TROPHY** in Gen 1 and Gen 2).
 
+## Online scores
+
+Want your score on the leaderboard without copying it out? Install the
+**Recomp Achievements Online** add-on as well. It's a separate download so
+this mod stays offline unless you choose otherwise.
+
 ## More
 
 - `docs/PROVIDER_API.md`: how other mods add their own achievements.

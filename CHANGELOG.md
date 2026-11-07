@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.7.0
+
+Online scores, for people who want them. The mod itself stays offline.
+
+### New
+- **Recomp Achievements Online** (`recomp_achievements_online`), an add-on
+  in its own zip. With it installed, saving sends your leaderboard card
+  and Extra Credit page to the board if they changed. The card shows
+  ONLINE: SENT, or a code to send with `/link` so the save's scores belong
+  to your Discord account. Options: ONLINE SCORES, SEND EXTRA CREDIT.
+- `/link` on the Discord bot.
+- API 1.4.0: `extraCard()` and `addCardNote()`, which the add-on uses.
+  Mods that add achievements don't need to change anything.
+
+### Upgrading
+- Nothing to do if you don't want online scores.
+- For online scores, install both zips. A save you already sent by hand
+  under your Discord account needs `/link` before the add-on can update
+  that row.
+
 ## 2.6.4
 
 Gym rematches, from Trainer Rematch or any mod that fights the same trainers.

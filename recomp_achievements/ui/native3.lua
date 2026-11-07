@@ -405,7 +405,12 @@ function Native3.newScreen(o)
       print(l[2], LABEL_X + 52, y, C.NORMAL, { small = true })
     end
     -- the font has no _, so printU draws it as a line for the URL
-    printU(Browser.BOARD_URL, LABEL_X - 4, WIN_Y + WIN_H - 12, C.BLUE, PAL[8])
+    local notes = Share.noteLines(c)
+    if #notes > 0 then
+      print(table.concat(notes, " "):sub(1, 36), LABEL_X - 4, WIN_Y + WIN_H - 12, C.BLUE, { small = true })
+    else
+      printU(Browser.BOARD_URL, LABEL_X - 4, WIN_Y + WIN_H - 12, C.BLUE, PAL[8])
+    end
   end
 
   function self:draw()

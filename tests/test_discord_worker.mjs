@@ -13,7 +13,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import worker, { boardEmbed, checkCode, extraCheckCode, extraEmbed, normalizeCode, parseExtraLines, parseTime, precheck, precheckExtra, topEntries, topExtra } from "../discord/worker.js";
+import worker, { readAuto, validKey, boardEmbed, checkCode, extraCheckCode, extraEmbed, normalizeCode, parseExtraLines, parseTime, precheck, precheckExtra, topEntries, topExtra } from "../discord/worker.js";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 let passed = 0;
@@ -286,6 +286,133 @@ await test("the dispatched payload goes through the real ingest script", () => {
   assert.equal(entry.owner, "discord:" + dispatched.client_payload.owner);
   assert.ok(!("github" in entry));
   assert.match(fs.readFileSync(reply, "utf8"), /\/score/);
+});
+
+// ---------------------------------------------------------- online add-on
+function memoryKV() {
+  const m = new Map();
+  return { m,
+    get: async (k) => (m.has(k) ? m.get(k) : null),
+    put: async (k, v) => { m.set(k, v); },
+    delete: async (k) => { m.delete(k); } };
+}
+
+// The URL the add-on's client.lua builds, so both ends are tested together.
+function luaUrl(kind, card, key) {
+  const lua = `local C = dofile(${JSON.stringify(path.join(ROOT, "recomp_achievements_online", "client.lua"))})
+    local card = ${card}
+    io.write(C.${kind}Url("https://bot.example", ${JSON.stringify(key)}, card))`;
+  return execFileSync("luajit", ["-e", lua], { encoding: "utf8" });
+}
+
+function ingest(event) {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lb-"));
+  const file = path.join(dir, "event.json"), reply = path.join(dir, "reply.md");
+  fs.writeFileSync(file, JSON.stringify(event));
+  let rc = 0;
+  try {
+    execFileSync("python3", [path.join(ROOT, "tools", "leaderboard_ingest.py"), "--event", file,
+      "--board", onlineBoard, "--reply", reply, "--now", "2026-11-07T00:00:00Z"]);
+  } catch (e) { rc = e.status; }
+  return { rc, reply: fs.readFileSync(reply, "utf8"), board: JSON.parse(fs.readFileSync(onlineBoard, "utf8")) };
+}
+const onlineBoard = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "lb-")), "board.json");
+const KEY = "ABCDEFGHJKMNPQRSTVWXYZ01";
+let onlineCode, firstSend;
+
+await test("online: client.lua's URL checks, sends online-score and hands out a link code", async () => {
+  const url = luaUrl("score", `{ game = "red", name = "ASH", points = 120, earned = 20, saveId = "ABC123", code = ${JSON.stringify(CARD.code)} }`, KEY);
+  assert.match(url, /^https:\/\/bot\.example\/auto\?v=1&k=ABCDEFGHJKMNPQRSTVWXYZ01&kind=score&game=red&name=ASH/);
+  const env = { ...ENV, LINKS: memoryKV() };
+  const calls = stubFetch(() => new Response(null, { status: 204 }));
+  const r = await worker.fetch(new Request(url), env, ctx());
+  const body = await r.text();
+  assert.match(body, /^ok code [0-9A-Z]{4}-[0-9A-Z]{4}$/);
+  onlineCode = body.slice(8);
+  firstSend = JSON.parse(calls[0].init.body);
+  assert.equal(firstSend.event_type, "online-score");
+  assert.match(firstSend.client_payload.owner, /^online:[0-9a-f]{32}$/);
+  assert.ok(!calls[0].init.body.includes(KEY), "the key itself never reaches GitHub");
+  const again = await (await worker.fetch(new Request(url), env, ctx())).text();
+  assert.equal(again, body, "same code until it expires");
+  globalThis.onlineEnv = env;
+});
+
+await test("online: the send reaches the board, owned by the save", () => {
+  const got = ingest({ action: "online-score", client_payload: firstSend.client_payload });
+  assert.equal(got.rc, 0, got.reply);
+  const e = got.board.games.red.entries[0];
+  assert.equal(e.via, "online");
+  assert.equal(e.owner, firstSend.client_payload.owner);
+});
+
+await test("online: /link moves the save's rows to the Discord account", async () => {
+  const env = globalThis.onlineEnv;
+  const calls = stubFetch(() => new Response(null, { status: 204 }));
+  const c = ctx();
+  const link = (code, id) => signed({ type: 2, application_id: "999888777666555444",
+    token: "interaction-token-abcdefghijklmnop", user: { id },
+    data: { name: "link", options: [{ name: "code", value: code }] } });
+  const r = await worker.fetch(await link(onlineCode.toLowerCase().replace("-", " "), "42"), env, c);
+  assert.match((await r.json()).data.content, /^Linked/);
+  await Promise.all(c.jobs);
+  const d = JSON.parse(calls[0].init.body);
+  assert.equal(d.event_type, "online-link");
+  assert.equal(d.client_payload.from, firstSend.client_payload.owner);
+  assert.match(d.client_payload.to, /^discord:[0-9a-f]{32}$/);
+  const got = ingest({ action: "online-link", client_payload: d.client_payload });
+  assert.equal(got.rc, 0);
+  assert.match(got.reply, /1 score moved/);
+  assert.equal(got.board.games.red.entries[0].owner, d.client_payload.to);
+  // the code is used up
+  const again = await worker.fetch(await link(onlineCode, "43"), env, ctx());
+  assert.match((await again.json()).data.content, /expired/);
+  // later sends go as the Discord account
+  const calls2 = stubFetch(() => new Response(null, { status: 204 }));
+  const url = luaUrl("score", `{ game = "red", name = "ASH", points = 120, earned = 20, saveId = "ABC123", code = ${JSON.stringify(CARD.code)} }`, KEY);
+  assert.equal(await (await worker.fetch(new Request(url), env, ctx())).text(), "ok linked");
+  const p = JSON.parse(calls2[0].init.body).client_payload;
+  assert.equal(p.owner, d.client_payload.to);
+  assert.equal(p.alias, d.client_payload.from);
+});
+
+await test("online: a linked save takes over rows it sent before /link", () => {
+  const board = JSON.parse(fs.readFileSync(onlineBoard, "utf8"));
+  board.games.red.entries[0].owner = firstSend.client_payload.owner; // as if the relink never ran
+  fs.writeFileSync(onlineBoard, JSON.stringify(board));
+  const got = ingest({ action: "online-score", client_payload: {
+    ...firstSend.client_payload, owner: "discord:" + "ab".repeat(16), alias: firstSend.client_payload.owner } });
+  assert.equal(got.rc, 0, got.reply);
+  assert.equal(got.board.games.red.entries[0].owner, "discord:" + "ab".repeat(16));
+  const stranger = ingest({ action: "online-score", client_payload: { ...firstSend.client_payload, owner: "online:" + "cd".repeat(16) } });
+  assert.equal(stranger.rc, 1, "someone else's key can't take the row");
+});
+
+await test("online: Extra Credit from client.lua checks too", async () => {
+  const sources = [["bonus", 3, 9, 20], ["naviplay", 1, 4, 10]];
+  const code = extraCheckCode("emerald", "MAY", "6F4FB8", sources);
+  const url = luaUrl("extra", `{ game = "emerald", name = "MAY", saveId = "6F4FB8", code = ${JSON.stringify(code)},
+    sources = { { id = "bonus", earned = 3, total = 9, points = 20 }, { id = "naviplay", earned = 1, total = 4, points = 10 } } }`, KEY);
+  const calls = stubFetch(() => new Response(null, { status: 204 }));
+  assert.equal(await (await worker.fetch(new Request(url), { ...ENV }, ctx())).text(), "ok");
+  assert.equal(JSON.parse(calls[0].init.body).event_type, "online-extra");
+});
+
+await test("online: bad cards and old clients get a short error and send nothing", async () => {
+  const calls = stubFetch(() => new Response(null, { status: 204 }));
+  const base = `https://bot.example/auto?v=1&k=${KEY}&kind=score&game=red&name=ASH&points=121&earned=20&save_id=ABC123&code=${CARD.code}`;
+  assert.equal(await (await worker.fetch(new Request(base), ENV, ctx())).text(), "error card didn't check");
+  assert.equal(await (await worker.fetch(new Request(base.replace("v=1", "v=9")), ENV, ctx())).text(), "error update the mod");
+  assert.equal(await (await worker.fetch(new Request(base.replace(KEY, "short")), ENV, ctx())).text(), "error bad key");
+  assert.equal(calls.length, 0);
+  assert.ok(validKey(KEY) && !validKey(KEY.toLowerCase()));
+  assert.equal(readAuto(new URLSearchParams("v=1&k=" + KEY + "&kind=other")).problem, "update the mod");
+  const limited = { ...ENV, AUTO_LIMIT: { limit: async () => ({ success: false }) } };
+  const ok = base.replace("points=121", "points=120");
+  assert.equal(await (await worker.fetch(new Request(ok), limited, ctx())).text(), "error try again later");
+  const down = stubFetch(() => new Response(null, { status: 503 }));
+  assert.equal(await (await worker.fetch(new Request(ok), ENV, ctx())).text(), "error try again later");
+  assert.equal(down.length, 1);
 });
 
 console.log(`\n${passed} passed`);

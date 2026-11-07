@@ -1,8 +1,8 @@
 // discord/worker.js
 // The Recomp Achievements leaderboard bot, a Cloudflare Worker that answers
 // Discord slash commands sent to its interactions endpoint. The free tier is plenty.
-// It has no database and keeps nothing. A /score or /extra is checked for
-// typos, then handed to the GitHub Action as a repository_dispatch event.
+// A /score or /extra is checked for typos, then handed to the GitHub Action
+// as a repository_dispatch event.
 // The Action runs the same checks as an issue submission
 // (tools/leaderboard_ingest.py), updates the board and edits the bot's reply
 // in Discord with the result. The bot never writes to the board itself.
@@ -15,6 +15,20 @@
 //                           Extra Credit, extra:<mod> for one mod
 //   /extra game name save_id lines code
 //                           an Extra Credit score (bonus and mod achievements)
+//   /link code              ties a save sending from Recomp Achievements Online
+//                           to this Discord account
+//
+// It also answers GET /auto for the online add-on (recomp_achievements_online).
+// The add-on sends the same card fields as /score or /extra, plus k, a random
+// key kept in the save. mod.fetch only does GET, so the card is in the query
+// string, and the reply is plain text (see the add-on's client.lua).
+//
+// The only thing it keeps is in the LINKS KV namespace, for /link:
+//   code:<CODE>       -> key hash, the code shown on the card, gone after 7 days
+//   keycode:<hash>    -> CODE, so a save gets the same code until it expires
+//   link:<hash>       -> Discord owner hash, once /link has run
+// Without LINKS the add-on still sends, owned by the save, and /link says it
+// isn't set up. AUTO_LIMIT, a rate limiting binding, caps sends per save.
 //
 // Secrets (wrangler secret put ...):
 //   DISCORD_PUBLIC_KEY  from the Discord developer portal
@@ -23,6 +37,9 @@
 // Vars (wrangler.toml):
 //   GITHUB_REPO         e.g. ElvieBlooms/recomp_achievements
 //   BOARD_URL           the GitHub Pages address
+//
+// Online sends are owned by "online:<hash of the key>" until /link, then by
+// the same "discord:<hash>" as /score, so both ways update one row.
 //
 // The Discord user id is never sent to GitHub. The bot sends an HMAC of it
 // keyed with OWNER_SALT instead, so only the same Discord account can update
@@ -210,6 +227,21 @@ export function precheck(o) {
   return null;
 }
 
+async function sendDispatch(env, eventType, payload) {
+  const r = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/dispatches`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+      "User-Agent": "recomp-achievements-discord-bot",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ event_type: eventType, client_payload: payload }),
+  });
+  if (r.status !== 204) throw new Error("GitHub said " + r.status);
+}
+
 async function dispatch(env, interaction, o, kind = "score") {
   const user = interaction.user || (interaction.member && interaction.member.user) || {};
   const payload = {
@@ -230,18 +262,119 @@ async function dispatch(env, interaction, o, kind = "score") {
       time: o.time == null ? "" : String(o.time).trim(),
     };
   }
-  const r = await fetch(`https://api.github.com/repos/${env.GITHUB_REPO}/dispatches`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-      "User-Agent": "recomp-achievements-discord-bot",
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ event_type: kind === "extra" ? "discord-extra" : "discord-score", client_payload: payload }),
-  });
-  if (r.status !== 204) throw new Error("GitHub said " + r.status);
+  await sendDispatch(env, kind === "extra" ? "discord-extra" : "discord-score", payload);
+}
+
+// ---------------------------------------------------------- online add-on
+// Replies are short: the add-on shows them on the card, 18 characters a line.
+const LINK_TTL = 7 * 24 * 60 * 60;
+
+export function validKey(k) {
+  return /^[0-9A-Z]{24}$/.test(String(k || ""));
+}
+
+async function keyHash(salt, key) {
+  const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(salt),
+    { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = await crypto.subtle.sign("HMAC", k, new TextEncoder().encode("key:" + key));
+  return hex(mac).slice(0, 32);
+}
+
+export function newLinkCode() {
+  const bytes = crypto.getRandomValues(new Uint8Array(8));
+  let s = "";
+  for (const b of bytes) s += ALPHABET[b % 32];
+  return s.slice(0, 4) + "-" + s.slice(4);
+}
+
+// The card fields from the query string, or a short reason it can't be sent.
+export function readAuto(params) {
+  if (params.get("v") !== "1") return { problem: "update the mod" };
+  if (!validKey(params.get("k"))) return { problem: "bad key" };
+  const kind = params.get("kind");
+  const o = {};
+  if (kind === "score") {
+    for (const f of ["game", "name", "points", "earned", "save_id", "code", "time"]) o[f] = params.get(f) ?? "";
+    if (o.time === "") o.time = null;
+    if (precheck(o)) return { problem: "card didn't check" };
+  } else if (kind === "extra") {
+    for (const f of ["game", "name", "save_id", "lines", "code"]) o[f] = params.get(f) ?? "";
+    if (precheckExtra(o)) return { problem: "card didn't check" };
+  } else {
+    return { problem: "update the mod" };
+  }
+  return { kind, key: params.get("k"), o };
+}
+
+function text(body) {
+  return new Response(body, { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
+}
+
+async function handleAuto(url, env) {
+  if (!env.GITHUB_TOKEN || !env.GITHUB_REPO || !env.OWNER_SALT) return text("error server not set up");
+  const got = readAuto(url.searchParams);
+  if (got.problem) return text("error " + got.problem);
+  const hash = await keyHash(env.OWNER_SALT, got.key);
+  if (env.AUTO_LIMIT) {
+    const { success } = await env.AUTO_LIMIT.limit({ key: hash });
+    if (!success) return text("error try again later");
+  }
+  const linked = env.LINKS ? await env.LINKS.get("link:" + hash) : null;
+  const o = got.o;
+  // once linked, rows the save sent before /link still count as its own
+  const payload = linked ? { owner: "discord:" + linked, alias: "online:" + hash }
+                         : { owner: "online:" + hash };
+  if (got.kind === "extra") {
+    payload.extra = {
+      game: String(o.game).toLowerCase(), name: String(o.name).trim(),
+      save_id: normalizeSaveId(o.save_id), extra: String(o.lines), code: normalizeCode(o.code),
+    };
+  } else {
+    payload.score = {
+      game: String(o.game).toLowerCase(), name: String(o.name).trim(),
+      points: String(o.points), earned: String(o.earned),
+      save_id: normalizeSaveId(o.save_id), code: normalizeCode(o.code),
+      time: o.time == null ? "" : String(o.time).trim(),
+    };
+  }
+  try {
+    await sendDispatch(env, got.kind === "extra" ? "online-extra" : "online-score", payload);
+  } catch (e) {
+    return text("error try again later");
+  }
+  if (linked) return text("ok linked");
+  if (!env.LINKS) return text("ok");
+  let code = await env.LINKS.get("keycode:" + hash);
+  if (!code) {
+    code = newLinkCode();
+    await env.LINKS.put("code:" + code, hash, { expirationTtl: LINK_TTL });
+    await env.LINKS.put("keycode:" + hash, code, { expirationTtl: LINK_TTL });
+  }
+  return text("ok code " + code);
+}
+
+async function handleLink(env, interaction) {
+  if (!env.LINKS || !env.GITHUB_TOKEN || !env.GITHUB_REPO || !env.OWNER_SALT) {
+    return { reply: "Linking isn't set up yet. Please tell the maintainer." };
+  }
+  const code = normalizeCode(options(interaction).code || "");
+  const hash = /^[0-9A-Z]{4}-[0-9A-Z]{4}$/.test(code) ? await env.LINKS.get("code:" + code) : null;
+  if (!hash) {
+    return { reply: "That code doesn't exist or has expired. Save in game, then check the card " +
+      "(START > TROPHIES > SELECT) for a new one." };
+  }
+  const user = interaction.user || (interaction.member && interaction.member.user) || {};
+  const owner = await ownerHash(env.OWNER_SALT, user.id);
+  const already = await env.LINKS.get("link:" + hash);
+  if (already && already !== owner) return { reply: "That save is already linked to another Discord account." };
+  await env.LINKS.put("link:" + hash, owner);
+  await env.LINKS.delete("code:" + code);
+  await env.LINKS.delete("keycode:" + hash);
+  return {
+    reply: "Linked. Moving this save's scores to your account… this message will update in a minute or two.",
+    payload: { from: "online:" + hash, to: "discord:" + owner,
+               app_id: interaction.application_id, token: interaction.token },
+  };
 }
 
 // ---------------------------------------------------------- /check
@@ -369,6 +502,10 @@ async function editReply(interaction, content) {
 // ---------------------------------------------------------- entry point
 export default {
   async fetch(request, env, ctx) {
+    if (request.method === "GET") {
+      const url = new URL(request.url);
+      if (url.pathname === "/auto") return handleAuto(url, env);
+    }
     if (request.method !== "POST") return new Response("Recomp Achievements leaderboard bot", { status: 200 });
     const body = await request.text();
     if (!(await verify(request, body, env.DISCORD_PUBLIC_KEY))) {
@@ -407,6 +544,14 @@ export default {
         ctx.waitUntil(dispatch(env, interaction, o, "extra").catch(() =>
           editReply(interaction, "Couldn't reach the leaderboard right now. Please try again in a few minutes.")));
         return say("Checking your Extra Credit score… this message will update in a minute or two.");
+      }
+      if (name === "link") {
+        const got = await handleLink(env, interaction);
+        if (got.payload) {
+          ctx.waitUntil(sendDispatch(env, "online-link", got.payload).catch(() =>
+            editReply(interaction, "Linked, but couldn't move your scores yet. They'll move with your next save.")));
+        }
+        return say(got.reply);
       }
       if (name === "score") {
         const o = options(interaction);

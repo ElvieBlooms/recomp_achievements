@@ -200,4 +200,33 @@ function Share.extraCard(engine)
   return f
 end
 
+-- ------------------ card notes
+-- A short status another mod adds to the card, like an online add-on
+-- saying when it last sent the score. Each note is a list of up to three
+-- lines of 18 characters, which is what the classic card has room for.
+-- When there are notes they take the place of the "enter at" text.
+Share.notes = {}
+Share.noteOrder = {}
+
+function Share.addNote(id, fn)
+  if type(fn) ~= "function" then return false end
+  if not Share.notes[id] then Share.noteOrder[#Share.noteOrder + 1] = id end
+  Share.notes[id] = fn
+  return true
+end
+
+function Share.noteLines(card)
+  local out = {}
+  for _, id in ipairs(Share.noteOrder) do
+    local ok, lines = pcall(Share.notes[id], card)
+    if ok and type(lines) == "string" then lines = { lines } end
+    if ok and type(lines) == "table" then
+      for i = 1, math.min(#lines, 3) do
+        if type(lines[i]) == "string" and #out < 3 then out[#out + 1] = lines[i]:sub(1, 18) end
+      end
+    end
+  end
+  return out
+end
+
 return Share

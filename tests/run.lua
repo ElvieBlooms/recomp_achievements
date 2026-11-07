@@ -45,7 +45,7 @@ test("both mods load in dependency order with no errors", function()
   check(env.ok, "loader:load returned false: " .. table.concat(env.loader.errors, "; "))
   eq(env.loader.order[1], "recomp_achievements", "framework loads first")
   eq(env.loader.order[2], "achievement_sandbox", "provider loads second")
-  eq(ach(env).apiVersion, "1.3.0", "api version")
+  eq(ach(env).apiVersion, "1.4.0", "api version")
   check(ach(env).supports("progress"), "supports progress")
   check(not ach(env).supports("leaderboards"), "unknown capability is false")
 end)
@@ -543,6 +543,21 @@ test("leaderboard card: official points only, stable save id, shown on SELECT", 
   check(H.screenHas("RetroAchievements"), "credits on RIGHT again")
   env:press("left"); env:press("left"); env:draw()
   check(H.screenHas("LEADERBOARD CARD"), "back on LEFT")
+  -- a card note from another mod takes the "enter at" lines
+  check(H.screenHas("Enter at"), "enter-at text without notes")
+  eq(ach(env).addCardNote("online_thing", function(c)
+    return { "SENT " .. c.saveId, "LINK ABCD-1234", "THIRD", "FOURTH" }
+  end), true, "addCardNote")
+  env:draw()
+  check(H.screenHas("SENT " .. card.saveId), "note shown")
+  check(H.screenHas("THIRD") and not H.screenHas("FOURTH"), "three lines at most")
+  check(not H.screenHas("Enter at"), "note replaces the enter-at text")
+  check(ach(env).addCardNote("online_thing", "nope") == nil, "fn must be a function")
+  ach(env).addCardNote("online_thing", function() return nil end)
+  env:draw()
+  check(H.screenHas("Enter at"), "a note of nil shows the usual text")
+  local extra = ach(env).extraCard()
+  check(extra and extra.saveId == card.saveId and extra.code:match("^%w%w%w%w%-%w%w%w%w$"), "extraCard export")
 end)
 
 test("v2 check code (with play time) matches Python", function()
@@ -1559,6 +1574,114 @@ test("Gen 2 Game Corner rules see the engine's Gen2SlotMachine and Gen2CardFlip 
   tick("g2o_card_flip", { screenId = "Gen2CardFlip" }, 100, s)
   eq(tick("g2o_card_flip", { screenId = "Gen2CardFlip" }, 172, s), true, "x24 Card Flip")
   eq(tick("g2o_slots_777", { screenId = "Gen2CardFlip", matched = 0 }), nil, "other screens don't count")
+end)
+
+-- ------------------ Recomp Achievements Online
+local function loadClient()
+  return assert(loadfile(H.PROJECT .. "/recomp_achievements_online/client.lua"))()
+end
+
+test("online client: reply, note, when to send", function()
+  local C = loadClient()
+  local r = C.reply("ok code ABCD-1234\n")
+  check(r.ok and not r.linked and r.code == "ABCD-1234", "code reply")
+  r = C.reply("ok linked")
+  check(r.ok and r.linked and r.code == nil, "linked reply")
+  r = C.reply("error card didn't check")
+  check(not r.ok and r.message == "card didn't check", "error reply")
+  check(not C.reply("<html>").ok, "anything else is an error")
+  check(C.wants({ earned = 3, code = "A" }, nil), "new card")
+  check(not C.wants({ earned = 3, code = "A" }, "A"), "unchanged card")
+  check(not C.wants({ earned = 0, code = "B" }, nil), "empty card")
+  for _, st in ipairs({ {}, { sending = true }, { sent = true, code = "ABCD-1234" }, { sent = true, linked = true },
+                        { error = "try again later, please, really" }, { off = true } }) do
+    local lines = C.note(st)
+    check(#lines >= 1 and #lines <= 3, "note size")
+    for _, l in ipairs(lines) do check(#l <= 18, "18 characters: " .. l) end
+  end
+  local key = C.newKey(math.random)
+  check(C.validKey(key) and not C.validKey(key:lower()) and not C.validKey("ABC"), "key shape")
+  local url = C.scoreUrl("https://x.example/", key, { game = "red", name = "A B\226\153\130", points = 1,
+                                                      earned = 1, saveId = "ABC123", code = "AAAA-BBBB", time = 75 })
+  check(url:find("https://x.example/auto?v=1&k=" .. key, 1, true) == 1, "base and key")
+  check(url:find("name=A%20B%E2%99%82", 1, true) and url:find("time=1%3A15", 1, true), "encoded")
+end)
+
+test("online add-on sends the card on save and shows the link code", function()
+  local requests, replies = {}, {}
+  local fake = {
+    available = function() return true end,
+    get = function(url) requests[#requests + 1] = url; return #requests end,
+    isPending = function(id) return replies[id] == nil end,
+    poll = function(id)
+      local body = replies[id]
+      if body == nil then return { status = "pending" } end
+      return { status = "ok", body = body }
+    end,
+    release = function() end, cancel = function() end,
+  }
+  local saved = package.loaded["src.net.Fetch"]
+  package.loaded["src.net.Fetch"] = fake
+  local ok, err = pcall(function()
+    local env = H.boot({ "recomp_achievements", "recomp_achievements_online" })
+    check(env:mod("recomp_achievements_online") ~= nil, "add-on loaded after the main mod")
+    env:newGame()
+    env.game.save.inventory.BOULDERBADGE = 1
+    env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+    local card = ach(env).leaderboardCard()
+    for _, item in ipairs(env:startMenu()) do
+      if item.label == "TROPHIES" or item.label == "TROPHY" then item.onSelect() end
+    end
+    env:press("select"); env:draw()
+    check(H.screenHas("ONLINE: ON SAVE"), "status before a save")
+    env:press("b"); env:press("b")
+
+    local blob = env:writeBlob()
+    check(#requests >= 1, "sent on save")
+    check(requests[1]:find("kind=score", 1, true) and requests[1]:find("code=" .. card.code, 1, true), "score card")
+    local key = env.game.save.modData.recomp_achievements_online.key
+    check(type(key) == "string" and #key == 24, "key kept in the save")
+    check(blob:find(key, 1, true), "and in this write")
+    for i = 1, #requests do replies[i] = "ok code ABCD-1234" end
+    env:frame(); env:frame(); env:frame()
+    for i = 1, #requests do replies[i] = replies[i] or "ok code ABCD-1234" end
+    env:frame(); env:frame()
+    eq(env.game.save.modData.recomp_achievements_online.lastScore, card.code, "last sent code remembered")
+    for _, item in ipairs(env:startMenu()) do
+      if item.label == "TROPHIES" or item.label == "TROPHY" then item.onSelect() end
+    end
+    env:press("select"); env:draw()
+    check(H.screenHas("DISCORD: /link") and H.screenHas("ABCD%-1234"), "link code on the card")
+
+    local before = #requests
+    env:writeBlob()
+    eq(#requests, before, "an unchanged card isn't sent again")
+
+    -- Save Sync to another device: same key, nothing re-sent
+    local env2 = H.boot({ "recomp_achievements", "recomp_achievements_online" })
+    env2:loadBlob(blob)
+    eq(env2.game.save.modData.recomp_achievements_online.key, key, "key travels with the save")
+
+    -- turned off: nothing goes out
+    local off = H.boot({ "recomp_achievements", "recomp_achievements_online" })
+    off.loader.modOptions.recomp_achievements_online = { onlineScores = false }
+    off:newGame()
+    off.game.save.inventory.BOULDERBADGE = 1
+    off:setFlag("EVENT_BEAT_BROCK"); off:frame()
+    local n = #requests
+    off:writeBlob()
+    eq(#requests, n, "ONLINE SCORES off sends nothing")
+  end)
+  package.loaded["src.net.Fetch"] = saved
+  check(ok, tostring(err))
+end)
+
+test("main mod alone never touches the network", function()
+  local manifest = assert(io.open(H.PROJECT .. "/recomp_achievements/manifest.json")):read("*a")
+  check(not manifest:find('"network"', 1, true), "no network permission")
+  local src = io.popen("grep -rl 'mod.fetch\\|postLog\\|socket' '" .. H.PROJECT .. "/recomp_achievements' --include=*.lua")
+  local hits = src:read("*a"); src:close()
+  eq(hits, "", "no network calls in the main mod")
 end)
 
 print(("\n%d passed, %d failed"):format(passed, failed))

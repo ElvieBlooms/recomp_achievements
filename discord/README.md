@@ -37,8 +37,14 @@ Discord ──/score──▶ Cloudflare Worker (worker.js)
                                         bot's message with the result
 ```
 
-There's no server to keep running and no database. The Worker is a single
-file on Cloudflare's free plan. The bot never needs its bot token after
+Recomp Achievements Online sends the same cards to the Worker's
+`GET /auto`, which dispatches `online-score` or `online-extra` to the same
+Action. `/link CODE` ties a save's key to a Discord account
+(`online-link` moves its rows over).
+
+There's no server to keep running. The Worker is a single file on
+Cloudflare's free plan, and the only thing it stores is the /link codes and
+links, in a KV namespace. The bot never needs its bot token after
 setup, and the Action needs no Discord secrets at all: it replies using the
 one-time token that comes with each command, which lasts 15 minutes.
 
@@ -83,7 +89,7 @@ computer.
    ```
    DISCORD_APP_ID=<application id> DISCORD_BOT_TOKEN=<bot token> python3 tools/discord_register.py
    ```
-   It prints `registered: /score, /leaderboard, /check, /extra`. Commands can take a few
+   It prints `registered: /score, /leaderboard, /check, /extra, /link`. Commands can take a few
    minutes to appear in Discord.
 6. **Let people use it.** On *Installation*, tick **User Install** and
    **Guild Install**, with the `applications.commands` scope (add `bot`
@@ -92,6 +98,24 @@ computer.
    You can also add it to your mod's Discord server.
 
 `time` is optional so cards from mod 1.1.0 (no TIME line) still work.
+
+### For Recomp Achievements Online
+
+7. **Make the KV namespace** for /link, in `discord/`:
+   ```
+   npx wrangler kv namespace create LINKS
+   ```
+   Uncomment the `[[kv_namespaces]]` block in `wrangler.toml` and paste the
+   id it printed. Uncomment `[[ratelimits]]` too: it caps each save at 10
+   sends a minute. Then `npx wrangler deploy` and run
+   `tools/discord_register.py` again for `/link`.
+8. **Point the add-on at the Worker.** Set `SERVER` at the top of
+   `recomp_achievements_online/main.lua` to the Worker address from step 3.
+   `tools/build_release.sh` won't build the add-on until it's set.
+
+Without the KV namespace the add-on still sends, but codes and `/link`
+don't work. Without the rate limit, sends aren't capped (the add-on itself
+waits two minutes between sends and only sends changed cards).
 
 ## Keeping it running
 
@@ -103,6 +127,9 @@ computer.
   option, and `npx wrangler deploy` once for the new worker.js.)
 - **Turning it off:** clear the Interactions Endpoint URL, or delete the
   Worker with `npx wrangler delete`. Issue submissions keep working.
+- **Online sends failing:** the card says ONLINE: NOT SENT and a short
+  reason. "try again later" is GitHub refusing the dispatch (often the
+  token) or the rate limit.
 - **Logs:** `npx wrangler tail` shows live requests. The GitHub side shows
   up under the repo's *Actions* tab like issue submissions.
 

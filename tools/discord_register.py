@@ -70,6 +70,10 @@ COMMANDS = [
              {"type": 3, "name": "code", "description": "CODE on the page (XXXX-XXXX)",
               "required": True, "min_length": 8, "max_length": 9},
          ]),
+    dict(WHERE, name="link", type=1,
+         description="Link a save sending from Recomp Achievements Online to your Discord account",
+         options=[{"type": 3, "name": "code", "required": True, "max_length": 12,
+                   "description": "The code under DISCORD: /link on the card (XXXX-XXXX)"}]),
 ]
 
 

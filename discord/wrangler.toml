@@ -9,3 +9,17 @@ BOARD_URL = "https://elvieblooms.github.io/recomp_achievements/"
 
 # Secrets, set with `npx wrangler secret put NAME` (never put them here):
 #   DISCORD_PUBLIC_KEY, GITHUB_TOKEN, OWNER_SALT
+
+# For Recomp Achievements Online (see discord/README.md):
+# /link keeps its codes here. Create it with
+#   npx wrangler kv namespace create LINKS
+# and put the id it prints below.
+# [[kv_namespaces]]
+# binding = "LINKS"
+# id = "..."
+#
+# Caps sends per save. The namespace_id is any number you choose.
+# [[ratelimits]]
+# name = "AUTO_LIMIT"
+# namespace_id = "1001"
+# simple = { limit = 10, period = 60 }

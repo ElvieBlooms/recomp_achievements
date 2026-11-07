@@ -754,8 +754,11 @@ function Modern.newScreen(deps)
         end
         y = y + 2.5 * u
         local stop = my + mh - ip - fTiny:getHeight() * 2 - 3 * u
-        for _, line in ipairs(wrap(fTiny, "Only achievements from the RetroAchievements list count. Enter these at " ..
-            (deps.boardUrl or "") .. " or with /score on Discord.", iw)) do
+        local notes = Share.noteLines(card)
+        local hint = #notes > 0 and table.concat(notes, " ")
+          or ("Only achievements from the RetroAchievements list count. Enter these at " ..
+              (deps.boardUrl or "") .. " or with /score on Discord.")
+        for _, line in ipairs(wrap(fTiny, hint, iw)) do
           if y + fTiny:getHeight() > stop then break end
           text(fTiny, line, x, y, C.muted); y = y + fTiny:getHeight()
         end

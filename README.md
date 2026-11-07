@@ -123,7 +123,8 @@ Options are in the Mods manager:
 
 There's an optional, community-run leaderboard at
 **https://elvieblooms.github.io/recomp_achievements**. The mod never goes
-online; you copy a short card into a form yourself:
+online; you copy a short card into a form yourself, or install
+**Recomp Achievements Online** (below) to send it when you save:
 
 1. In the game, open **START > TROPHIES** and press **SELECT**.
 2. On the website, press **Submit a score**. It opens a GitHub issue form
@@ -148,6 +149,20 @@ the board is an honor system. Trainer names are filtered for offensive
 words, and every row has a Report link. It has nothing to do with
 RetroAchievements or its leaderboards, and scores here mean nothing on
 retroachievements.org.
+
+### Recomp Achievements Online
+
+An optional add-on, `recomp_achievements_online`, that sends the card and
+the Extra Credit page when you save, if they changed. It's a separate mod
+with the `network` permission, so the main mod stays offline and players
+choose. Mods that add achievements don't need to do anything for it: they
+still talk to `recomp_achievements`, and their achievements count on Extra
+Credit the same way.
+
+A save's scores belong to the save until it's linked: the card shows a
+code, and `/link CODE` with the Discord bot ties the save to that account.
+What it sends and the options are in
+[recomp_achievements_online/README.md](recomp_achievements_online/README.md).
 
 ### Extra Credit
 
@@ -199,6 +214,9 @@ recomp_achievements/   the mod (this folder is what ships)
   data/gen3_rs.lua       Ruby/Sapphire flags, trainers, items, moves, decorations (generated)
   catalog/               RA metadata (generated)
   ui/                    menu (modern + classic), popups, unlock sound, text helpers
+recomp_achievements_online/
+                       the optional online add-on (its own zip): main.lua
+                       wires it, client.lua builds requests and reads replies
 achievement_sandbox/   example provider mod (not part of the release)
 docs/                  PROVIDER_API.md, COVERAGE.md (generated), and the
                        leaderboard website (index.html, leaderboard.json)

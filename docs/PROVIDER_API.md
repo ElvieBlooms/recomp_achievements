@@ -1,4 +1,4 @@
-# Recomp Achievements — Provider API (v1.3.0)
+# Recomp Achievements — Provider API (v1.4.0)
 
 How another Gen1Recomp mod adds its own achievements, reports progress,
 and listens for unlocks. `achievement_sandbox/main.lua` is a complete,
@@ -133,6 +133,20 @@ maxPoints, saveId, code }`, or nil before a save is loaded.
 Since 1.2.0, `officialTotals()` also has `reachedAt`: the play time in
 seconds of the latest RA-list unlock (nil with none), and the card has
 `time`: the same in whole minutes.
+
+Since 1.4.0:
+
+- `ach.extraCard()` returns the Extra Credit page: `{ game, name, saveId,
+  points, earned, total, code, sources = { { id, label, earned, total,
+  points }, ... } }`, or nil before a save is loaded.
+- `ach.addCardNote(mod, fn)` puts up to three lines (18 characters each)
+  at the bottom of the leaderboard card, in place of the "enter at" text.
+  `fn(card)` is called when the card draws and returns a string, a list
+  of strings, or nil for nothing. Calling it again replaces your note.
+  Recomp Achievements Online uses this for its status and link code.
+
+Nothing changes for a mod that adds achievements when the player also has
+Recomp Achievements Online: it only reads the cards above.
 
 ## 6. What happens to your records
 

@@ -61,10 +61,16 @@ function Browser.cardLines(card, url)
     -- play time when the score was reached, H:MM like the trainer card
     lines[#lines + 1] = ("TIME    %d:%02d"):format(math.floor(card.time / 60), card.time % 60)
   end
-  for _, line in ipairs({ "SAVE ID " .. card.saveId, "CHECK   " .. card.code, "",
-                          "RA-list points", "only. Enter at:" }) do
+  for _, line in ipairs({ "SAVE ID " .. card.saveId, "CHECK   " .. card.code, "" }) do
     lines[#lines + 1] = line
   end
+  local notes = Browser.Share and Browser.Share.noteLines(card) or {}
+  if #notes > 0 then
+    for _, line in ipairs(notes) do lines[#lines + 1] = line end
+    return lines
+  end
+  lines[#lines + 1] = "RA-list points"
+  lines[#lines + 1] = "only. Enter at:"
   url = url or Browser.BOARD_URL
   for i = 1, #url, 18 do lines[#lines + 1] = url:sub(i, i + 17) end
   return lines
@@ -477,6 +483,7 @@ end
 -- (ui/modern.lua) is the default; CLASSIC MENU brings back the game's
 -- own look.
 function Browser.install(mod, engine, util, Text, Share, Modern, Native3)
+  Browser.Share = Share
   mod.content.screens:register(Browser.SCREEN_ID, {
     new = function(game)
       -- CLASSIC MENU: Gen 1 and 2 use their tile font and text-box frame

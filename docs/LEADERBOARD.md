@@ -65,6 +65,10 @@ on Discord" button.
   it. The mod keeps the save ID in the save from the first time the card is
   opened, so a save synced to another device keeps its ID and its row.
   Before 2.6.3 a synced save could show a different ID on each device.
+- Rows sent by Recomp Achievements Online are owned by the save
+  (`online:<hash>`) until `/link`, then by the Discord account, the same
+  owner `/score` uses. A linked save can still update rows it sent before
+  linking.
 
 Extra Credit submissions (`extra.yml`, or `/extra` on Discord) go through
 the same Action. It checks the game, name and save ID the same way, then

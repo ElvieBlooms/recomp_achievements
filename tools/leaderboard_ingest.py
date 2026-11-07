@@ -407,8 +407,9 @@ def upsert_extra(board, entry, sub, now):
     entries = board["extra"][entry["game"]]["entries"]
     for e in entries:
         if e["saveId"] == entry["saveId"]:
-            if owner_of(e) != sub.owner:
+            if owner_of(e) not in (sub.owner, sub.alias):
                 raise Rejected("That save ID is already on the board for another account.")
+            e["owner"] = sub.owner
             e.update(name=entry["name"], points=entry["points"], earned=entry["earned"],
                      sources=entry["sources"], date=now, via=sub.source)
             if sub.issue:
@@ -426,7 +427,8 @@ def upsert_extra(board, entry, sub, now):
 
 
 def owner_of(e):
-    """Return who may update an entry: "gh:<login>" or "discord:<hash>".
+    """Return who may update an entry: "gh:<login>", "discord:<hash>" or
+    "online:<hash>" (a save sending from the online add-on, not linked yet).
 
     Old entries without an owner fall back to their GitHub login."""
     if e.get("owner"):
@@ -441,8 +443,9 @@ def upsert(board, entry, sub, now):
     entries = board["games"][entry["game"]]["entries"]
     for e in entries:
         if e["saveId"] == entry["saveId"]:
-            if owner_of(e) != sub.owner:
+            if owner_of(e) not in (sub.owner, sub.alias):
                 raise Rejected("That save ID is already on the board for another account.")
+            e["owner"] = sub.owner
             e.update(name=entry["name"], points=entry["points"],
                      earned=entry["earned"], date=now, via=sub.source, time=entry["time"])
             if sub.issue:
@@ -460,12 +463,32 @@ def upsert(board, entry, sub, now):
 
 
 # ------------------------------------------------------------- submission
+ONLINE_OWNER = re.compile(r"(online|discord):[0-9a-f]{16,64}")
+
+
+def relink(board, frm, to):
+    """Give every row owned by frm (a save's online key) to to (a Discord
+    account). Returns how many moved."""
+    moved = 0
+    slots = [board.get("games", {}).get(g, {}) for g in GAMES]
+    slots += [board.get("extra", {}).get(g, {}) for g in GAMES]
+    for slot in slots:
+        for e in slot.get("entries", []):
+            if owner_of(e) == frm:
+                e["owner"] = to
+                moved += 1
+    return moved
+
+
 class Submission:
     """One score to check: its fields, where it came from and who sent it."""
 
-    def __init__(self, source, fields, owner, login=None, issue=None, kind="score"):
+    def __init__(self, source, fields, owner, login=None, issue=None, kind="score", alias=None):
         self.source, self.fields, self.owner = source, fields, owner
         self.login, self.issue, self.kind = login, issue, kind
+        # another owner whose rows this sender may take over: the save's own
+        # "online:" owner once it's linked to Discord
+        self.alias = alias
 
 
 def read_submission(event_path=None):
@@ -474,6 +497,24 @@ def read_submission(event_path=None):
         with open(event_path, encoding="utf-8") as f:
             event = json.load(f)
     payload = event.get("client_payload")
+    action = str(event.get("action") or "")
+    if "issue" not in event and isinstance(payload, dict) and action.startswith("online-"):
+        # From Recomp Achievements Online, through the worker's GET /auto, or
+        # a /link moving a save's rows to a Discord account.
+        if action == "online-link":
+            frm, to = str(payload.get("from", "")), str(payload.get("to", ""))
+            if not (ONLINE_OWNER.fullmatch(frm) and frm.startswith("online:")
+                    and ONLINE_OWNER.fullmatch(to) and to.startswith("discord:")):
+                raise Rejected("The link request was missing who it was for.")
+            return Submission("discord", {}, to, kind="link", alias=frm)
+        kind = "extra" if isinstance(payload.get("extra"), dict) else "score"
+        data = payload.get(kind) if isinstance(payload.get(kind), dict) else {}
+        fields = {k: str(data.get(k, "")) for k in (EXTRA_FIELDS if kind == "extra" else FIELDS)}
+        owner, alias = str(payload.get("owner", "")), payload.get("alias")
+        if not ONLINE_OWNER.fullmatch(owner):
+            raise Rejected("The online add-on sent no sender id.")
+        alias = str(alias) if alias is not None and ONLINE_OWNER.fullmatch(str(alias)) else None
+        return Submission("online", fields, owner, kind=kind, alias=alias)
     if "issue" not in event and isinstance(payload, dict):
         # A repository_dispatch from the Discord bot. The bot has already swapped
         # the Discord user id for a keyed hash, so the raw id never reaches GitHub.
@@ -509,6 +550,18 @@ def main(argv=None):
 
     try:
         sub = read_submission(args.event)
+        if sub.kind == "link":
+            board = load_board(args.board)
+            moved = relink(board, sub.alias, sub.owner)
+            board["updated"] = now
+            with open(args.board, "w", encoding="utf-8") as f:
+                json.dump(board, f, indent=1, ensure_ascii=False)
+                f.write("\n")
+            with open(args.reply, "w", encoding="utf-8") as f:
+                f.write(f"Linked. {moved} score{'' if moved == 1 else 's'} moved to your Discord account. "
+                        "From now on this save's scores are yours to update with `/score` too.\n")
+            print(f"linked: {moved} moved")
+            return 0
         if sub.kind == "extra":
             entry = validate_extra(sub.fields)
             board = load_board(args.board)

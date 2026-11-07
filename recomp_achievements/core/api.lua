@@ -22,11 +22,12 @@
 
 local Api = {}
 
-Api.VERSION = "1.3.0"
+Api.VERSION = "1.4.0"
 Api.CAPABILITIES = {
   register = true, register_many = true, unlock = true,
   progress = true, query = true, events = true, games_filter = true,
   hidden = true, official_totals = true, leaderboard_card = true, provider_tabs = true,
+  extra_card = true, card_notes = true,
 }
 
 -- Writes per provider per second before calls return "rate_limited".
@@ -231,6 +232,30 @@ function Api.install(mod, engine, util, Share)
     if not Share then return nil end
     local card = Share.card(engine)
     return card and util.plain(card) or nil
+  end)
+
+  -- The Extra Credit page (since 1.4.0):
+  -- { game, name, saveId, points, earned, total, code,
+  --   sources = { { id, label, earned, total, points }, ... } }.
+  -- nil before a save is loaded.
+  exports.extraCard = method(exports, function()
+    if not Share then return nil end
+    local card = Share.extraCard(engine)
+    return card and util.plain(card) or nil
+  end)
+
+  -- A note on the leaderboard card (since 1.4.0). fn(card) returns a string
+  -- or up to three strings of 18 characters; nil shows nothing. Notes
+  -- replace the "enter at" text, so use it for something the player needs
+  -- instead, like an online add-on's status. Calling again replaces yours.
+  exports.addCardNote = method(exports, function(providerId, fn)
+    if type(providerId) == "table" and providerId.id then providerId = providerId.id end
+    if not util.validId(providerId) then
+      return fail("invalid_provider", "provider id must look like a mod id")
+    end
+    if not Share then return fail("unavailable") end
+    if not Share.addNote(providerId, fn) then return fail("invalid_note", "fn must be a function") end
+    return true
   end)
 
   -- The active save's game, or nil before a save is loaded.

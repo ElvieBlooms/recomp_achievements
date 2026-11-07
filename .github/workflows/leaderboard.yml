@@ -4,6 +4,8 @@
 #     Extra Credit score" form
 #   * the Discord bot (discord/worker.js), as a repository_dispatch event
 #     (/score -> discord-score, /extra -> discord-extra)
+#   * Recomp Achievements Online, through the same worker (online-score,
+#     online-extra), and /link moving a save's rows (online-link)
 # Nothing here contacts RetroAchievements.
 name: Leaderboard
 
@@ -11,7 +13,7 @@ on:
   issues:
     types: [opened, edited, reopened]
   repository_dispatch:
-    types: [discord-score, discord-extra]
+    types: [discord-score, discord-extra, online-score, online-extra, online-link]
 
 permissions:
   contents: write
@@ -57,7 +59,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/leaderboard.json
           if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Leaderboard: ${{ github.event_name == 'repository_dispatch' && 'Discord submission' || format('issue #{0}', github.event.issue.number) }}"
+          git commit -m "Leaderboard: ${{ github.event_name == 'repository_dispatch' && github.event.action || format('issue #{0}', github.event.issue.number) }}"
           for attempt in 1 2 3; do
             git push && exit 0
             git pull --rebase
@@ -79,9 +81,11 @@ jobs:
             gh issue close "$ISSUE_NUMBER" --repo "$GITHUB_REPOSITORY" --reason completed
           fi
 
+      # Online sends have no Discord message to answer.
       - name: Reply in Discord
         if: >-
           always() && github.event_name == 'repository_dispatch' &&
+          github.event.client_payload.token &&
           steps.ingest.outcome == 'success'
         run: |
           if [ "${{ steps.ingest.outputs.ok }}" = "true" ] && [ "${{ steps.save.outcome }}" != "success" ]; then
