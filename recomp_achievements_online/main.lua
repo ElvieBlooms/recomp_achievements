@@ -13,7 +13,7 @@
 -- ------------------
 
 -- The Cloudflare Worker that runs the Discord bot.
-local SERVER = "https://recomp-achievements-bot.REPLACE_ME.workers.dev"
+local SERVER = "https://recomp-achievements-bot.recomp-achievements-bot.workers.dev"
 
 return function(mod)
   local source = assert(mod:read("client.lua"), "recomp_achievements_online: missing client.lua")
