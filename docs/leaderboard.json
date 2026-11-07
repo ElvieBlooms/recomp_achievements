@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-07T17:30:11Z",
+ "updated": "2026-11-07T17:30:47Z",
  "banned": [],
  "games": {
   "red": {
@@ -65,7 +65,7 @@
      "earned": 21,
      "saveId": "VVTY95",
      "time": 1063,
-     "owner": "online:fc537e27847b0f952d00d94ae8f4dbab",
+     "owner": "discord:aaef198558cdb1d70d12ac988593e6fd",
      "via": "online",
      "date": "2026-11-07T17:30:11Z",
      "first": "2026-11-07T17:21:49Z",
@@ -220,7 +220,7 @@
       }
      },
      "saveId": "VVTY95",
-     "owner": "online:fc537e27847b0f952d00d94ae8f4dbab",
+     "owner": "discord:aaef198558cdb1d70d12ac988593e6fd",
      "via": "online",
      "date": "2026-11-07T17:21:44Z",
      "first": "2026-11-07T17:21:44Z",
