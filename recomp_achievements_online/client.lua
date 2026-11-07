@@ -4,10 +4,14 @@
 -- tests/run.lua can check them without a network.
 --
 -- The worker (discord/worker.js) answers GET /auto with plain text:
---   ok linked                 sent, and this save is linked to Discord
---   ok code ABCD-1234         sent, not linked yet; /link ABCD-1234 links it
---   ok                        sent, not linked, no code (links not set up)
+--   ok                        sent, not linked to Discord
+--   ok linked                 sent, and linked
+--   ok ... code ABCD-1234     with link=1 (SHOW LINK CODE on): the code for
+--                             /link, good for an hour
 --   error <message>           not sent, and why
+-- "Sent" means the worker passed it to the board's GitHub Action, which
+-- checks it again. The worker already turns away a save ID that belongs to
+-- someone else, which is the usual reason the Action would.
 -- mod.fetch only does GET, so the card goes in the query string.
 -- ------------------
 
@@ -37,7 +41,8 @@ local function encode(s)
   end))
 end
 
-local function query(base, fields)
+local function query(base, fields, link)
+  if link then fields[#fields + 1] = { "link", 1 } end
   local parts = {}
   for _, kv in ipairs(fields) do
     if kv[2] ~= nil then parts[#parts + 1] = kv[1] .. "=" .. encode(kv[2]) end
@@ -51,17 +56,17 @@ local function clock(minutes)
 end
 
 -- The score card from exports.leaderboardCard().
-function Client.scoreUrl(base, key, card)
+function Client.scoreUrl(base, key, card, link)
   return query(base, {
     { "v", 1 }, { "k", key }, { "kind", "score" }, { "game", card.game }, { "name", card.name },
     { "points", card.points }, { "earned", card.earned }, { "save_id", card.saveId },
     { "code", card.code }, { "time", clock(card.time) },
-  })
+  }, link)
 end
 
 -- The Extra Credit page from exports.extraCard(). Lines are joined with ";",
 -- which the worker splits the same as /extra.
-function Client.extraUrl(base, key, card)
+function Client.extraUrl(base, key, card, link)
   local lines = {}
   for _, s in ipairs(card.sources or {}) do
     lines[#lines + 1] = ("%s %d/%d %d"):format(s.id, s.earned, s.total, s.points)
@@ -69,7 +74,7 @@ function Client.extraUrl(base, key, card)
   return query(base, {
     { "v", 1 }, { "k", key }, { "kind", "extra" }, { "game", card.game }, { "name", card.name },
     { "save_id", card.saveId }, { "lines", table.concat(lines, ";") }, { "code", card.code },
-  })
+  }, link)
 end
 
 -- Only cards with something on them, and only when they changed since the
@@ -84,14 +89,16 @@ function Client.reply(body)
   local first = text:match("^[^\n]*")
   if first:match("^ok") then
     local out = { ok = true, linked = first:match("^ok linked") ~= nil }
-    out.code = first:match("^ok code ([0-9A-Z]+%-[0-9A-Z]+)$")
+    out.code = first:match(" code ([0-9A-Z]+%-[0-9A-Z]+)$")
     return out
   end
   local msg = first:match("^error%s+(.+)$")
   return { ok = false, message = msg or "the server didn't answer as expected" }
 end
 
--- Up to three lines of 18 characters for the leaderboard card.
+-- Up to three lines of 18 characters for the leaderboard card. The link
+-- code only shows with SHOW LINK CODE on: whoever uses it gets the save, and
+-- people share screenshots of this card.
 function Client.note(state)
   if state.off then return { "ONLINE SCORES OFF" } end
   local lines = {}
@@ -99,13 +106,15 @@ function Client.note(state)
   elseif state.error then lines[1] = "ONLINE: NOT SENT"
   elseif state.sent then lines[1] = "ONLINE: SENT"
   else lines[1] = "ONLINE: ON SAVE" end
-  if state.linked then
-    lines[2] = "LINKED TO DISCORD"
-  elseif state.code then
+  if state.error then
+    lines[2] = state.error:upper():sub(1, 18)
+  elseif state.showCode and state.code then
     lines[2] = "DISCORD: /link"
     lines[3] = state.code
-  elseif state.error then
-    lines[2] = state.error:upper():sub(1, 18)
+  elseif state.showCode then
+    lines[2] = "SAVE FOR A CODE"
+  elseif state.linked then
+    lines[2] = "LINKED TO DISCORD"
   end
   return lines
 end

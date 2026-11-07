@@ -159,8 +159,9 @@ choose. Mods that add achievements don't need to do anything for it: they
 still talk to `recomp_achievements`, and their achievements count on Extra
 Credit the same way.
 
-A save's scores belong to the save until it's linked: the card shows a
-code, and `/link CODE` with the Discord bot ties the save to that account.
+A save's scores belong to the save until it's linked: with SHOW LINK CODE
+on, the card shows a code, and `/link CODE` with the Discord bot ties the
+save to that account.
 What it sends and the options are in
 [recomp_achievements_online/README.md](recomp_achievements_online/README.md).
 

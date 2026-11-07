@@ -1587,6 +1587,11 @@ test("online client: reply, note, when to send", function()
   check(r.ok and not r.linked and r.code == "ABCD-1234", "code reply")
   r = C.reply("ok linked")
   check(r.ok and r.linked and r.code == nil, "linked reply")
+  r = C.reply("ok linked code WXYZ-0123")
+  check(r.ok and r.linked and r.code == "WXYZ-0123", "linked, with a new code")
+  local plain = table.concat(C.note({ sent = true, code = "ABCD-1234" }), " ")
+  check(not plain:find("ABCD"), "no code on the card without SHOW LINK CODE")
+  check(table.concat(C.note({ sent = true, code = "ABCD-1234", showCode = true }), " "):find("ABCD%-1234"), "code with it")
   r = C.reply("error card didn't check")
   check(not r.ok and r.message == "card didn't check", "error reply")
   check(not C.reply("<html>").ok, "anything else is an error")
@@ -1642,20 +1647,49 @@ test("online add-on sends the card on save and shows the link code", function()
     local key = env.game.save.modData.recomp_achievements_online.key
     check(type(key) == "string" and #key == 24, "key kept in the save")
     check(blob:find(key, 1, true), "and in this write")
-    for i = 1, #requests do replies[i] = "ok code ABCD-1234" end
-    env:frame(); env:frame(); env:frame()
-    for i = 1, #requests do replies[i] = replies[i] or "ok code ABCD-1234" end
-    env:frame(); env:frame()
-    eq(env.game.save.modData.recomp_achievements_online.lastScore, card.code, "last sent code remembered")
-    for _, item in ipairs(env:startMenu()) do
-      if item.label == "TROPHIES" or item.label == "TROPHY" then item.onSelect() end
+    check(not requests[1]:find("link=1", 1, true), "no code asked for by default")
+    for _ = 1, 4 do
+      for i = 1, #requests do replies[i] = replies[i] or "ok" end
+      env:frame()
     end
-    env:press("select"); env:draw()
-    check(H.screenHas("DISCORD: /link") and H.screenHas("ABCD%-1234"), "link code on the card")
+    eq(env.game.save.modData.recomp_achievements_online.lastScore, card.code, "last sent code remembered")
+    local function openCard()
+      for _, item in ipairs(env:startMenu()) do
+        if item.label == "TROPHIES" or item.label == "TROPHY" then item.onSelect() end
+      end
+      env:press("select"); env:draw()
+    end
+    openCard()
+    check(H.screenHas("ONLINE: SENT"), "sent")
+    env:press("b"); env:press("b")
 
     local before = #requests
     env:writeBlob()
     eq(#requests, before, "an unchanged card isn't sent again")
+
+    -- SHOW LINK CODE: the next save asks for one even though nothing changed
+    env.loader.modOptions.recomp_achievements_online = { showLinkCode = true }
+    openCard()
+    check(H.screenHas("SAVE FOR A CODE"), "asks for a save")
+    env:press("b"); env:press("b")
+    -- past the two-minute gap
+    local timer = love and love.timer
+    local realTime = timer and timer.getTime
+    if timer then timer.getTime = function() return (realTime and realTime() or 0) + 1000 end end
+    env:writeBlob()
+    if timer then timer.getTime = realTime end
+    check(#requests > before and requests[before + 1]:find("link=1", 1, true), "asked for a code")
+    for _ = 1, 4 do
+      for i = 1, #requests do replies[i] = replies[i] or "ok code ABCD-1234" end
+      env:frame()
+    end
+    openCard()
+    check(H.screenHas("DISCORD: /link") and H.screenHas("ABCD%-1234"), "link code on the card")
+    env:press("b"); env:press("b")
+    env.loader.modOptions.recomp_achievements_online = { showLinkCode = false }
+    openCard()
+    check(not H.screenHas("ABCD%-1234"), "hidden again with the option off")
+    env:press("b"); env:press("b")
 
     -- Save Sync to another device: same key, nothing re-sent
     local env2 = H.boot({ "recomp_achievements", "recomp_achievements_online" })

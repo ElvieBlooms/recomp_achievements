@@ -7,3 +7,4 @@ tests/e2e/e2e_driver/test.sav
 discord/.wrangler/
 discord/.dev.vars
 node_modules/
+__pycache__/

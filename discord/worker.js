@@ -24,11 +24,15 @@
 // string, and the reply is plain text (see the add-on's client.lua).
 //
 // The only thing it keeps is in the LINKS KV namespace, for /link:
-//   code:<CODE>       -> key hash, the code shown on the card, gone after 7 days
+//   code:<CODE>       -> key hash, gone after an hour
 //   keycode:<hash>    -> CODE, so a save gets the same code until it expires
 //   link:<hash>       -> Discord owner hash, once /link has run
+// A code is only made when the add-on asks (SHOW LINK CODE on), since
+// whoever runs /link with it gets the save. The key itself is what proves a
+// save, so a newer code from the same save can always link it again.
 // Without LINKS the add-on still sends, owned by the save, and /link says it
-// isn't set up. AUTO_LIMIT, a rate limiting binding, caps sends per save.
+// isn't set up. AUTO_LIMIT, a rate limiting binding, caps sends per save and
+// per IP address.
 //
 // Secrets (wrangler secret put ...):
 //   DISCORD_PUBLIC_KEY  from the Discord developer portal
@@ -39,7 +43,9 @@
 //   BOARD_URL           the GitHub Pages address
 //
 // Online sends are owned by "online:<hash of the key>" until /link, then by
-// the same "discord:<hash>" as /score, so both ways update one row.
+// the same "discord:<hash>" as /score, so both ways update one row. Every
+// online send also carries src, the save's own "online:<hash>": a row with
+// that src can always be updated by the save, whoever it's linked to.
 //
 // The Discord user id is never sent to GitHub. The bot sends an HMAC of it
 // keyed with OWNER_SALT instead, so only the same Discord account can update
@@ -267,7 +273,7 @@ async function dispatch(env, interaction, o, kind = "score") {
 
 // ---------------------------------------------------------- online add-on
 // Replies are short: the add-on shows them on the card, 18 characters a line.
-const LINK_TTL = 7 * 24 * 60 * 60;
+const LINK_TTL = 60 * 60;
 
 export function validKey(k) {
   return /^[0-9A-Z]{24}$/.test(String(k || ""));
@@ -303,27 +309,49 @@ export function readAuto(params) {
   } else {
     return { problem: "update the mod" };
   }
-  return { kind, key: params.get("k"), o };
+  return { kind, key: params.get("k"), o, wantCode: params.get("link") === "1" };
+}
+
+// Whether this save may write the row the board already has for its save
+// ID. The Action checks again; this only lets the add-on say so.
+export function rowTaken(board, kind, o, owner, src) {
+  const game = String(o.game).toLowerCase();
+  const slot = kind === "extra" ? board?.extra?.[game] : board?.games?.[game];
+  const saveId = normalizeSaveId(o.save_id);
+  for (const e of (slot && slot.entries) || []) {
+    if (e.saveId !== saveId) continue;
+    const who = e.owner || "gh:" + String(e.github || "").toLowerCase();
+    return !(who === owner || who === src || e.src === src);
+  }
+  return false;
 }
 
 function text(body) {
   return new Response(body, { status: 200, headers: { "Content-Type": "text/plain; charset=utf-8" } });
 }
 
-async function handleAuto(url, env) {
+async function handleAuto(url, env, request) {
   if (!env.GITHUB_TOKEN || !env.GITHUB_REPO || !env.OWNER_SALT) return text("error server not set up");
   const got = readAuto(url.searchParams);
   if (got.problem) return text("error " + got.problem);
   const hash = await keyHash(env.OWNER_SALT, got.key);
   if (env.AUTO_LIMIT) {
-    const { success } = await env.AUTO_LIMIT.limit({ key: hash });
-    if (!success) return text("error try again later");
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    for (const key of [hash, "ip:" + ip]) {
+      const { success } = await env.AUTO_LIMIT.limit({ key });
+      if (!success) return text("error try again later");
+    }
   }
   const linked = env.LINKS ? await env.LINKS.get("link:" + hash) : null;
+  const src = "online:" + hash;
+  const owner = linked ? "discord:" + linked : src;
   const o = got.o;
-  // once linked, rows the save sent before /link still count as its own
-  const payload = linked ? { owner: "discord:" + linked, alias: "online:" + hash }
-                         : { owner: "online:" + hash };
+  if (env.BOARD_URL) {
+    let board = null;
+    try { board = await loadBoard(env); } catch (e) { board = null; }
+    if (board && rowTaken(board, got.kind, o, owner, src)) return text("error save id taken");
+  }
+  const payload = { owner, src };
   if (got.kind === "extra") {
     payload.extra = {
       game: String(o.game).toLowerCase(), name: String(o.name).trim(),
@@ -342,15 +370,17 @@ async function handleAuto(url, env) {
   } catch (e) {
     return text("error try again later");
   }
-  if (linked) return text("ok linked");
-  if (!env.LINKS) return text("ok");
-  let code = await env.LINKS.get("keycode:" + hash);
-  if (!code) {
-    code = newLinkCode();
-    await env.LINKS.put("code:" + code, hash, { expirationTtl: LINK_TTL });
-    await env.LINKS.put("keycode:" + hash, code, { expirationTtl: LINK_TTL });
+  let reply = linked ? "ok linked" : "ok";
+  if (got.wantCode && env.LINKS) {
+    let code = await env.LINKS.get("keycode:" + hash);
+    if (!code) {
+      code = newLinkCode();
+      await env.LINKS.put("code:" + code, hash, { expirationTtl: LINK_TTL });
+      await env.LINKS.put("keycode:" + hash, code, { expirationTtl: LINK_TTL });
+    }
+    reply += " code " + code;
   }
-  return text("ok code " + code);
+  return text(reply);
 }
 
 async function handleLink(env, interaction) {
@@ -360,19 +390,20 @@ async function handleLink(env, interaction) {
   const code = normalizeCode(options(interaction).code || "");
   const hash = /^[0-9A-Z]{4}-[0-9A-Z]{4}$/.test(code) ? await env.LINKS.get("code:" + code) : null;
   if (!hash) {
-    return { reply: "That code doesn't exist or has expired. Save in game, then check the card " +
-      "(START > TROPHIES > SELECT) for a new one." };
+    return { reply: "That code doesn't exist or has expired (codes last an hour). Turn on SHOW LINK CODE " +
+      "in the add-on's options, save, and use the code on the card (START > TROPHIES > SELECT)." };
   }
   const user = interaction.user || (interaction.member && interaction.member.user) || {};
   const owner = await ownerHash(env.OWNER_SALT, user.id);
-  const already = await env.LINKS.get("link:" + hash);
-  if (already && already !== owner) return { reply: "That save is already linked to another Discord account." };
+  // A code only comes from the save itself, so a newer one always wins.
+  const before = await env.LINKS.get("link:" + hash);
   await env.LINKS.put("link:" + hash, owner);
   await env.LINKS.delete("code:" + code);
   await env.LINKS.delete("keycode:" + hash);
   return {
-    reply: "Linked. Moving this save's scores to your account… this message will update in a minute or two.",
-    payload: { from: "online:" + hash, to: "discord:" + owner,
+    reply: (before && before !== owner ? "Linked, in place of the account it was linked to before. " : "Linked. ") +
+      "Moving this save's scores to your account… this message will update in a minute or two.",
+    payload: { src: "online:" + hash, to: "discord:" + owner,
                app_id: interaction.application_id, token: interaction.token },
   };
 }
@@ -504,7 +535,7 @@ export default {
   async fetch(request, env, ctx) {
     if (request.method === "GET") {
       const url = new URL(request.url);
-      if (url.pathname === "/auto") return handleAuto(url, env);
+      if (url.pathname === "/auto") return handleAuto(url, env, request);
     }
     if (request.method !== "POST") return new Response("Recomp Achievements leaderboard bot", { status: 200 });
     const body = await request.text();

@@ -8,9 +8,13 @@ Online scores, for people who want them. The mod itself stays offline.
 - **Recomp Achievements Online** (`recomp_achievements_online`), an add-on
   in its own zip. With it installed, saving sends your leaderboard card
   and Extra Credit page to the board if they changed. The card shows
-  ONLINE: SENT, or a code to send with `/link` so the save's scores belong
-  to your Discord account. Options: ONLINE SCORES, SEND EXTRA CREDIT.
+  ONLINE: SENT. With SHOW LINK CODE on it shows a code for `/link`, so the
+  save's scores belong to your Discord account. Options: ONLINE SCORES,
+  SEND EXTRA CREDIT, SHOW LINK CODE.
 - `/link` on the Discord bot.
+- The leaderboard Action no longer queues runs in one group, which could
+  drop submissions that arrived together. Each run saves on top of the
+  latest board and tries again if another one got there first.
 - API 1.4.0: `extraCard()` and `addCardNote()`, which the add-on uses.
   Mods that add achievements don't need to change anything.
 

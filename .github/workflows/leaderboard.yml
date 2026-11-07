@@ -19,11 +19,11 @@ permissions:
   contents: write
   issues: write
 
-# One submission at a time, so two players never overwrite each other.
-concurrency:
-  group: leaderboard
-  cancel-in-progress: false
-
+# No concurrency group: GitHub keeps only one waiting run per group and
+# cancels the rest, which would drop submissions when several arrive at once
+# (the online add-on sends two per save). Each run instead reads the latest
+# board, adds its entry and pushes, and starts again from the new board if
+# someone else pushed first.
 jobs:
   ingest:
     if: >-
@@ -41,36 +41,34 @@ jobs:
       # submission can't inject commands and the Discord reply token never
       # appears in this (public) log.
       # Exit 0 = added, 1 = rejected (the player gets the reason), 2 = bug.
-      - name: Check the submission
+      - name: Check the submission and save the board
         id: ingest
         run: |
           set +e
-          python3 tools/leaderboard_ingest.py --event "$GITHUB_EVENT_PATH" \
-            --board docs/leaderboard.json --reply "$RUNNER_TEMP/reply.md"
-          rc=$?
-          echo "rc=$rc" >> "$GITHUB_OUTPUT"
-          if [ "$rc" = 0 ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
-
-      - name: Save the board
-        id: save
-        if: steps.ingest.outputs.ok == 'true'
-        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/leaderboard.json
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m "Leaderboard: ${{ github.event_name == 'repository_dispatch' && github.event.action || format('issue #{0}', github.event.issue.number) }}"
-          for attempt in 1 2 3; do
-            git push && exit 0
-            git pull --rebase
+          saved=false
+          for attempt in 1 2 3 4 5 6; do
+            git fetch -q origin "$GITHUB_REF_NAME" && git reset -q --hard FETCH_HEAD
+            python3 tools/leaderboard_ingest.py --event "$GITHUB_EVENT_PATH" \
+              --board docs/leaderboard.json --reply "$RUNNER_TEMP/reply.md"
+            rc=$?
+            [ "$rc" = 0 ] || break
+            git add docs/leaderboard.json
+            if git diff --cached --quiet; then saved=true; break; fi
+            git commit -q -m "Leaderboard: ${{ github.event_name == 'repository_dispatch' && github.event.action || format('issue #{0}', github.event.issue.number) }}"
+            if git push -q; then saved=true; break; fi
+            sleep $((attempt * 3 + RANDOM % 5))
           done
-          exit 1
+          echo "rc=$rc" >> "$GITHUB_OUTPUT"
+          if [ "$rc" = 0 ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+          echo "saved=$saved" >> "$GITHUB_OUTPUT"
 
       - name: Reply on the issue
         if: >-
           always() && github.event_name == 'issues' &&
           steps.ingest.outcome == 'success' &&
-          (steps.ingest.outputs.ok != 'true' || steps.save.outcome == 'success')
+          (steps.ingest.outputs.ok != 'true' || steps.ingest.outputs.saved == 'true')
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ github.event.issue.number }}
@@ -88,13 +86,13 @@ jobs:
           github.event.client_payload.token &&
           steps.ingest.outcome == 'success'
         run: |
-          if [ "${{ steps.ingest.outputs.ok }}" = "true" ] && [ "${{ steps.save.outcome }}" != "success" ]; then
+          if [ "${{ steps.ingest.outputs.ok }}" = "true" ] && [ "${{ steps.ingest.outputs.saved }}" != "true" ]; then
             echo "Something went wrong saving the board. The maintainer will take a look." > "$RUNNER_TEMP/reply.md"
           fi
           python3 tools/discord_reply.py --event "$GITHUB_EVENT_PATH" --reply "$RUNNER_TEMP/reply.md"
 
-      # Mark the run failed on a bug so the repo owner gets GitHub's
-      # failed-workflow email.
+      # Mark the run failed on a bug, or a board that never saved, so the
+      # repo owner gets GitHub's failed-workflow email.
       - name: Fail on an unexpected error
-        if: steps.ingest.outputs.rc == '2'
+        if: steps.ingest.outputs.rc == '2' || (steps.ingest.outputs.ok == 'true' && steps.ingest.outputs.saved != 'true')
         run: exit 1

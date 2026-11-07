@@ -23,12 +23,16 @@ mod either way.
 Until it's linked, a save's scores belong to the save. To manage them from
 Discord (and update them with `/score` too), link it once:
 
-1. After a save has been sent, the card shows `DISCORD: /link` and a code
-   like `ABCD-1234`.
-2. Send `/link ABCD-1234` to the leaderboard bot.
+1. In the MODS menu, turn on **SHOW LINK CODE** for this add-on.
+2. Save in game. The card shows `DISCORD: /link` and a code like
+   `ABCD-1234`.
+3. Send `/link ABCD-1234` to the leaderboard bot within the hour.
+4. Turn SHOW LINK CODE off again.
 
-The code lasts 7 days. Each save links on its own, and Save Sync carries
-the link to your other devices.
+Treat the code like a password: whoever uses it gets the save's scores, so
+don't post the card while it's showing. If someone does, make a new code
+and `/link` again: the newest link wins. Each save links on its own, and
+Save Sync carries the link to your other devices.
 
 ## What it sends
 
@@ -44,6 +48,12 @@ In the MODS menu:
 
 - **ONLINE SCORES**: turn sending off without uninstalling.
 - **SEND EXTRA CREDIT**: off sends only the main card.
+- **SHOW LINK CODE**: asks for a `/link` code on the next save and shows it
+  on the card.
+
+ONLINE: SENT means the bot took it. The board checks it again and updates
+within a few minutes. ONLINE: NOT SENT shows why underneath, like SAVE ID
+TAKEN when that save ID is already on the board for someone else.
 
 An unofficial fan project, not affiliated with RetroAchievements.
 Source and issues: https://github.com/ElvieBlooms/recomp_achievements

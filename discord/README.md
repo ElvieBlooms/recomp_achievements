@@ -107,7 +107,7 @@ computer.
    ```
    Uncomment the `[[kv_namespaces]]` block in `wrangler.toml` and paste the
    id it printed. Uncomment `[[ratelimits]]` too: it caps each save at 10
-   sends a minute. Then `npx wrangler deploy` and run
+   sends a minute, per save and per IP address. Then `npx wrangler deploy` and run
    `tools/discord_register.py` again for `/link`.
 8. **Point the add-on at the Worker.** Set `SERVER` at the top of
    `recomp_achievements_online/main.lua` to the Worker address from step 3.

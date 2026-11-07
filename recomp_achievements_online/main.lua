@@ -29,10 +29,14 @@ return function(mod)
   mod.options:define({
     { key = "onlineScores", type = "toggle", label = "ONLINE SCORES", default = true },
     { key = "sendExtra", type = "toggle", label = "SEND EXTRA CREDIT", default = true },
+    -- Asks for a /link code on the next save and shows it on the card.
+    -- Off by default, since the code hands the save to whoever uses it.
+    { key = "showLinkCode", type = "toggle", label = "SHOW LINK CODE", default = false },
   })
 
   -- Status for the card note. Only what this session saw; the save keeps
-  -- the key, the last codes sent and whether it's linked.
+  -- the key, the last cards sent and whether it's linked. The link code is
+  -- never saved: it lasts an hour.
   local state = {}
   local queue, current, lastAt = {}, nil, nil
 
@@ -44,11 +48,12 @@ return function(mod)
   local function reset()
     if current then pcall(mod.fetch.cancel, mod.fetch, current.handle) end
     queue, current = {}, nil
-    state = { linked = mod.save:get("linked", false) == true, code = mod.save:get("linkCode") }
+    state = { linked = mod.save:get("linked", false) == true }
   end
 
   ach.addCardNote(mod, function()
     state.off = mod.options:get("onlineScores") == false
+    state.showCode = mod.options:get("showLinkCode") == true
     return Client.note(state)
   end)
 
@@ -80,8 +85,7 @@ return function(mod)
     state.sent, state.error = true, nil
     state.linked = reply.linked
     mod.save:set("linked", reply.linked)
-    if reply.code then state.code = reply.code; mod.save:set("linkCode", reply.code) end
-    if reply.linked then state.code = nil; mod.save:set("linkCode", nil) end
+    if job.link then state.code = reply.code end
     startNext()
   end
 
@@ -92,13 +96,21 @@ return function(mod)
     if not mod.fetch:available() then state.error = "no network"; return end
     local key = mod.save:get("key")
     if not Client.validKey(key) then
-      local rand = (love and love.math and love.math.random) or math.random
+      local rand = love and love.math and love.math.random
+      if not rand then
+        -- plain math.random starts from the same seed for everyone
+        math.randomseed(os.time() + math.floor(now() * 1000))
+        rand = math.random
+      end
       key = Client.newKey(rand)
       mod.save:set("key", key)
     end
     local card = ach.leaderboardCard()
-    if Client.wants(card, mod.save:get("lastScore")) then
-      queue[#queue + 1] = { url = Client.scoreUrl(SERVER, key, card), saveKey = "lastScore", code = card.code }
+    -- SHOW LINK CODE sends the card even if it hasn't changed, to get a code
+    local link = mod.options:get("showLinkCode") == true and not state.code
+    if Client.wants(card, not link and mod.save:get("lastScore") or nil) then
+      queue[#queue + 1] = { url = Client.scoreUrl(SERVER, key, card, link), saveKey = "lastScore",
+                            code = card.code, link = link }
     end
     if mod.options:get("sendExtra") ~= false then
       local extra = ach.extraCard()
@@ -121,8 +133,8 @@ return function(mod)
   mod.hooks:wrap("core.update", function(nextFn, game, dt, ...)
     local result = nextFn(game, dt, ...)
     if current then
-      local r = mod.fetch:poll(current.handle)
-      if r and r.status ~= "pending" then
+      local r = mod.fetch:poll(current.handle) or { status = "error", err = "lost the request" }
+      if r.status ~= "pending" then
         pcall(mod.fetch.release, mod.fetch, current.handle)
         finish(current, r)
       end
