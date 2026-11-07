@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-07T04:16:28Z",
+ "updated": "2026-11-07T16:55:25Z",
  "banned": [],
  "games": {
   "red": {
@@ -58,7 +58,20 @@
    "total": 75
   },
   "crystal": {
-   "entries": [],
+   "entries": [
+    {
+     "name": "THIAGO",
+     "points": 20,
+     "earned": 6,
+     "saveId": "WQZ72K",
+     "time": 56,
+     "owner": "online:ba3e635dd7059c3b5e9e024e54945059",
+     "via": "online",
+     "date": "2026-11-07T16:55:25Z",
+     "first": "2026-11-07T16:55:25Z",
+     "src": "online:ba3e635dd7059c3b5e9e024e54945059"
+    }
+   ],
    "title": "Pokemon Crystal",
    "maxPoints": 864,
    "total": 113
