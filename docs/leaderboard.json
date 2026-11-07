@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-07T17:30:47Z",
+ "updated": "2026-11-07T17:32:28Z",
  "banned": [],
  "games": {
   "red": {
@@ -89,7 +89,20 @@
    "total": 113
   },
   "firered": {
-   "entries": [],
+   "entries": [
+    {
+     "name": "JOTT",
+     "points": 63,
+     "earned": 15,
+     "saveId": "RQ1SP6",
+     "time": 630,
+     "owner": "online:afa684f8bc5f1471024d000e56174a33",
+     "via": "online",
+     "date": "2026-11-07T17:32:28Z",
+     "first": "2026-11-07T17:32:28Z",
+     "src": "online:afa684f8bc5f1471024d000e56174a33"
+    }
+   ],
    "title": "Pokemon FireRed",
    "maxPoints": 453,
    "total": 61
