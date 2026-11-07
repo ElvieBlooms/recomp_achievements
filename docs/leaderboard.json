@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-07T16:55:25Z",
+ "updated": "2026-11-07T16:55:33Z",
  "banned": [],
  "games": {
   "red": {
@@ -181,6 +181,34 @@
   },
   "crystal": {
    "entries": [
+    {
+     "name": "THIAGO",
+     "points": 45,
+     "earned": 11,
+     "sources": {
+      "bonus": {
+       "earned": 6,
+       "total": 17,
+       "points": 12
+      },
+      "emerald_lens": {
+       "earned": 5,
+       "total": 9,
+       "points": 33
+      },
+      "facets": {
+       "earned": 0,
+       "total": 10,
+       "points": 0
+      }
+     },
+     "saveId": "WQZ72K",
+     "owner": "online:ba3e635dd7059c3b5e9e024e54945059",
+     "via": "online",
+     "date": "2026-11-07T16:55:33Z",
+     "first": "2026-11-07T16:55:33Z",
+     "src": "online:ba3e635dd7059c3b5e9e024e54945059"
+    },
     {
      "name": "ELVIE",
      "points": 25,
