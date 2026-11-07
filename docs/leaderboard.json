@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-07T17:32:28Z",
+ "updated": "2026-11-07T17:32:32Z",
  "banned": [],
  "games": {
   "red": {
@@ -298,7 +298,36 @@
    ]
   },
   "firered": {
-   "entries": []
+   "entries": [
+    {
+     "name": "JOTT",
+     "points": 94,
+     "earned": 14,
+     "sources": {
+      "bonus": {
+       "earned": 1,
+       "total": 1,
+       "points": 1
+      },
+      "emerald_lens": {
+       "earned": 8,
+       "total": 10,
+       "points": 63
+      },
+      "max_raids": {
+       "earned": 5,
+       "total": 14,
+       "points": 30
+      }
+     },
+     "saveId": "RQ1SP6",
+     "owner": "online:afa684f8bc5f1471024d000e56174a33",
+     "via": "online",
+     "date": "2026-11-07T17:32:32Z",
+     "first": "2026-11-07T17:32:32Z",
+     "src": "online:afa684f8bc5f1471024d000e56174a33"
+    }
+   ]
   },
   "leafgreen": {
    "entries": []
