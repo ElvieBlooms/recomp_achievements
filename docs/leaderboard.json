@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-10T02:24:46Z",
+ "updated": "2026-11-10T06:46:58Z",
  "banned": [],
  "games": {
   "red": {
@@ -114,7 +114,20 @@
    "total": 128
   },
   "emerald": {
-   "entries": [],
+   "entries": [
+    {
+     "name": "JOTT",
+     "points": 1,
+     "earned": 1,
+     "saveId": "BPWJVN",
+     "time": 3,
+     "owner": "online:89452be12559ab80407327dd3f8e8bd9",
+     "via": "online",
+     "date": "2026-11-10T06:46:58Z",
+     "first": "2026-11-10T06:46:58Z",
+     "src": "online:89452be12559ab80407327dd3f8e8bd9"
+    }
+   ],
    "title": "Pokemon Emerald",
    "maxPoints": 2086,
    "total": 197
