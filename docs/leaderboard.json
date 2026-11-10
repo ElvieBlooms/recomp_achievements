@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-10T07:07:38Z",
+ "updated": "2026-11-10T10:08:38Z",
  "banned": [],
  "games": {
   "red": {
@@ -22,13 +22,13 @@
    "entries": [
     {
      "name": "ELVIE",
-     "points": 4,
-     "earned": 4,
+     "points": 13,
+     "earned": 9,
      "saveId": "RF14J2",
-     "time": 34,
+     "time": 96,
      "owner": "discord:19f7e31d3cc343740b10454a66371bc1",
      "via": "online",
-     "date": "2026-11-07T03:40:40Z",
+     "date": "2026-11-10T10:08:38Z",
      "first": "2026-11-07T03:40:40Z",
      "src": "online:f41888d43a2004a669ca64dd7a4b07db"
     },
