@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-10T06:56:14Z",
+ "updated": "2026-11-10T06:58:57Z",
  "banned": [],
  "games": {
   "red": {
@@ -117,13 +117,13 @@
    "entries": [
     {
      "name": "JOTT",
-     "points": 1,
-     "earned": 1,
+     "points": 5,
+     "earned": 3,
      "saveId": "BPWJVN",
-     "time": 3,
+     "time": 9,
      "owner": "online:89452be12559ab80407327dd3f8e8bd9",
      "via": "online",
-     "date": "2026-11-10T06:56:14Z",
+     "date": "2026-11-10T06:58:57Z",
      "first": "2026-11-10T06:46:58Z",
      "src": "online:89452be12559ab80407327dd3f8e8bd9"
     }
