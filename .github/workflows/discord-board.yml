@@ -1,0 +1,49 @@
+# .github/workflows/discord-board.yml
+# The live leaderboard message in Discord, by hand: post it the first time,
+# or refresh it after editing docs/leaderboard.json directly. Board changes
+# from submissions refresh it in leaderboard.yml.
+# Needs the DISCORD_BOARD_WEBHOOK secret. See discord/README.md.
+# ------------------
+name: Discord board
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "post makes the message (once), update refreshes it"
+        type: choice
+        options: [update, post]
+        default: update
+      thread_name:
+        description: "post, forum channel: the title of the new forum post"
+        required: false
+      thread_id:
+        description: "post: an existing thread to post in instead"
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  board:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Inputs go through the environment, never straight into the script.
+      - name: Post or update
+        env:
+          DISCORD_BOARD_WEBHOOK: ${{ secrets.DISCORD_BOARD_WEBHOOK }}
+          DISCORD_BOARD_MESSAGE: ${{ vars.DISCORD_BOARD_MESSAGE }}
+          DISCORD_BOARD_THREAD: ${{ vars.DISCORD_BOARD_THREAD }}
+          ACTION: ${{ inputs.action }}
+          THREAD_NAME: ${{ inputs.thread_name }}
+          THREAD_ID: ${{ inputs.thread_id }}
+        run: |
+          if [ "$ACTION" = post ]; then
+            set -- post
+            [ -n "$THREAD_NAME" ] && set -- "$@" --thread-name "$THREAD_NAME"
+            [ -n "$THREAD_ID" ] && set -- "$@" --thread-id "$THREAD_ID"
+            python3 tools/discord_board.py "$@"
+          else
+            python3 tools/discord_board.py update
+          fi

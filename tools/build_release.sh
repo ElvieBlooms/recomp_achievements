@@ -26,6 +26,7 @@ echo "== tests"
 PROJECT="$ROOT" luajit tests/run.lua | tail -1
 PROJECT="$ROOT" luajit tests/official.lua | tail -1
 python3 tests/test_leaderboard.py 2>&1 | tail -1
+python3 tests/test_discord_board.py 2>&1 | tail -1
 node tests/test_discord_worker.mjs | tail -1
 
 echo "== coverage"

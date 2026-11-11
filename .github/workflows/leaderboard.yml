@@ -64,6 +64,18 @@ jobs:
           if [ "$rc" = 0 ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
           echo "saved=$saved" >> "$GITHUB_OUTPUT"
 
+      # The live board in Discord (tools/discord_board.py). Does nothing
+      # until the webhook and message id are set; a Discord hiccup doesn't
+      # fail the run, the next update catches up.
+      - name: Update the Discord board
+        if: steps.ingest.outputs.saved == 'true'
+        continue-on-error: true
+        env:
+          DISCORD_BOARD_WEBHOOK: ${{ secrets.DISCORD_BOARD_WEBHOOK }}
+          DISCORD_BOARD_MESSAGE: ${{ vars.DISCORD_BOARD_MESSAGE }}
+          DISCORD_BOARD_THREAD: ${{ vars.DISCORD_BOARD_THREAD }}
+        run: python3 tools/discord_board.py update
+
       - name: Reply on the issue
         if: >-
           always() && github.event_name == 'issues' &&

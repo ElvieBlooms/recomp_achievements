@@ -150,6 +150,10 @@ words, and every row has a Report link. It has nothing to do with
 RetroAchievements or its leaderboards, and scores here mean nothing on
 retroachievements.org.
 
+A live copy of the board can sit in a Discord channel or forum post,
+edited after every change. Setup is in
+[discord/README.md](discord/README.md#the-live-leaderboard-message).
+
 ### Recomp Achievements Online
 
 An optional add-on, `recomp_achievements_online`, that sends the card and

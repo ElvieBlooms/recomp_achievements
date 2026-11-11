@@ -117,6 +117,42 @@ Without the KV namespace the add-on still sends, but codes and `/link`
 don't work. Without the rate limit, sends aren't capped (the add-on itself
 waits two minutes between sends and only sends changed cards).
 
+### The live leaderboard message
+
+One message in your server that always shows the current board: a header
+with how many trainers are on it, the top 3 for every game grouped by
+generation, and Extra Credit. It's posted by a channel webhook and edited
+by the leaderboard Action after every change, so it never makes a new post
+or pings anyone. `tools/discord_board.py` builds it.
+
+1. **Make a webhook** in the channel: Edit Channel > Integrations >
+   Webhooks > New Webhook. Name it and give it the mod's icon, since that's
+   who the message shows as. Copy its URL.
+2. **Save the URL as a secret** in the GitHub repo: Settings > Secrets and
+   variables > Actions > New repository secret, named
+   `DISCORD_BOARD_WEBHOOK`. Anyone with the URL can post as the webhook,
+   so keep it out of chat and commits.
+3. **Post the message** from the Actions tab: run **Discord board** with
+   action `post`.
+   - In a **forum** channel, fill in `thread_name` (say, "Leaderboard").
+     The webhook makes the forum post, and its first message is the board.
+     It has to be this way round: a webhook can only edit its own
+     messages, so it can't take over a post you made.
+   - In a forum post that already exists, put its id in `thread_id`
+     instead (right-click the post > Copy Link, the last number). The board
+     is then a reply, so pin it.
+   - In a normal text channel, leave both empty.
+4. **Save the ids it prints** as repository variables (Settings > Secrets
+   and variables > Actions > Variables): `DISCORD_BOARD_MESSAGE`, and
+   `DISCORD_BOARD_THREAD` for a forum.
+
+From then on it updates by itself a minute or so after each submission.
+After editing `docs/leaderboard.json` by hand, run **Discord board** with
+`update`. To see what it would post, run
+`python3 tools/discord_board.py print`.
+
+If the message is deleted, post a new one and replace the variables.
+
 ## Keeping it running
 
 - **Token expiry:** when the GitHub token expires, `/score` replies "Couldn't
