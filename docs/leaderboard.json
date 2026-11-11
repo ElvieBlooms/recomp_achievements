@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-11T05:22:51Z",
+ "updated": "2026-11-11T05:48:01Z",
  "banned": [],
  "games": {
   "red": {
@@ -116,14 +116,14 @@
   "emerald": {
    "entries": [
     {
-     "name": "JOTT",
-     "points": 5,
-     "earned": 3,
+     "name": "JOtt",
+     "points": 6,
+     "earned": 4,
      "saveId": "BPWJVN",
-     "time": 9,
+     "time": 30,
      "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
      "via": "online",
-     "date": "2026-11-11T05:22:51Z",
+     "date": "2026-11-11T05:48:01Z",
      "first": "2026-11-10T06:46:58Z",
      "src": "online:89452be12559ab80407327dd3f8e8bd9"
     }
