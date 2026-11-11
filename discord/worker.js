@@ -15,6 +15,8 @@
 //                           Extra Credit, extra:<mod> for one mod
 //   /extra game name save_id lines code
 //                           an Extra Credit score (bonus and mod achievements)
+//   /check game:All         the whole board in one post: every game's top 3,
+//                           Extra Credit, and what changed this week
 //   /link code              ties a save sending from Recomp Achievements Online
 //                           to this Discord account
 //
@@ -493,6 +495,92 @@ export function extraEmbed(game, slot, source, boardUrl) {
   };
 }
 
+// ---------------------------------------------------------- whole board
+// /check game:All. The same message tools/discord_board.py keeps live with a
+// webhook; tests/test_discord_worker.mjs checks the two match.
+const GENERATIONS = [
+  ["Generation I", ["red", "blue", "yellow"], 0xc0392b],
+  ["Generation II", ["gold", "silver", "crystal"], 0xa8801a],
+  ["Generation III: Hoenn", ["ruby", "sapphire", "emerald"], 0x1f8f6a],
+  ["Generation III: Kanto", ["firered", "leafgreen"], 0xd9622b],
+];
+const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
+const WEEK = 7 * 86400;
+
+function stamp(s) {
+  return /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(String(s)) ? Date.parse(s) / 1000 : null;
+}
+
+function medalLines(entries, extra) {
+  let top;
+  if (extra) {
+    top = topExtra(entries, null).top;
+  } else {
+    top = topEntries(entries).map((e) => ({ name: e.name, points: e.points | 0 }));
+  }
+  return top.map((e, i) => `${MEDALS[i]} **${plain(e.name)}** ${e.points | 0} pts`);
+}
+
+function ownerOf(e) {
+  return e.owner || "gh:" + String(e.github || "").toLowerCase();
+}
+
+export function allBoard(board, boardUrl, now = Math.floor(Date.now() / 1000)) {
+  const base = String(boardUrl || "").replace(/\/+$/, "");
+  const games = (board && board.games) || {};
+  const extras = (board && board.extra) || {};
+  const ids = Object.keys(GAMES);
+  const entriesOf = (slot) => (slot && Array.isArray(slot.entries) ? slot.entries : []);
+  const owners = new Set();
+  let fresh = 0, updated = 0;
+  for (const g of ids) {
+    for (const e of [...entriesOf(games[g]), ...entriesOf(extras[g])]) {
+      owners.add(ownerOf(e));
+      const first = stamp(e.first), date = stamp(e.date);
+      if (first && now - first <= WEEK) fresh++;
+      else if (date && now - date <= WEEK) updated++;
+    }
+  }
+  const played = ids.filter((g) => entriesOf(games[g]).length > 0).length;
+  const when = stamp(board && board.updated);
+  const s = (n) => (n === 1 ? "" : "s");
+  const desc = [`**${owners.size}** trainer${s(owners.size)} across **${played}** game${s(played)}.`
+    + (when ? ` Updated <t:${when}:R>.` : "")];
+  desc.push(fresh || updated ? `This week: **${fresh}** new score${s(fresh)}, **${updated}** updated.`
+    : "A quiet week. Your move.");
+  desc.push("Install **Recomp Achievements Online** and your score goes up when you save, "
+    + "or send your card with `/score`. `/check` shows any game's top 3.");
+  const embeds = [{ title: "Recomp Achievements leaderboard", url: base + "/", color: 0x2b8fa8,
+                    description: desc.join("\n") }];
+  for (const [title, list, color] of GENERATIONS) {
+    let people = 0;
+    const fields = list.map((g) => {
+      const entries = entriesOf(games[g]);
+      people += entries.length;
+      const lines = medalLines(entries, false);
+      return { name: GAMES[g].replace("Pokemon ", ""), inline: true,
+               value: (lines.join("\n") || "*No scores yet*").slice(0, 1024) };
+    });
+    embeds.push({ title, url: `${base}/#${list[0]}`, color, fields,
+                  footer: { text: people ? `${people} on the board` : "Be the first" } });
+  }
+  const extraFields = [];
+  let first = null;
+  for (const g of ids) {
+    const lines = medalLines(entriesOf(extras[g]), true);
+    if (lines.length) {
+      first = first || g;
+      extraFields.push({ name: GAMES[g].replace("Pokemon ", ""), inline: true, value: lines.join("\n").slice(0, 1024) });
+    }
+  }
+  const extra = { title: "Extra Credit", url: `${base}/#${first || "red"}/extra`, color: 0x6f7a86,
+                  footer: { text: "Bonus and mod achievements. Kept apart from the main board." } };
+  if (extraFields.length) extra.fields = extraFields;
+  else extra.description = "*No Extra Credit yet*";
+  embeds.push(extra);
+  return { embeds, allowed_mentions: { parse: [] } };
+}
+
 async function loadBoard(env) {
   const base = String(env.BOARD_URL || "").replace(/#.*$/, "").replace(/\/?$/, "/");
   const r = await fetch(`${base}leaderboard.json?t=${Date.now()}`, {
@@ -506,7 +594,9 @@ async function postCheck(env, interaction, game, extra = null) {
   let body;
   try {
     const board = await loadBoard(env);
-    if (extra) {
+    if (game === "all") {
+      body = allBoard(board, env.BOARD_URL);
+    } else if (extra) {
       const source = extra === "all" ? null : extra;
       body = { embeds: [extraEmbed(game, board.extra && board.extra[game], source, env.BOARD_URL)] };
     } else {
@@ -555,7 +645,7 @@ export default {
       if (name === "check") {
         const o = options(interaction);
         const game = String(o.game || "").toLowerCase();
-        if (!GAMES[game]) return say("Pick the game from the list.");
+        if (!GAMES[game] && game !== "all") return say("Pick the game from the list.");
         if (!env.BOARD_URL) return say("The bot isn't set up yet. Please tell the maintainer.");
         let extra = o.extra == null ? null : String(o.extra).trim().toLowerCase();
         if (extra === "") extra = null;

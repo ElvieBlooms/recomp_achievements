@@ -18,6 +18,12 @@ linking to that game's tab on the page. It reads the public
 `leaderboard.json`, so it needs no extra secrets. GitHub Pages can take a
 few minutes to serve a new score.
 
+`/check game:All games` posts the whole board in one message: how many
+trainers there are and what changed in the last 7 days, every game's top 3
+grouped by generation, and the Extra Credit top 3s. It's the same message
+as the live board below, for when you'd rather post it yourself, say every
+Friday, than give the webhook a channel.
+
 `/extra game name save_id lines code` submits an Extra Credit score (bonus
 and mod achievements) from the card's Extra Credit page; `lines` is every
 line from the page separated by commas. `/check game:ruby extra:all` shows
@@ -118,6 +124,9 @@ don't work. Without the rate limit, sends aren't capped (the add-on itself
 waits two minutes between sends and only sends changed cards).
 
 ### The live leaderboard message
+
+This needs a moderator to make the webhook. Without one, `/check game:All
+games` posts the same message by hand.
 
 One message in your server that always shows the current board: a header
 with how many trainers are on it, the top 3 for every game grouped by

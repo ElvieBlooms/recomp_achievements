@@ -13,7 +13,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import worker, { readAuto, rowTaken, validKey, boardEmbed, checkCode, extraCheckCode, extraEmbed, normalizeCode, parseExtraLines, parseTime, precheck, precheckExtra, topEntries, topExtra } from "../discord/worker.js";
+import worker, { allBoard, readAuto, rowTaken, validKey, boardEmbed, checkCode, extraCheckCode, extraEmbed, normalizeCode, parseExtraLines, parseTime, precheck, precheckExtra, topEntries, topExtra } from "../discord/worker.js";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 let passed = 0;
@@ -449,6 +449,56 @@ await test("online: bad cards, old clients and rate limits get a short error and
   assert.deepEqual(seen.map((k) => k.replace(/^[0-9a-f]{32}$/, "HASH")), ["HASH", "ip:203.0.113.9"]);
   stubFetch((url) => new Response(url.includes("leaderboard.json") ? "{}" : null, { status: url.includes("leaderboard.json") ? 200 : 503 }));
   assert.equal(await (await worker.fetch(new Request(ok), ENV, ctx())).text(), "error try again later");
+});
+
+// ---------------------------------------------------------- /check game:All
+const SAMPLE_BOARD = {
+  updated: "2026-11-10T10:11:24Z",
+  games: {
+    red: { entries: [
+      { name: "ASH", points: 50, earned: 10, time: 60, owner: "discord:a", first: "2026-11-01T00:00:00Z", date: "2026-11-09T00:00:00Z" },
+      { name: "GARY", points: 90, earned: 18, time: 99, owner: "discord:b", first: "2026-11-08T00:00:00Z", date: "2026-11-08T00:00:00Z" },
+      { name: "MISTY", points: 50, earned: 10, time: 30, owner: "discord:c", first: "2026-10-01T00:00:00Z", date: "2026-10-01T00:00:00Z" },
+      { name: "BROCK", points: 10, earned: 2, time: null, owner: "discord:d", first: "2026-10-01T00:00:00Z", date: "2026-10-01T00:00:00Z" }] },
+    emerald: { entries: [{ name: "@everyone *hi*", points: 5, earned: 1, time: 5, github: "Someone", first: "2026-10-01T00:00:00Z" }] },
+  },
+  extra: { crystal: { entries: [{ name: "ETHAN", points: 20, earned: 4, owner: "online:e", first: "2026-11-09T00:00:00Z", sources: {} }] } },
+};
+const NOW = Date.parse("2026-11-10T12:00:00Z") / 1000;
+
+await test("/check game:All matches tools/discord_board.py", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "lb-"));
+  const file = path.join(dir, "board.json");
+  fs.writeFileSync(file, JSON.stringify(SAMPLE_BOARD));
+  const py = execFileSync("python3", ["-c", `
+import json, sys
+sys.path.insert(0, ${JSON.stringify(path.join(ROOT, "tools"))})
+import discord_board as D, leaderboard_ingest as L
+print(json.dumps(D.build(L.load_board(sys.argv[1]), "https://example.github.io/board", now=${NOW})))`, file],
+    { encoding: "utf8" });
+  const js = allBoard(SAMPLE_BOARD, "https://example.github.io/board/", NOW);
+  assert.deepEqual(js, JSON.parse(py));
+  assert.match(js.embeds[0].description, /\*\*6\*\* trainers across \*\*2\*\* games/);
+  assert.match(js.embeds[0].description, /This week: \*\*2\*\* new scores, \*\*1\*\* updated/);
+  assert.match(js.embeds[1].fields[0].value, /GARY[^\n]*\n[^\n]*MISTY[^\n]*\n[^\n]*ASH/);
+  const quiet = allBoard({ games: {}, extra: {} }, "https://x", NOW);
+  assert.match(quiet.embeds[0].description, /A quiet week/);
+  assert.equal(quiet.embeds.length, 6);
+});
+
+await test("/check game:All posts the whole board", async () => {
+  const calls = stubFetch((url) => url.includes("leaderboard.json")
+    ? new Response(JSON.stringify(SAMPLE_BOARD), { status: 200 }) : new Response(null, { status: 204 }));
+  const c = ctx();
+  const r = await worker.fetch(await signed({ type: 2, application_id: "999888777666555444",
+    token: "interaction-token-abcdefghijklmnop",
+    data: { name: "check", options: [{ name: "game", value: "all" }] } }), ENV, c);
+  assert.equal((await r.json()).type, 5);
+  await Promise.all(c.jobs);
+  const edit = calls.find((x) => x.url.includes("/messages/@original"));
+  const body = JSON.parse(edit.init.body);
+  assert.equal(body.embeds.length, 6);
+  assert.deepEqual(body.allowed_mentions, { parse: [] });
 });
 
 console.log(`\n${passed} passed`);

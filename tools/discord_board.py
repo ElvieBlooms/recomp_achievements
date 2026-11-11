@@ -34,6 +34,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -95,16 +96,39 @@ def trainers(board):
     return len(owners)
 
 
-def build(board, board_url=BOARD_URL):
-    """The message body: a header, one embed per generation, Extra Credit."""
+def this_week(board, now):
+    """New rows and updated rows in the 7 days before now (seconds)."""
+    new = updated = 0
+    for section in ("games", "extra"):
+        for slot in board.get(section, {}).values():
+            for e in slot.get("entries", []):
+                first, date = unix(e.get("first")), unix(e.get("date"))
+                if first and now - first <= 7 * 86400:
+                    new += 1
+                elif date and now - date <= 7 * 86400:
+                    updated += 1
+    return new, updated
+
+
+def build(board, board_url=BOARD_URL, now=None):
+    """The message body: a header, one embed per generation, Extra Credit.
+    discord/worker.js builds the same for /check game:All, and
+    tests/test_discord_worker.mjs checks they match."""
     base = board_url.rstrip("/")
     games = board.get("games", {})
     played = [g for g in L.GAMES if games.get(g, {}).get("entries")]
     count = trainers(board)
     when = unix(board.get("updated"))
+    now = int(time.time()) if now is None else now
     desc = [f"**{count}** trainer{'' if count == 1 else 's'} across **{len(played)}** "
             f"game{'' if len(played) == 1 else 's'}."
             + (f" Updated <t:{when}:R>." if when else "")]
+    new, updated = this_week(board, now)
+    if new or updated:
+        desc.append(f"This week: **{new}** new score{'' if new == 1 else 's'}, "
+                    f"**{updated}** updated.")
+    else:
+        desc.append("A quiet week. Your move.")
     desc.append("Install **Recomp Achievements Online** and your score goes up when you save, "
                 "or send your card with `/score`. `/check` shows any game's top 3.")
     embeds = [{
