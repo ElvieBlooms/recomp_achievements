@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-11T13:06:02Z",
+ "updated": "2026-11-11T19:09:35Z",
  "banned": [],
  "games": {
   "red": {
@@ -126,6 +126,18 @@
      "date": "2026-11-11T13:06:02Z",
      "first": "2026-11-10T06:46:58Z",
      "src": "online:89452be12559ab80407327dd3f8e8bd9"
+    },
+    {
+     "name": "AA",
+     "points": 6,
+     "earned": 4,
+     "saveId": "W9YQXC",
+     "time": 117,
+     "owner": "online:46866d66f41c795dd00bf08f633685d6",
+     "via": "online",
+     "date": "2026-11-11T19:09:35Z",
+     "first": "2026-11-11T19:09:35Z",
+     "src": "online:46866d66f41c795dd00bf08f633685d6"
     }
    ],
    "title": "Pokemon Emerald",
