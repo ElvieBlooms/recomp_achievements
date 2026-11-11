@@ -480,7 +480,8 @@ print(json.dumps(D.build(L.load_board(sys.argv[1]), "https://example.github.io/b
   assert.deepEqual(js, JSON.parse(py));
   assert.match(js.embeds[0].description, /\*\*6\*\* trainers across \*\*2\*\* games/);
   assert.match(js.embeds[0].description, /This week: \*\*2\*\* new scores, \*\*1\*\* updated/);
-  assert.match(js.embeds[1].fields[0].value, /GARY[^\n]*\n[^\n]*MISTY[^\n]*\n[^\n]*ASH/);
+  assert.match(js.embeds[1].fields[0].value, /^🥇 `GARY` \*\*90\*\* pts\n`▰▱▱▱▱▱▱▱` 12%\n🥈 `MISTY`[\s\S]*🥉 `ASH`/u);
+  assert.equal(js.embeds[0].author.name, "Recomp Achievements");
   const quiet = allBoard({ games: {}, extra: {} }, "https://x", NOW);
   assert.match(quiet.embeds[0].description, /A quiet week/);
   assert.equal(quiet.embeds.length, 6);

@@ -45,6 +45,9 @@ BOARD_URL = "https://elvieblooms.github.io/recomp_achievements"
 USER_AGENT = "DiscordBot (https://github.com/ElvieBlooms/recomp_achievements, 1)"
 WEBHOOK = re.compile(r"https://(?:canary\.|ptb\.)?discord(?:app)?\.com/api/webhooks/\d+/[\w-]+")
 MEDALS = ["\U0001F947", "\U0001F948", "\U0001F949"]
+ICON = "https://raw.githubusercontent.com/ElvieBlooms/recomp_achievements/main/discord/assets/bot_icon.png"
+ACCENT = 0x3D6B2A  # --accent on the site
+BAR = 8
 
 GENERATIONS = [
     ("Generation I", ["red", "blue", "yellow"], 0xC0392B),
@@ -55,12 +58,6 @@ GENERATIONS = [
 
 # Discord's limits for one message.
 MAX_EMBEDS, MAX_TOTAL, MAX_FIELD = 10, 6000, 1024
-
-
-def plain(s):
-    """A name as plain text: no markdown, no pings."""
-    s = re.sub(r"([\\*_~`|>#\[\]()-])", r"\\\1", str(s))
-    return s.replace("@", "@​")
 
 
 def short_title(game):
@@ -76,14 +73,33 @@ def unix(stamp):
     return calendar.timegm(t.timetuple())
 
 
-def top_lines(entries, extra=False):
+def code(name):
+    """A name in Discord's inline code, the site's monospace name column.
+    Markdown doesn't apply inside it; the board already refuses backticks."""
+    return "`" + str(name).replace("`", "'") + "`"
+
+
+def meter(points, max_points):
+    """The site's progress meter in block characters: ▰▰▰▱▱▱▱▱ 37%.
+    Integer maths so worker.js rounds the same way."""
+    if not max_points:
+        return ""
+    points = max(0, min(points, max_points))
+    filled = (2 * BAR * points + max_points) // (2 * max_points)
+    return "`" + "\u25B0" * filled + "\u25B1" * (BAR - filled) + f"` {100 * points // max_points}%"
+
+
+def top_lines(entries, extra=False, max_points=None):
     entries = [dict(e) for e in entries if isinstance(e, dict) and isinstance(e.get("name"), str)]
     for e in entries:
         e["points"], e["earned"] = int(e.get("points") or 0), int(e.get("earned") or 0)
     (L.rank_extra if extra else L.rank)(entries)
     lines = []
     for i, e in enumerate(entries[:3]):
-        lines.append(f"{MEDALS[i]} **{plain(e['name'])}** {e['points']} pts")
+        lines.append(f"{MEDALS[i]} {code(e['name'])} **{e['points']}** pts")
+        bar = "" if extra else meter(e["points"], max_points)
+        if bar:
+            lines.append(bar)
     return lines
 
 
@@ -132,9 +148,10 @@ def build(board, board_url=BOARD_URL, now=None):
     desc.append("Install **Recomp Achievements Online** and your score goes up when you save, "
                 "or send your card with `/score`. `/check` shows any game's top 3.")
     embeds = [{
-        "title": "Recomp Achievements leaderboard",
+        "author": {"name": "Recomp Achievements", "url": base + "/", "icon_url": ICON},
+        "title": "Leaderboard",
         "url": base + "/",
-        "color": 0x2B8FA8,
+        "color": ACCENT,
         "description": "\n".join(desc),
     }]
     for title, ids, color in GENERATIONS:
@@ -142,7 +159,7 @@ def build(board, board_url=BOARD_URL, now=None):
         for g in ids:
             entries = games.get(g, {}).get("entries", [])
             people += len(entries)
-            lines = top_lines(entries)
+            lines = top_lines(entries, max_points=L.GAMES[g]["maxPoints"])
             fields.append({"name": short_title(g), "inline": True,
                            "value": ("\n".join(lines) or "*No scores yet*")[:MAX_FIELD]})
         embeds.append({
@@ -156,7 +173,8 @@ def build(board, board_url=BOARD_URL, now=None):
             first = first or g
             extra_fields.append({"name": short_title(g), "inline": True, "value": "\n".join(lines)[:MAX_FIELD]})
     extra = {"title": "Extra Credit", "url": f"{base}/#{first or 'red'}/extra", "color": 0x6F7A86,
-             "footer": {"text": "Bonus and mod achievements. Kept apart from the main board."}}
+             "footer": {"text": "Bonus and mod achievements. Kept apart from the main board.",
+                        "icon_url": ICON}}
     if extra_fields:
         extra["fields"] = extra_fields
     else:
@@ -170,6 +188,7 @@ def size(message):
     n = 0
     for e in message["embeds"]:
         n += len(e.get("title", "")) + len(e.get("description", ""))
+        n += len(e.get("author", {}).get("name", ""))
         n += len(e.get("footer", {}).get("text", ""))
         for f in e.get("fields", []):
             n += len(f["name"]) + len(f["value"])

@@ -78,10 +78,11 @@ class Build(unittest.TestCase):
         red = self.msg["embeds"][1]["fields"][0]
         self.assertEqual(red["name"], "Red")
         lines = red["value"].split("\n")
-        self.assertEqual(len(lines), 3, "top 3 only")
-        self.assertIn("GARY", lines[0])
-        self.assertIn("MISTY", lines[1], "equal points: shorter time first")
-        self.assertIn("ASH", lines[2])
+        self.assertEqual(len(lines), 6, "top 3 only, each with a meter")
+        self.assertEqual(lines[0], "\U0001F947 `GARY` **90** pts")
+        self.assertEqual(lines[1], "`\u25B0" + "\u25B1" * 7 + "` 12%")
+        self.assertIn("MISTY", lines[2], "equal points: shorter time first")
+        self.assertIn("ASH", lines[4])
         self.assertIn("*No scores yet*", self.msg["embeds"][1]["fields"][1]["value"])
         self.assertEqual(self.msg["embeds"][1]["footer"]["text"], "4 on the board")
 
@@ -92,8 +93,14 @@ class Build(unittest.TestCase):
 
     def test_names_are_plain(self):
         em = self.msg["embeds"][3]["fields"][2]["value"]
-        self.assertIn("@​everyone", em)
-        self.assertIn("\\*hi\\*", em)
+        self.assertIn("`@everyone *hi*`", em, "in code, so no markdown")
+        self.assertEqual(self.msg["allowed_mentions"], {"parse": []}, "and no pings")
+
+    def test_meter(self):
+        self.assertEqual(D.meter(0, 100), "`" + "\u25B1" * 8 + "` 0%")
+        self.assertEqual(D.meter(100, 100), "`" + "\u25B0" * 8 + "` 100%")
+        self.assertEqual(D.meter(150, 100), D.meter(100, 100))
+        self.assertEqual(D.meter(1, 0), "")
 
     def test_extra(self):
         extra = self.msg["embeds"][-1]

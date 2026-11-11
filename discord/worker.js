@@ -506,19 +506,39 @@ const GENERATIONS = [
 ];
 const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
 const WEEK = 7 * 86400;
+const ICON = "https://raw.githubusercontent.com/ElvieBlooms/recomp_achievements/main/discord/assets/bot_icon.png";
+const ACCENT = 0x3d6b2a; // --accent on the site
+const BAR = 8;
+// GAMES in tools/leaderboard_ingest.py, for a board file without maxPoints
+const MAX_POINTS = { red: 745, blue: 678, yellow: 458, gold: 685, silver: 616, crystal: 864,
+                     firered: 453, leafgreen: 781, emerald: 2086, ruby: 485, sapphire: 485 };
+
+// The site's monospace name column. Markdown doesn't apply inside it.
+function code(name) {
+  return "`" + String(name).replace(/`/g, "'") + "`";
+}
+
+// The site's progress meter: ▰▰▰▱▱▱▱▱ 37%. Integer maths, as in Python.
+function meter(points, max) {
+  if (!max) return "";
+  const p = Math.max(0, Math.min(points, max));
+  const filled = Math.floor((2 * BAR * p + max) / (2 * max));
+  return "`" + "\u25B0".repeat(filled) + "\u25B1".repeat(BAR - filled) + "` " + Math.floor((100 * p) / max) + "%";
+}
 
 function stamp(s) {
   return /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ$/.test(String(s)) ? Date.parse(s) / 1000 : null;
 }
 
-function medalLines(entries, extra) {
-  let top;
-  if (extra) {
-    top = topExtra(entries, null).top;
-  } else {
-    top = topEntries(entries).map((e) => ({ name: e.name, points: e.points | 0 }));
-  }
-  return top.map((e, i) => `${MEDALS[i]} **${plain(e.name)}** ${e.points | 0} pts`);
+function medalLines(entries, extra, max) {
+  const top = extra ? topExtra(entries, null).top : topEntries(entries);
+  const lines = [];
+  top.forEach((e, i) => {
+    lines.push(`${MEDALS[i]} ${code(e.name)} **${e.points | 0}** pts`);
+    const bar = extra ? "" : meter(e.points | 0, max);
+    if (bar) lines.push(bar);
+  });
+  return lines;
 }
 
 function ownerOf(e) {
@@ -550,14 +570,15 @@ export function allBoard(board, boardUrl, now = Math.floor(Date.now() / 1000)) {
     : "A quiet week. Your move.");
   desc.push("Install **Recomp Achievements Online** and your score goes up when you save, "
     + "or send your card with `/score`. `/check` shows any game's top 3.");
-  const embeds = [{ title: "Recomp Achievements leaderboard", url: base + "/", color: 0x2b8fa8,
-                    description: desc.join("\n") }];
+  const embeds = [{ author: { name: "Recomp Achievements", url: base + "/", icon_url: ICON },
+                    title: "Leaderboard", url: base + "/", color: ACCENT, description: desc.join("\n") }];
   for (const [title, list, color] of GENERATIONS) {
     let people = 0;
     const fields = list.map((g) => {
       const entries = entriesOf(games[g]);
       people += entries.length;
-      const lines = medalLines(entries, false);
+      const max = (games[g] && games[g].maxPoints) || MAX_POINTS[g];
+      const lines = medalLines(entries, false, max);
       return { name: GAMES[g].replace("Pokemon ", ""), inline: true,
                value: (lines.join("\n") || "*No scores yet*").slice(0, 1024) };
     });
@@ -574,7 +595,7 @@ export function allBoard(board, boardUrl, now = Math.floor(Date.now() / 1000)) {
     }
   }
   const extra = { title: "Extra Credit", url: `${base}/#${first || "red"}/extra`, color: 0x6f7a86,
-                  footer: { text: "Bonus and mod achievements. Kept apart from the main board." } };
+                  footer: { text: "Bonus and mod achievements. Kept apart from the main board.", icon_url: ICON } };
   if (extraFields.length) extra.fields = extraFields;
   else extra.description = "*No Extra Credit yet*";
   embeds.push(extra);
