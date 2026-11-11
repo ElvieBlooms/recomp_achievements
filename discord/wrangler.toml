@@ -14,12 +14,12 @@ BOARD_URL = "https://elvieblooms.github.io/recomp_achievements/"
 # /link keeps its codes here. Create it with
 #   npx wrangler kv namespace create LINKS
 # and put the id it prints below.
-# [[kv_namespaces]]
-# binding = "LINKS"
-# id = "..."
+[[kv_namespaces]]
+ binding = "LINKS"
+ id = "279fc56c81034a3497a0b4f660bb98d5"
 #
 # Caps sends per save. The namespace_id is any number you choose.
-# [[ratelimits]]
-# name = "AUTO_LIMIT"
-# namespace_id = "1001"
-# simple = { limit = 10, period = 60 }
+ [[ratelimits]]
+ name = "AUTO_LIMIT"
+ namespace_id = "1001"
+ simple = { limit = 10, period = 60 }
