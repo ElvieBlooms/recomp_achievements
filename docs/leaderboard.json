@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-11T06:03:08Z",
+ "updated": "2026-11-11T06:05:46Z",
  "banned": [],
  "games": {
   "red": {
@@ -377,9 +377,9 @@
      "issue": 3
     },
     {
-     "name": "JOTT",
-     "points": 39,
-     "earned": 7,
+     "name": "JOtt",
+     "points": 49,
+     "earned": 8,
      "sources": {
       "bonus": {
        "earned": 1,
@@ -387,9 +387,9 @@
        "points": 1
       },
       "emerald_lens": {
-       "earned": 6,
+       "earned": 7,
        "total": 11,
-       "points": 38
+       "points": 48
       },
       "max_raids": {
        "earned": 0,
@@ -400,7 +400,7 @@
      "saveId": "BPWJVN",
      "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
      "via": "online",
-     "date": "2026-11-10T06:59:01Z",
+     "date": "2026-11-11T06:05:46Z",
      "first": "2026-11-09T08:06:01Z",
      "src": "online:89452be12559ab80407327dd3f8e8bd9"
     }
