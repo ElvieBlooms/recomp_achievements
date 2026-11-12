@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-12T09:21:04Z",
+ "updated": "2026-11-12T09:21:12Z",
  "banned": [],
  "games": {
   "red": {
@@ -455,6 +455,34 @@
      "date": "2026-11-11T06:05:46Z",
      "first": "2026-11-09T08:06:01Z",
      "src": "online:89452be12559ab80407327dd3f8e8bd9"
+    },
+    {
+     "name": "JOtts",
+     "points": 3,
+     "earned": 2,
+     "sources": {
+      "bonus": {
+       "earned": 0,
+       "total": 1,
+       "points": 0
+      },
+      "emerald_lens": {
+       "earned": 2,
+       "total": 11,
+       "points": 3
+      },
+      "max_raids": {
+       "earned": 0,
+       "total": 14,
+       "points": 0
+      }
+     },
+     "saveId": "T3WA0E",
+     "owner": "online:04e523393d58a5419adee8806e75bb80",
+     "via": "online",
+     "date": "2026-11-12T09:21:12Z",
+     "first": "2026-11-12T09:21:12Z",
+     "src": "online:04e523393d58a5419adee8806e75bb80"
     }
    ]
   },
