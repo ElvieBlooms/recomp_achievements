@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-12T20:27:06Z",
+ "updated": "2026-11-12T22:25:17Z",
  "banned": [],
  "games": {
   "red": {
@@ -298,19 +298,24 @@
     },
     {
      "name": "ASH",
-     "points": 93,
-     "earned": 10,
+     "points": 95,
+     "earned": 11,
      "sources": {
       "bonus": {
        "earned": 10,
        "total": 16,
        "points": 93
+      },
+      "pika_remastered": {
+       "earned": 1,
+       "total": 5,
+       "points": 2
       }
      },
      "saveId": "VC9717",
      "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
      "via": "online",
-     "date": "2026-11-12T14:03:47Z",
+     "date": "2026-11-12T22:25:17Z",
      "first": "2026-11-12T14:03:47Z",
      "src": "online:2d3a62e805866ad0626db202e81e3930"
     },
