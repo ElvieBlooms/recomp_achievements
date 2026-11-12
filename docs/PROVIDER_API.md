@@ -1,4 +1,4 @@
-# Recomp Achievements — Provider API (v1.4.0)
+# Recomp Achievements — Provider API (v1.5.0)
 
 How another Gen1Recomp mod adds its own achievements, reports progress,
 and listens for unlocks. `achievement_sandbox/main.lua` is a complete,
@@ -144,6 +144,9 @@ Since 1.4.0:
   `fn(card)` is called when the card draws and returns a string, a list
   of strings, or nil for nothing. Calling it again replaces your note.
   Recomp Achievements Online uses this for its status and link code.
+- Since 1.5.0, `ach.addCardNote(mod, fn, { onPress = function(card) ... })`
+  also gets the A button on the card page. Return true when you used it;
+  otherwise A closes the card as usual.
 
 Nothing changes for a mod that adds achievements when the player also has
 Recomp Achievements Online: it only reads the cards above.

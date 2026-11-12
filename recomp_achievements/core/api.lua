@@ -22,12 +22,12 @@
 
 local Api = {}
 
-Api.VERSION = "1.4.0"
+Api.VERSION = "1.5.0"
 Api.CAPABILITIES = {
   register = true, register_many = true, unlock = true,
   progress = true, query = true, events = true, games_filter = true,
   hidden = true, official_totals = true, leaderboard_card = true, provider_tabs = true,
-  extra_card = true, card_notes = true,
+  extra_card = true, card_notes = true, card_note_press = true,
 }
 
 -- Writes per provider per second before calls return "rate_limited".
@@ -248,13 +248,18 @@ function Api.install(mod, engine, util, Share)
   -- or up to three strings of 18 characters; nil shows nothing. Notes
   -- replace the "enter at" text, so use it for something the player needs
   -- instead, like an online add-on's status. Calling again replaces yours.
-  exports.addCardNote = method(exports, function(providerId, fn)
+  -- Since 1.5.0, opts.onPress(card) gets the A button on the card page;
+  -- return true when you used it, or the card closes as usual.
+  exports.addCardNote = method(exports, function(providerId, fn, opts)
     if type(providerId) == "table" and providerId.id then providerId = providerId.id end
     if not util.validId(providerId) then
       return fail("invalid_provider", "provider id must look like a mod id")
     end
     if not Share then return fail("unavailable") end
-    if not Share.addNote(providerId, fn) then return fail("invalid_note", "fn must be a function") end
+    local onPress = type(opts) == "table" and opts.onPress or nil
+    if not Share.addNote(providerId, fn, onPress) then
+      return fail("invalid_note", "fn and opts.onPress must be functions")
+    end
     return true
   end)
 

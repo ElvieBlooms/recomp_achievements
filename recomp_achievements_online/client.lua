@@ -6,7 +6,7 @@
 -- The worker (discord/worker.js) answers GET /auto with plain text:
 --   ok                        sent, not linked to Discord
 --   ok linked                 sent, and linked
---   ok ... code ABCD-1234     with link=1 (SHOW LINK CODE on): the code for
+--   ok ... code ABCD-1234     with link=1 (A on the card): the code for
 --                             /link, good for an hour
 --   error <message>           not sent, and why
 -- "Sent" means the worker passed it to the board's GitHub Action, which
@@ -97,7 +97,7 @@ function Client.reply(body)
 end
 
 -- Up to three lines of 18 characters for the leaderboard card. The link
--- code only shows with SHOW LINK CODE on: whoever uses it gets the save, and
+-- code only shows after A (state.reveal): whoever uses it gets the save, and
 -- people share screenshots of this card.
 function Client.note(state)
   if state.off then return { "ONLINE SCORES OFF" } end
@@ -108,13 +108,20 @@ function Client.note(state)
   else lines[1] = "ONLINE: ON SAVE" end
   if state.error then
     lines[2] = state.error:upper():sub(1, 18)
-  elseif state.showCode and state.code then
+    if state.button then lines[3] = "A: TRY AGAIN" end
+  elseif state.reveal and state.code then
+    if state.keyUnsaved then lines[1] = "SAVE AFTER /link" end
     lines[2] = "DISCORD: /link"
     lines[3] = state.code
-  elseif state.showCode then
-    lines[2] = "SAVE FOR A CODE"
+  elseif state.reveal and state.noCodes and not state.sending then
+    lines[2] = "NO CODES RIGHT NOW"
+  elseif state.reveal then
+    lines[2] = "GETTING CODE..."
   elseif state.linked then
     lines[2] = "LINKED TO DISCORD"
+    if state.button then lines[3] = "A: NEW LINK CODE" end
+  elseif state.button then
+    lines[2] = "A: GET LINK CODE"
   end
   return lines
 end

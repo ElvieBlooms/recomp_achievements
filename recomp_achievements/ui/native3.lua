@@ -111,6 +111,7 @@ function Native3.newScreen(o)
     if not settled then settled = true return end
     local function pressed(b) return input:wasPressed(b) end
     if card then
+      if card == 1 and pressed("a") and Share and Share.pressNote() then return end
       if pressed("b") or pressed("a") or pressed("select") then card = false
       elseif pressed("right") and Share then card = math.min(3, card + 1)
       elseif pressed("left") and Share then card = math.max(1, card - 1) end

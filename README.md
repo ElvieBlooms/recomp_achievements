@@ -34,7 +34,7 @@ and each achievement's author, and are credited in the game. See
 ## Install
 
 1. In the launcher, open **MODS** and find Recomp Achievements under
-   **Find mods**, or download `recomp_achievements-2.6.4.zip` from
+   **Find mods**, or download `recomp_achievements-2.7.1.zip` from
    Releases and use **Import mod .zip** (dropping the zip on the launcher
    window works too). Unzipping by hand also works: put the files in
    `mods/recomp_achievements/`.
@@ -163,9 +163,9 @@ choose. Mods that add achievements don't need to do anything for it: they
 still talk to `recomp_achievements`, and their achievements count on Extra
 Credit the same way.
 
-A save's scores belong to the save until it's linked: with SHOW LINK CODE
-on, the card shows a code, and `/link CODE` with the Discord bot ties the
-save to that account.
+A save's scores belong to the save until it's linked: A on the card shows
+a code, and `/link CODE` with the Discord bot ties the save to that
+account.
 What it sends and the options are in
 [recomp_achievements_online/README.md](recomp_achievements_online/README.md).
 

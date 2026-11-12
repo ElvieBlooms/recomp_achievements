@@ -1,7 +1,7 @@
 {
   "id": "recomp_achievements_online",
   "name": "Recomp Achievements Online",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "github": "ElvieBlooms/recomp_achievements",
   "api": 3,
   "entry": "main.lua",
@@ -10,7 +10,7 @@
   "category": "OTHER",
   "priority": 60,
   "dependencies": [
-    "recomp_achievements@>=2.7.0#ElvieBlooms/recomp_achievements"
+    "recomp_achievements@>=2.7.1#ElvieBlooms/recomp_achievements"
   ],
   "optional_dependencies": [],
   "conflicts": [],

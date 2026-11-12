@@ -21,22 +21,23 @@ return function(mod)
 
   local found = mod.find("recomp_achievements")
   local ach = found and found.exports
-  if not (ach and ach.supports and ach.supports("card_notes")) then
-    mod.log:warn("needs recomp_achievements 2.7.0 or newer; nothing will be sent")
+  if not (ach and ach.supports and ach.supports("card_note_press")) then
+    mod.log:warn("needs recomp_achievements 2.7.1 or newer; nothing will be sent")
     return
   end
 
   mod.options:define({
     { key = "onlineScores", type = "toggle", label = "ONLINE SCORES", default = true },
     { key = "sendExtra", type = "toggle", label = "SEND EXTRA CREDIT", default = true },
-    -- Asks for a /link code on the next save and shows it on the card.
-    -- Off by default, since the code hands the save to whoever uses it.
-    { key = "showLinkCode", type = "toggle", label = "SHOW LINK CODE", default = false },
+    -- A on the card gets a /link code and shows it until A again. The code
+    -- stays hidden until asked for, since it hands the save to whoever uses
+    -- it and people share screenshots of the card.
+    { key = "linkButton", type = "toggle", label = "LINK CODE ON A", default = true },
   })
 
   -- Status for the card note. Only what this session saw; the save keeps
   -- the key, the last cards sent and whether it's linked. The link code is
-  -- never saved: it lasts an hour.
+  -- never saved: it lasts an hour, so it's asked for again after 50 minutes.
   local state = {}
   local queue, current, lastAt = {}, nil, nil
 
@@ -51,14 +52,39 @@ return function(mod)
     state = { linked = mod.save:get("linked", false) == true }
   end
 
+  local CODE_LIFE = 50 * 60
+  local send, sendCode
+
+  local function codeFresh()
+    return state.code and state.codeAt and now() - state.codeAt < CODE_LIFE
+  end
+
   ach.addCardNote(mod, function()
     state.off = mod.options:get("onlineScores") == false
-    state.showCode = mod.options:get("showLinkCode") == true
+    state.button = mod.options:get("linkButton") ~= false
     return Client.note(state)
-  end)
+  end, {
+    onPress = function()
+      if mod.options:get("onlineScores") == false or mod.options:get("linkButton") == false then
+        return false
+      end
+      if state.error or not state.reveal then
+        state.reveal, state.error = true, nil
+        if not codeFresh() then state.code = nil; pcall(sendCode) end
+      else
+        state.reveal = false
+      end
+      return true
+    end,
+  })
 
   local function startNext()
     local job = table.remove(queue, 1)
+    if not job and state.wantCode then
+      state.wantCode = false
+      pcall(sendCode)
+      return
+    end
     if not job then state.sending = false; return end
     local handle, why = mod.fetch:get(job.url, { accept = "text/plain", maxSeconds = 20 })
     if not handle then
@@ -76,7 +102,7 @@ return function(mod)
       or { ok = false, message = result.err or "no connection" }
     if not reply.ok then
       state.error = reply.message
-      queue = {}
+      queue, state.wantCode = {}, false
       state.sending = false
       return
     end
@@ -85,15 +111,14 @@ return function(mod)
     state.sent, state.error = true, nil
     state.linked = reply.linked
     mod.save:set("linked", reply.linked)
-    if job.link then state.code = reply.code end
+    if job.link then
+      state.code, state.codeAt = reply.code, now()
+      state.noCodes = reply.code == nil
+    end
     startNext()
   end
 
-  local function send()
-    if mod.options:get("onlineScores") == false then return end
-    if current or #queue > 0 then return end
-    if lastAt and now() - lastAt < Client.MIN_GAP then return end
-    if not mod.fetch:available() then state.error = "no network"; return end
+  local function getKey()
     local key = mod.save:get("key")
     if not Client.validKey(key) then
       local rand = love and love.math and love.math.random
@@ -104,13 +129,34 @@ return function(mod)
       end
       key = Client.newKey(rand)
       mod.save:set("key", key)
+      -- only kept once the game saves; the card says so next to a code
+      state.keyUnsaved = true
     end
+    return key
+  end
+
+  -- A on the card: send the card now, asking for a code, whatever changed.
+  function sendCode()
+    if current or #queue > 0 then state.wantCode = true; return end
+    if not mod.fetch:available() then state.error = "no network"; return end
     local card = ach.leaderboardCard()
-    -- SHOW LINK CODE sends the card even if it hasn't changed, to get a code
-    local link = mod.options:get("showLinkCode") == true and not state.code
-    if Client.wants(card, not link and mod.save:get("lastScore") or nil) then
-      queue[#queue + 1] = { url = Client.scoreUrl(SERVER, key, card, link), saveKey = "lastScore",
-                            code = card.code, link = link }
+    if not Client.wants(card, nil) then state.error = "earn one first"; return end
+    local key = getKey()
+    queue[1] = { url = Client.scoreUrl(SERVER, key, card, true), saveKey = "lastScore",
+                 code = card.code, link = true }
+    state.sending, state.error = true, nil
+    startNext()
+  end
+
+  function send()
+    if mod.options:get("onlineScores") == false then return end
+    if current or #queue > 0 then return end
+    if lastAt and now() - lastAt < Client.MIN_GAP then return end
+    if not mod.fetch:available() then state.error = "no network"; return end
+    local key = getKey()
+    local card = ach.leaderboardCard()
+    if Client.wants(card, mod.save:get("lastScore")) then
+      queue[#queue + 1] = { url = Client.scoreUrl(SERVER, key, card), saveKey = "lastScore", code = card.code }
     end
     if mod.options:get("sendExtra") ~= false then
       local extra = ach.extraCard()
@@ -128,7 +174,10 @@ return function(mod)
   mod.events:on("save.created", reset)
   -- Just before the file is written, so a new key goes into this save. The
   -- reply comes later, so the codes it confirms ride on the next save.
-  mod.events:on("save.writing", function() pcall(send) end)
+  mod.events:on("save.writing", function()
+    state.keyUnsaved = nil
+    pcall(send)
+  end)
 
   mod.hooks:wrap("core.update", function(nextFn, game, dt, ...)
     local result = nextFn(game, dt, ...)

@@ -45,7 +45,7 @@ test("both mods load in dependency order with no errors", function()
   check(env.ok, "loader:load returned false: " .. table.concat(env.loader.errors, "; "))
   eq(env.loader.order[1], "recomp_achievements", "framework loads first")
   eq(env.loader.order[2], "achievement_sandbox", "provider loads second")
-  eq(ach(env).apiVersion, "1.4.0", "api version")
+  eq(ach(env).apiVersion, "1.5.0", "api version")
   check(ach(env).supports("progress"), "supports progress")
   check(not ach(env).supports("leaderboards"), "unknown capability is false")
 end)
@@ -1589,17 +1589,21 @@ test("online client: reply, note, when to send", function()
   check(r.ok and r.linked and r.code == nil, "linked reply")
   r = C.reply("ok linked code WXYZ-0123")
   check(r.ok and r.linked and r.code == "WXYZ-0123", "linked, with a new code")
-  local plain = table.concat(C.note({ sent = true, code = "ABCD-1234" }), " ")
-  check(not plain:find("ABCD"), "no code on the card without SHOW LINK CODE")
-  check(table.concat(C.note({ sent = true, code = "ABCD-1234", showCode = true }), " "):find("ABCD%-1234"), "code with it")
+  local plain = table.concat(C.note({ sent = true, code = "ABCD-1234", button = true }), " ")
+  check(not plain:find("ABCD") and plain:find("A: GET LINK CODE"), "no code until A")
+  check(table.concat(C.note({ sent = true, code = "ABCD-1234", reveal = true }), " "):find("ABCD%-1234"), "code after A")
+  check(table.concat(C.note({ reveal = true, code = "ABCD-1234", keyUnsaved = true }), " "):find("SAVE AFTER"), "save the key")
+  check(table.concat(C.note({ sent = true, linked = true, button = true }), " "):find("A: NEW LINK CODE"), "relink")
+  check(not table.concat(C.note({ sent = true }), " "):find("A:"), "no prompt with the option off")
   r = C.reply("error card didn't check")
   check(not r.ok and r.message == "card didn't check", "error reply")
   check(not C.reply("<html>").ok, "anything else is an error")
   check(C.wants({ earned = 3, code = "A" }, nil), "new card")
   check(not C.wants({ earned = 3, code = "A" }, "A"), "unchanged card")
   check(not C.wants({ earned = 0, code = "B" }, nil), "empty card")
-  for _, st in ipairs({ {}, { sending = true }, { sent = true, code = "ABCD-1234" }, { sent = true, linked = true },
-                        { error = "try again later, please, really" }, { off = true } }) do
+  for _, st in ipairs({ {}, { sending = true }, { sent = true, code = "ABCD-1234", reveal = true },
+                        { sent = true, linked = true, button = true }, { reveal = true, noCodes = true },
+                        { error = "try again later, please, really", button = true }, { off = true } }) do
     local lines = C.note(st)
     check(#lines >= 1 and #lines <= 3, "note size")
     for _, l in ipairs(lines) do check(#l <= 18, "18 characters: " .. l) end
@@ -1667,29 +1671,31 @@ test("online add-on sends the card on save and shows the link code", function()
     env:writeBlob()
     eq(#requests, before, "an unchanged card isn't sent again")
 
-    -- SHOW LINK CODE: the next save asks for one even though nothing changed
-    env.loader.modOptions.recomp_achievements_online = { showLinkCode = true }
+    -- A on the card: asks for a code right away, no save needed
     openCard()
-    check(H.screenHas("SAVE FOR A CODE"), "asks for a save")
-    env:press("b"); env:press("b")
-    -- past the two-minute gap
-    local timer = love and love.timer
-    local realTime = timer and timer.getTime
-    if timer then timer.getTime = function() return (realTime and realTime() or 0) + 1000 end end
-    env:writeBlob()
-    if timer then timer.getTime = realTime end
-    check(#requests > before and requests[before + 1]:find("link=1", 1, true), "asked for a code")
+    check(H.screenHas("A: GET LINK CODE"), "the prompt")
+    env:press("a"); env:draw()
+    check(H.screenHas("ONLINE: SENDING") and H.screenHas("GETTING CODE"), "asking")
+    check(#requests == before + 1 and requests[before + 1]:find("link=1", 1, true), "asked for a code")
     for _ = 1, 4 do
       for i = 1, #requests do replies[i] = replies[i] or "ok code ABCD-1234" end
       env:frame()
     end
-    openCard()
+    env:draw()
     check(H.screenHas("DISCORD: /link") and H.screenHas("ABCD%-1234"), "link code on the card")
+    env:press("a"); env:draw()
+    check(not H.screenHas("ABCD%-1234") and H.screenHas("A: GET LINK CODE"), "A hides it again")
+    env:press("a"); env:draw()
+    eq(#requests, before + 1, "a fresh code isn't asked for twice")
+    check(H.screenHas("ABCD%-1234"), "and shows again")
     env:press("b"); env:press("b")
-    env.loader.modOptions.recomp_achievements_online = { showLinkCode = false }
+    -- with the option off, A closes the card as before
+    env.loader.modOptions.recomp_achievements_online = { linkButton = false }
     openCard()
-    check(not H.screenHas("ABCD%-1234"), "hidden again with the option off")
-    env:press("b"); env:press("b")
+    check(not H.screenHas("A: GET"), "no prompt")
+    env:press("a"); env:draw()
+    check(not H.screenHas("LEADERBOARD CARD"), "A closed the card")
+    env.loader.modOptions.recomp_achievements_online = nil
 
     -- Save Sync to another device: same key, nothing re-sent
     local env2 = H.boot({ "recomp_achievements", "recomp_achievements_online" })

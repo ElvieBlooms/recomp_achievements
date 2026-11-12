@@ -1,5 +1,24 @@
 # Changelog
 
+## 2.7.1
+
+Link codes you can actually find.
+
+### Changed
+- Recomp Achievements Online: press **A** on the leaderboard card for your
+  `/link` code. It asks the bot right away, no save needed, and A again
+  hides it. Replaces SHOW LINK CODE, which wanted an option, a save and
+  some patience. LINK CODE ON A is on by default.
+- The card says what's happening: A: GET LINK CODE, GETTING CODE..., the
+  code, or why it didn't work with A: TRY AGAIN. A linked save offers
+  A: NEW LINK CODE.
+- A brand new save shows SAVE AFTER /link next to its code, since its key
+  is only kept once the game saves.
+- API 1.5.0: addCardNote takes opts.onPress for the A button on the card.
+
+### Upgrading
+- Update both zips together; the add-on needs 2.7.1.
+
 ## 2.7.0
 
 Online scores, for people who want them. The mod itself stays offline.

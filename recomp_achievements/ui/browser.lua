@@ -255,6 +255,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     if closing then game.stack:pop() return end
     if not settled then settled = true return end
     if about then
+      if about == 1 and input:wasPressed("a") and Share and Share.pressNote() then return end
       if input:wasPressed("b") or input:wasPressed("a") or input:wasPressed("select") then about = false
       elseif input:wasPressed("right") and Share then about = math.min(3, about + 1)
       elseif input:wasPressed("left") and Share then about = math.max(1, about - 1) end

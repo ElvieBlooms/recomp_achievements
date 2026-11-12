@@ -205,14 +205,31 @@ end
 -- saying when it last sent the score. Each note is a list of up to three
 -- lines of 18 characters, which is what the classic card has room for.
 -- When there are notes they take the place of the "enter at" text.
+-- A note can also take the A button on the card (onPress), so it can show
+-- something on request, like a link code that shouldn't sit in screenshots.
 Share.notes = {}
 Share.noteOrder = {}
+Share.notePress = {}
 
-function Share.addNote(id, fn)
+function Share.addNote(id, fn, onPress)
   if type(fn) ~= "function" then return false end
+  if onPress ~= nil and type(onPress) ~= "function" then return false end
   if not Share.notes[id] then Share.noteOrder[#Share.noteOrder + 1] = id end
   Share.notes[id] = fn
+  Share.notePress[id] = onPress
   return true
+end
+
+-- A on the card page. True when a note used it, so the card stays open.
+function Share.pressNote(card)
+  for _, id in ipairs(Share.noteOrder) do
+    local fn = Share.notePress[id]
+    if fn then
+      local ok, used = pcall(fn, card)
+      if ok and used then return true end
+    end
+  end
+  return false
 end
 
 function Share.noteLines(card)

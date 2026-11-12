@@ -23,15 +23,16 @@ mod either way.
 Until it's linked, a save's scores belong to the save. To manage them from
 Discord (and update them with `/score` too), link it once:
 
-1. In the MODS menu, turn on **SHOW LINK CODE** for this add-on.
-2. Save in game. The card shows `DISCORD: /link` and a code like
-   `ABCD-1234`.
+1. Open START > TROPHIES and press SELECT for the leaderboard card.
+2. Press **A**. The bottom of the card shows `DISCORD: /link` and a code
+   like `ABCD-1234`.
 3. Send `/link ABCD-1234` to the leaderboard bot within the hour.
-4. Turn SHOW LINK CODE off again.
+4. Press A again to hide it, and save once if the card says SAVE AFTER
+   /link (a brand new save hasn't kept its key yet).
 
 Treat the code like a password: whoever uses it gets the save's scores, so
-don't post the card while it's showing. If someone does, make a new code
-and `/link` again: the newest link wins. Each save links on its own, and
+don't post the card while it's showing. If someone does, press A for a new
+code on a linked save and `/link` again: the newest link wins. Each save links on its own, and
 Save Sync carries the link to your other devices.
 
 ## What it sends
@@ -48,8 +49,8 @@ In the MODS menu:
 
 - **ONLINE SCORES**: turn sending off without uninstalling.
 - **SEND EXTRA CREDIT**: off sends only the main card.
-- **SHOW LINK CODE**: asks for a `/link` code on the next save and shows it
-  on the card.
+- **LINK CODE ON A**: A on the card gets and shows a `/link` code. On by
+  default; off, A closes the card as usual.
 
 ONLINE: SENT means the bot took it. The board checks it again and updates
 within a few minutes. ONLINE: NOT SENT shows why underneath, like SAVE ID

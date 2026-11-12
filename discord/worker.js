@@ -29,7 +29,7 @@
 //   code:<CODE>       -> key hash, gone after an hour
 //   keycode:<hash>    -> CODE, so a save gets the same code until it expires
 //   link:<hash>       -> Discord owner hash, once /link has run
-// A code is only made when the add-on asks (SHOW LINK CODE on), since
+// A code is only made when the add-on asks (A on the card), since
 // whoever runs /link with it gets the save. The key itself is what proves a
 // save, so a newer code from the same save can always link it again.
 // Without LINKS the add-on still sends, owned by the save, and /link says it
@@ -392,8 +392,9 @@ async function handleLink(env, interaction) {
   const code = normalizeCode(options(interaction).code || "");
   const hash = /^[0-9A-Z]{4}-[0-9A-Z]{4}$/.test(code) ? await env.LINKS.get("code:" + code) : null;
   if (!hash) {
-    return { reply: "That code doesn't exist or has expired (codes last an hour). Turn on SHOW LINK CODE " +
-      "in the add-on's options, save, and use the code on the card (START > TROPHIES > SELECT)." };
+    return { reply: "That code doesn't exist or has expired (codes last an hour). Open the leaderboard card " +
+      "(START > TROPHIES > SELECT) and press A for a new one. On add-on 2.7.0, turn on SHOW LINK CODE " +
+      "in its options and save instead." };
   }
   const user = interaction.user || (interaction.member && interaction.member.user) || {};
   const owner = await ownerHash(env.OWNER_SALT, user.id);

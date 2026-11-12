@@ -437,6 +437,7 @@ function Modern.newScreen(deps)
     local function pressed(b) return input:wasPressed(b) end
     if st.modal then
       -- pages: 1 leaderboard card, 2 extra credit, 3 about
+      if st.modal == 1 and pressed("a") and Share and Share.pressNote() then return end
       if pressed("b") or pressed("a") or pressed("select") or pressed("start") then st.modal = nil
       elseif pressed("right") and Share then st.modal = math.min(3, st.modal + 1)
       elseif pressed("left") and Share then st.modal = math.max(1, st.modal - 1) end
