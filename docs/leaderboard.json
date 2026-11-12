@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-12T14:03:47Z",
+ "updated": "2026-11-12T14:11:39Z",
  "banned": [],
  "games": {
   "red": {
@@ -159,7 +159,20 @@
    "total": 61
   },
   "leafgreen": {
-   "entries": [],
+   "entries": [
+    {
+     "name": "MEMORY",
+     "points": 636,
+     "earned": 101,
+     "saveId": "Z98KMP",
+     "time": 59999,
+     "owner": "online:6c9a862a29b72e444fa2d392c3631461",
+     "via": "online",
+     "date": "2026-11-12T14:11:39Z",
+     "first": "2026-11-12T14:11:39Z",
+     "src": "online:6c9a862a29b72e444fa2d392c3631461"
+    }
+   ],
    "title": "Pokemon LeafGreen",
    "maxPoints": 781,
    "total": 128
