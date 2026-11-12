@@ -1,13 +1,26 @@
 {
  "version": 1,
- "updated": "2026-11-12T13:51:41Z",
+ "updated": "2026-11-12T13:51:48Z",
  "banned": [],
  "games": {
   "red": {
    "title": "Pokemon Red",
    "maxPoints": 745,
    "total": 93,
-   "entries": []
+   "entries": [
+    {
+     "name": "RED",
+     "points": 28,
+     "earned": 7,
+     "saveId": "W6Y6FC",
+     "time": 311,
+     "owner": "online:192d979615f2b23e6b032c61ca2b435c",
+     "via": "online",
+     "date": "2026-11-12T13:51:48Z",
+     "first": "2026-11-12T13:51:48Z",
+     "src": "online:192d979615f2b23e6b032c61ca2b435c"
+    }
+   ]
   },
   "blue": {
    "title": "Pokemon Blue",
