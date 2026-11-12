@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-12T18:24:24Z",
+ "updated": "2026-11-12T18:30:27Z",
  "banned": [],
  "games": {
   "red": {
@@ -124,13 +124,13 @@
     },
     {
      "name": "THIAGO",
-     "points": 30,
-     "earned": 8,
+     "points": 35,
+     "earned": 9,
      "saveId": "WQZ72K",
-     "time": 89,
+     "time": 96,
      "owner": "discord:e8a2cf49696d151350a5d7a92073697c",
      "via": "online",
-     "date": "2026-11-12T17:50:33Z",
+     "date": "2026-11-12T18:30:27Z",
      "first": "2026-11-07T16:55:25Z",
      "src": "online:ba3e635dd7059c3b5e9e024e54945059"
     }
