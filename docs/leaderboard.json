@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-12T13:59:24Z",
+ "updated": "2026-11-12T14:00:46Z",
  "banned": [],
  "games": {
   "red": {
@@ -26,7 +26,20 @@
    "title": "Pokemon Blue",
    "maxPoints": 678,
    "total": 90,
-   "entries": []
+   "entries": [
+    {
+     "name": "JOHN",
+     "points": 258,
+     "earned": 42,
+     "saveId": "YGYF16",
+     "time": 4401,
+     "owner": "online:68f28a9850cf345a6f1d202d61f2066d",
+     "via": "online",
+     "date": "2026-11-12T14:00:46Z",
+     "first": "2026-11-12T14:00:46Z",
+     "src": "online:68f28a9850cf345a6f1d202d61f2066d"
+    }
+   ]
   },
   "yellow": {
    "title": "Pokemon Yellow",
