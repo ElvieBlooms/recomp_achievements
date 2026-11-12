@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-12T14:01:29Z",
+ "updated": "2026-11-12T14:01:58Z",
  "banned": [],
  "games": {
   "red": {
@@ -220,7 +220,26 @@
    ]
   },
   "blue": {
-   "entries": []
+   "entries": [
+    {
+     "name": "JOHN",
+     "points": 121,
+     "earned": 14,
+     "sources": {
+      "bonus": {
+       "earned": 14,
+       "total": 16,
+       "points": 121
+      }
+     },
+     "saveId": "YGYF16",
+     "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
+     "via": "online",
+     "date": "2026-11-12T14:01:58Z",
+     "first": "2026-11-12T14:01:58Z",
+     "src": "online:68f28a9850cf345a6f1d202d61f2066d"
+    }
+   ]
   },
   "yellow": {
    "entries": [
