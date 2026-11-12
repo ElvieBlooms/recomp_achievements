@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-12T12:40:40Z",
+ "updated": "2026-11-12T12:43:11Z",
  "banned": [],
  "games": {
   "red": {
@@ -366,8 +366,8 @@
     },
     {
      "name": "AAAA",
-     "points": 10,
-     "earned": 4,
+     "points": 20,
+     "earned": 5,
      "sources": {
       "bonus": {
        "earned": 2,
@@ -380,15 +380,15 @@
        "points": 7
       },
       "facets": {
-       "earned": 0,
+       "earned": 1,
        "total": 10,
-       "points": 0
+       "points": 10
       }
      },
      "saveId": "N928ZT",
      "owner": "online:1066683fe818aaccbe10e6e1e6404fe8",
      "via": "online",
-     "date": "2026-11-12T12:40:40Z",
+     "date": "2026-11-12T12:43:11Z",
      "first": "2026-11-12T12:40:40Z",
      "src": "online:1066683fe818aaccbe10e6e1e6404fe8"
     }
