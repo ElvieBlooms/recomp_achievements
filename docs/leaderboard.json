@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-12T09:14:02Z",
+ "updated": "2026-11-12T09:21:04Z",
  "banned": [],
  "games": {
   "red": {
@@ -138,6 +138,18 @@
      "date": "2026-11-11T19:09:35Z",
      "first": "2026-11-11T19:09:35Z",
      "src": "online:46866d66f41c795dd00bf08f633685d6"
+    },
+    {
+     "name": "JOtts",
+     "points": 1,
+     "earned": 1,
+     "saveId": "T3WA0E",
+     "time": 3,
+     "owner": "online:04e523393d58a5419adee8806e75bb80",
+     "via": "online",
+     "date": "2026-11-12T09:21:04Z",
+     "first": "2026-11-12T09:21:04Z",
+     "src": "online:04e523393d58a5419adee8806e75bb80"
     }
    ],
    "title": "Pokemon Emerald",
