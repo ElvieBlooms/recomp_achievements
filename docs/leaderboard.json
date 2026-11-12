@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-12T11:35:18Z",
+ "updated": "2026-11-12T11:36:09Z",
  "banned": [],
  "games": {
   "red": {
@@ -53,7 +53,7 @@
      "earned": 1,
      "saveId": "2Z93NV",
      "time": 26,
-     "owner": "online:161ca197d233c27dd67382bf65a5e8de",
+     "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
      "via": "online",
      "date": "2026-11-12T11:35:13Z",
      "first": "2026-11-12T11:35:13Z",
@@ -262,7 +262,7 @@
       }
      },
      "saveId": "2Z93NV",
-     "owner": "online:161ca197d233c27dd67382bf65a5e8de",
+     "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
      "via": "online",
      "date": "2026-11-12T11:35:18Z",
      "first": "2026-11-12T11:35:18Z",
