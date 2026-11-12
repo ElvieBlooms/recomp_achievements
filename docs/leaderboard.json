@@ -421,34 +421,6 @@
      "issue": 3
     },
     {
-     "name": "AA",
-     "points": 84,
-     "earned": 12,
-     "sources": {
-      "bonus": {
-       "earned": 1,
-       "total": 1,
-       "points": 1
-      },
-      "emerald_lens": {
-       "earned": 6,
-       "total": 11,
-       "points": 38
-      },
-      "facets": {
-       "earned": 5,
-       "total": 9,
-       "points": 45
-      }
-     },
-     "saveId": "W9YQXC",
-     "owner": "online:46866d66f41c795dd00bf08f633685d6",
-     "via": "online",
-     "date": "2026-11-11T19:09:42Z",
-     "first": "2026-11-11T19:09:42Z",
-     "src": "online:46866d66f41c795dd00bf08f633685d6"
-    },
-    {
      "name": "JOtt",
      "points": 49,
      "earned": 8,
