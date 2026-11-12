@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-12T12:57:40Z",
+ "updated": "2026-11-12T13:04:59Z",
  "banned": [],
  "games": {
   "red": {
@@ -95,6 +95,18 @@
      "date": "2026-11-12T08:30:50Z",
      "first": "2026-11-07T16:55:25Z",
      "src": "online:ba3e635dd7059c3b5e9e024e54945059"
+    },
+    {
+     "name": "AAAAAAA",
+     "points": 1,
+     "earned": 1,
+     "saveId": "1JR7YT",
+     "time": 13,
+     "owner": "online:7994a2ae82b7c696ab338bf29b824fbc",
+     "via": "online",
+     "date": "2026-11-12T13:04:59Z",
+     "first": "2026-11-12T13:04:59Z",
+     "src": "online:7994a2ae82b7c696ab338bf29b824fbc"
     }
    ],
    "title": "Pokemon Crystal",
