@@ -95,18 +95,6 @@
      "date": "2026-11-12T08:30:50Z",
      "first": "2026-11-07T16:55:25Z",
      "src": "online:ba3e635dd7059c3b5e9e024e54945059"
-    },
-    {
-     "name": "AAAAAAA",
-     "points": 1,
-     "earned": 1,
-     "saveId": "1JR7YT",
-     "time": 13,
-     "owner": "online:7994a2ae82b7c696ab338bf29b824fbc",
-     "via": "online",
-     "date": "2026-11-12T13:05:18Z",
-     "first": "2026-11-12T13:04:59Z",
-     "src": "online:7994a2ae82b7c696ab338bf29b824fbc"
     }
    ],
    "title": "Pokemon Crystal",
@@ -151,18 +139,6 @@
      "date": "2026-11-12T09:14:02Z",
      "first": "2026-11-10T06:46:58Z",
      "src": "online:89452be12559ab80407327dd3f8e8bd9"
-    },
-    {
-     "name": "AA",
-     "points": 6,
-     "earned": 4,
-     "saveId": "W9YQXC",
-     "time": 117,
-     "owner": "online:46866d66f41c795dd00bf08f633685d6",
-     "via": "online",
-     "date": "2026-11-11T19:09:35Z",
-     "first": "2026-11-11T19:09:35Z",
-     "src": "online:46866d66f41c795dd00bf08f633685d6"
     },
     {
      "name": "JOtts",
@@ -349,34 +325,6 @@
      "src": "online:ba3e635dd7059c3b5e9e024e54945059"
     },
     {
-     "name": "AAAAAAA",
-     "points": 36,
-     "earned": 7,
-     "sources": {
-      "bonus": {
-       "earned": 2,
-       "total": 17,
-       "points": 3
-      },
-      "emerald_lens": {
-       "earned": 5,
-       "total": 9,
-       "points": 33
-      },
-      "facets": {
-       "earned": 0,
-       "total": 10,
-       "points": 0
-      }
-     },
-     "saveId": "1JR7YT",
-     "owner": "online:7994a2ae82b7c696ab338bf29b824fbc",
-     "via": "online",
-     "date": "2026-11-12T13:05:05Z",
-     "first": "2026-11-12T12:55:59Z",
-     "src": "online:7994a2ae82b7c696ab338bf29b824fbc"
-    },
-    {
      "name": "ELVIE",
      "points": 25,
      "earned": 5,
@@ -403,34 +351,6 @@
      "date": "2026-11-07T04:16:28Z",
      "first": "2026-11-07T03:56:39Z",
      "src": "online:e8a165e58a65302c92825aafafd6eb26"
-    },
-    {
-     "name": "AAAA",
-     "points": 20,
-     "earned": 5,
-     "sources": {
-      "bonus": {
-       "earned": 2,
-       "total": 17,
-       "points": 3
-      },
-      "emerald_lens": {
-       "earned": 2,
-       "total": 9,
-       "points": 7
-      },
-      "facets": {
-       "earned": 1,
-       "total": 10,
-       "points": 10
-      }
-     },
-     "saveId": "N928ZT",
-     "owner": "online:1066683fe818aaccbe10e6e1e6404fe8",
-     "via": "online",
-     "date": "2026-11-12T12:45:08Z",
-     "first": "2026-11-12T12:40:40Z",
-     "src": "online:1066683fe818aaccbe10e6e1e6404fe8"
     }
    ]
   },
