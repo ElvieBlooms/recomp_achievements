@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-13T06:24:07Z",
+ "updated": "2026-11-13T06:49:47Z",
  "banned": [],
  "games": {
   "red": {
@@ -468,6 +468,29 @@
      "src": "online:fc537e27847b0f952d00d94ae8f4dbab"
     },
     {
+     "name": "Chibi",
+     "points": 108,
+     "earned": 15,
+     "sources": {
+      "bonus": {
+       "earned": 2,
+       "total": 17,
+       "points": 3
+      },
+      "play_nav": {
+       "earned": 13,
+       "total": 62,
+       "points": 105
+      }
+     },
+     "saveId": "A48KBX",
+     "owner": "online:335655b0c6cb7cf70a83004c6ee49a12",
+     "via": "online",
+     "date": "2026-11-13T06:49:47Z",
+     "first": "2026-11-13T05:56:41Z",
+     "src": "online:335655b0c6cb7cf70a83004c6ee49a12"
+    },
+    {
      "name": "THIAGO",
      "points": 75,
      "earned": 15,
@@ -494,29 +517,6 @@
      "date": "2026-11-12T19:21:30Z",
      "first": "2026-11-07T16:55:33Z",
      "src": "online:ba3e635dd7059c3b5e9e024e54945059"
-    },
-    {
-     "name": "Chibi",
-     "points": 63,
-     "earned": 9,
-     "sources": {
-      "bonus": {
-       "earned": 2,
-       "total": 17,
-       "points": 3
-      },
-      "play_nav": {
-       "earned": 7,
-       "total": 62,
-       "points": 60
-      }
-     },
-     "saveId": "A48KBX",
-     "owner": "online:335655b0c6cb7cf70a83004c6ee49a12",
-     "via": "online",
-     "date": "2026-11-13T06:24:07Z",
-     "first": "2026-11-13T05:56:41Z",
-     "src": "online:335655b0c6cb7cf70a83004c6ee49a12"
     },
     {
      "name": "ELVIE",
