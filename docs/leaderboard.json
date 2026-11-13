@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-13T07:12:29Z",
+ "updated": "2026-11-13T08:04:40Z",
  "banned": [],
  "games": {
   "red": {
@@ -469,24 +469,24 @@
     },
     {
      "name": "Chibi",
-     "points": 158,
-     "earned": 19,
+     "points": 190,
+     "earned": 23,
      "sources": {
       "bonus": {
-       "earned": 2,
+       "earned": 3,
        "total": 17,
-       "points": 3
+       "points": 5
       },
       "play_nav": {
-       "earned": 17,
+       "earned": 20,
        "total": 62,
-       "points": 155
+       "points": 185
       }
      },
      "saveId": "A48KBX",
      "owner": "online:335655b0c6cb7cf70a83004c6ee49a12",
      "via": "online",
-     "date": "2026-11-13T07:12:29Z",
+     "date": "2026-11-13T08:04:40Z",
      "first": "2026-11-13T05:56:41Z",
      "src": "online:335655b0c6cb7cf70a83004c6ee49a12"
     },
