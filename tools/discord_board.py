@@ -54,6 +54,7 @@ GENERATIONS = [
     ("Generation II", ["gold", "silver", "crystal"], 0xA8801A),
     ("Generation III: Hoenn", ["ruby", "sapphire", "emerald"], 0x1F8F6A),
     ("Generation III: Kanto", ["firered", "leafgreen"], 0xD9622B),
+    ("Custom carts", ["pokepink"], 0xC2457A),
 ]
 
 # Discord's limits for one message.

@@ -27,7 +27,9 @@ GAME_CHOICES = [{"name": "Red", "value": "red"}, {"name": "Blue", "value": "blue
                 {"name": "Silver", "value": "silver"}, {"name": "Crystal", "value": "crystal"},
                 {"name": "FireRed", "value": "firered"}, {"name": "LeafGreen", "value": "leafgreen"},
                 {"name": "Ruby", "value": "ruby"}, {"name": "Sapphire", "value": "sapphire"},
-                {"name": "Emerald", "value": "emerald"}]
+                {"name": "Emerald", "value": "emerald"},
+                # custom carts with their own list
+                {"name": "Pokemon Pink", "value": "pokepink"}]
 
 COMMANDS = [
     dict(WHERE, name="score", type=1,

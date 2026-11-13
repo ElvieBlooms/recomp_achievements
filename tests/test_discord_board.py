@@ -65,12 +65,12 @@ class Build(unittest.TestCase):
 
     def test_layout_fits_discord(self):
         embeds = self.msg["embeds"]
-        self.assertEqual(len(embeds), 6)  # header, four generations, Extra Credit
+        self.assertEqual(len(embeds), 7)  # header, four generations, custom carts, Extra Credit
         self.assertLessEqual(len(embeds), D.MAX_EMBEDS)
         self.assertLessEqual(D.size(self.msg), D.MAX_TOTAL)
         for e in embeds:
             self.assertLessEqual(len(e.get("fields", [])), 25)
-        games = [f["name"] for e in embeds[1:5] for f in e["fields"]]
+        games = [f["name"] for e in embeds[1:6] for f in e["fields"]]
         self.assertEqual(len(games), len(L.GAMES))
         self.assertEqual(self.msg["allowed_mentions"], {"parse": []})
 
@@ -140,7 +140,7 @@ class Webhook(unittest.TestCase):
         self.assertEqual(D.update(board(), stub), 0)
         method, url, body = stub.calls[0]
         self.assertEqual((method, url), ("PATCH", HOOK + "/messages/555?thread_id=777"))
-        self.assertEqual(len(body["embeds"]), 6)
+        self.assertEqual(len(body["embeds"]), 7)
 
     def test_update_failure_is_reported(self):
         os.environ.update(DISCORD_BOARD_WEBHOOK=HOOK, DISCORD_BOARD_MESSAGE="555")

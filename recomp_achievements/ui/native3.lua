@@ -263,6 +263,10 @@ function Native3.newScreen(o)
   local function originOf(row)
     local by = row.author and row.author ~= "" and (" · BY " .. row.author) or ""
     if row.reference then return "RA LIST ENTRY" .. by end
+    if row.listed then
+      local label = tostring(row.listLabel or "CART")
+      return row.raType == "missable" and (label .. " · MISSABLE") or label
+    end
     if row.source == "core" and row.official then
       return (row.raType == "missable" and "RA LIST · MISSABLE" or "RA LIST") .. by
     end
@@ -305,7 +309,10 @@ function Native3.newScreen(o)
       chrome("{DPAD_LEFTRIGHT}PAGE {B_BUTTON}BACK", "HOW IT'S CHECKED", nil)
       local y = ROW_Y0
       local how
-      if row.source ~= "core" then
+      if row.listed then
+        how = tostring(row.listTitle or "This cart") .. "'s own list, from the "
+          .. tostring(row.providerName or row.provider) .. " mod." .. (row.note and (" " .. row.note) or "")
+      elseif row.source ~= "core" then
         how = "Added by the " .. tostring(row.providerName or row.provider) .. " mod."
       elseif row.fidelity == "interpretation" then
         how = "A close local version of the goal." .. (row.note and (" " .. row.note) or "")

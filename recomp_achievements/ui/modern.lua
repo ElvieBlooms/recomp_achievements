@@ -240,6 +240,10 @@ end
 -- What the side panel says about where an achievement comes from.
 function Modern.origin(row)
   if row.reference then return "RetroAchievements list entry (reference)" end
+  if row.listed then
+    local miss = row.raType == "missable" and " · Missable" or ""
+    return "From " .. tostring(row.listTitle or "this cart") .. "'s own list" .. miss
+  end
   if row.source == "core" and row.official then
     local by = row.author and row.author ~= "" and (" · by " .. row.author) or ""
     local miss = row.raType == "missable" and " · Missable" or ""
@@ -516,7 +520,9 @@ function Modern.newScreen(deps)
     local t = engine:totals()
     local hx, hy = x0 + p, y0 + p * 0.9
     text(fTitle, "Achievements", hx, hy, C.text)
-    local gameName = Modern.GAME_NAMES[engine.game or ""] or (engine.game and engine.game:upper()) or "No save loaded"
+    local cartList = engine.activeList and engine:activeList() or nil
+    local gameName = cartList and cartList.title
+      or Modern.GAME_NAMES[engine.game or ""] or (engine.game and engine.game:upper()) or "No save loaded"
     local nameW = fSmall:getWidth(gameName)
     local dotR = 1.6 * u
     textRight(fSmall, gameName, x0 + W - p, hy + (fTitle:getHeight() - fSmall:getHeight()) / 2, C.muted)
@@ -534,7 +540,7 @@ function Modern.newScreen(deps)
     local chipH = fSmall:getHeight() + 2.4 * u
     local chips, total = {}, 0
     for i, f in ipairs(filters) do
-      local label = Modern.FILTER_LABELS[f.id] or f.label
+      local label = f.title or Modern.FILTER_LABELS[f.id] or f.label
       local w = fSmall:getWidth(label) + 6 * u
       chips[i] = { label = label, w = w, x = total }
       total = total + w + 2.5 * u
@@ -673,7 +679,10 @@ function Modern.newScreen(deps)
       else
         para(fBody, "How it's checked", C.text, 2.5 * u)
         local how
-        if row.source ~= "core" then how = "Checked by the " .. tostring(row.providerName or row.provider) .. " mod."
+        if row.listed then
+          how = "Part of " .. tostring(row.listTitle or "this cart") .. "'s own list, checked by the "
+            .. tostring(row.providerName or row.provider) .. " mod." .. (row.note and ("\n\n" .. row.note) or "")
+        elseif row.source ~= "core" then how = "Checked by the " .. tostring(row.providerName or row.provider) .. " mod."
         elseif row.fidelity == "interpretation" then
           how = "A close local version of the RetroAchievements goal, adapted for Gen1Recomp." .. (row.note and ("\n\n" .. row.note) or "")
         elseif row.official and row.note then
@@ -742,7 +751,7 @@ function Modern.newScreen(deps)
       else
         local clock = card.time and ("%d:%02d"):format(math.floor(card.time / 60), card.time % 60) or "–"
         local fields = {
-          { "Game", Modern.SHORT_NAMES[card.game] or card.game }, { "Trainer", tostring(card.name) },
+          { "Game", card.title or Modern.SHORT_NAMES[card.game] or card.game }, { "Trainer", tostring(card.name) },
           { "Points", ("%d / %d"):format(card.points, card.maxPoints) },
           { "Earned", ("%d / %d"):format(card.earned, card.total) },
           { "Time", clock }, { "Save ID", card.saveId }, { "Check code", card.code },

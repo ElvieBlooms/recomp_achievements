@@ -45,7 +45,7 @@ test("both mods load in dependency order with no errors", function()
   check(env.ok, "loader:load returned false: " .. table.concat(env.loader.errors, "; "))
   eq(env.loader.order[1], "recomp_achievements", "framework loads first")
   eq(env.loader.order[2], "achievement_sandbox", "provider loads second")
-  eq(ach(env).apiVersion, "1.5.0", "api version")
+  eq(ach(env).apiVersion, "1.6.0", "api version")
   check(ach(env).supports("progress"), "supports progress")
   check(not ach(env).supports("leaderboards"), "unknown capability is false")
 end)
@@ -497,6 +497,131 @@ test("python parity holds for random cards", function()
   end
   py:close(); os.remove(tmp)
   eq(i, 40, "python answered every card")
+end)
+
+-- ------------------ Cart lists
+-- A custom cart can bring its own main list (a romhack ported as a cart):
+-- on that cart it replaces the RA list and goes on its own board.
+local SaveData = require("src.core.SaveData")
+local function pinkList(api)
+  local p = api.connect("cart_list_probe", { name = "Cart List Probe" })
+  check(p:declareCartList({ cart = "pokepink", board = "pokepink", title = "Pokemon Pink",
+                            label = "PINK", games = { "yellow" } }), "declare the cart's list")
+  check(p:register({ id = "badge_one", title = "Badge One", points = 10, type = "progression" }), "register a")
+  check(p:register({ id = "lost_cause", title = "Lost Cause", points = 5, type = "missable" }), "register b")
+  return p
+end
+
+test("cart lists: on its cart the list replaces the RA list and has its own board", function()
+  local env = H.boot({ "recomp_achievements" }, { version = "yellow" })
+  local api = ach(env)
+  check(api.supports("cart_lists"), "capability")
+  local p = pinkList(api)
+  SaveData.setCart("pokepink") -- the cart is chosen before its save loads
+  env:newGame()
+  local list = api.cartList()
+  eq(list and list.board, "pokepink", "cartList reports the board")
+  eq(list and list.label, "PINK", "and its tab label")
+  local t = api.officialTotals()
+  eq(t.total, 2, "only the cart's list counts")
+  eq(t.maxPoints, 15, "its points")
+  for _, row in ipairs(api.list()) do
+    check(not (row.source == "core" and row.official), "no RA-linked rule is listed: " .. tostring(row.key))
+  end
+  -- an RA-linked rule can't unlock here
+  env.game.save.inventory.BOULDERBADGE = 1
+  env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+  eq(api.officialTotals().earned, 0, "Brock's RA entry doesn't count on the cart")
+  check(p:unlock("badge_one"), "the list's own unlock")
+  t = api.officialTotals()
+  eq(t.earned, 1, "earned"); eq(t.points, 10, "points")
+  local row = api.get("mod:cart_list_probe:lost_cause")
+  check(row.official and row.listed, "list rows count as the main list")
+  eq(row.raType, "missable", "the list's own tags")
+  local card = api.leaderboardCard()
+  eq(card.game, "pokepink", "the card goes on the cart's board")
+  eq(card.title, "Pokemon Pink", "and names the cart")
+  eq(card.points, 10, "with the list's points")
+  local extra = api.extraCard()
+  for _, s in ipairs(extra.sources) do
+    check(s.id ~= "cart_list_probe", "the list isn't Extra Credit too")
+  end
+  -- the menu's list tab takes the RA list's place
+  local Browser = dofile(H.PROJECT .. "/recomp_achievements/ui/browser.lua")
+  local found
+  local engineView = { registry = { providers = {} }, rows = function() return api.list() end,
+                       activeList = function() return api.cartList() end }
+  for _, f in ipairs(Browser.filtersFor({ options = { get = function() return false end } }, engineView)) do
+    if f.id == "official" then found = f.label end
+    check(f.id ~= "mod:cart_list_probe", "no separate mod tab for the list")
+  end
+  eq(found, "PINK", "the list tab")
+  SaveData.setCart(nil)
+end)
+
+test("cart lists: elsewhere the list stays out of the way", function()
+  SaveData.setCart(nil)
+  local env = H.boot({ "recomp_achievements" }, { version = "yellow" })
+  local api = ach(env)
+  pinkList(api)
+  env:newGame()
+  eq(api.cartList(), nil, "no cart list on the plain game")
+  local t = api.officialTotals()
+  eq(t.total, 76, "Yellow's RA list as usual")
+  eq(api.leaderboardCard().game, "yellow", "Yellow's board")
+  local row = api.get("mod:cart_list_probe:badge_one")
+  check(not row.available and not row.listed, "a cart's list isn't there off its cart")
+  for _, r in ipairs(api.list()) do
+    check(r.provider ~= "cart_list_probe", "nor listed: " .. tostring(r.key))
+  end
+  local ok, code = api.connect("cart_list_probe"):unlock("badge_one")
+  eq(code, "wrong_cart", "nor earned")
+  eq(#api.extraCard().sources, 1, "nor on Extra Credit (only BONUS)")
+  SaveData.setCart("another_cart")
+  eq(api.cartList(), nil, "nor on another cart")
+  SaveData.setCart(nil)
+end)
+
+test("cart lists: an entry can be earned by one of the mod's own checks", function()
+  local env = H.boot({ "recomp_achievements" }, { version = "yellow" })
+  local api = ach(env)
+  local p = api.connect("cart_list_probe")
+  check(p:declareCartList({ cart = "pokepink", title = "Pokemon Pink", label = "PINK" }), "declare")
+  check(p:register({ id = "starting_line", title = "Starting Line", points = 1, uses = "off_pokedex" }), "borrow a flag check")
+  check(p:register({ id = "full_party", title = "Full Party", points = 1, uses = "off_full_team" }), "borrow a goal check")
+  check(p:register({ id = "any_badge", title = "Any Badge", points = 1,
+                     uses = { "off_cascadebadge", "off_boulderbadge" } }), "borrow any of several")
+  local ok, code = p:register({ id = "nope", title = "Nope", uses = "not_a_rule" })
+  eq(code, "unknown_rule", "only real checks can be borrowed")
+  eq(api.get("mod:cart_list_probe:full_party").goal, 6, "the goal comes with the check")
+  SaveData.setCart("pokepink")
+  env:newGame()
+  env:setFlag("EVENT_GOT_POKEDEX"); env:frame()
+  check(api.isUnlocked("mod:cart_list_probe:starting_line"), "the cart's entry is earned")
+  check(not api.isUnlocked("core:off_pokedex"), "the borrowed check doesn't earn itself")
+  env.game.save.inventory.BOULDERBADGE = 1
+  env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+  check(api.isUnlocked("mod:cart_list_probe:any_badge"), "any of the checks earns it")
+  for _, row in ipairs(api.list()) do
+    check(row.key ~= "core:off_pokedex", "the borrowed check isn't listed on the cart")
+  end
+  SaveData.setCart(nil)
+end)
+
+test("cart lists: declarations are checked", function()
+  local env = H.boot({ "recomp_achievements" }, { version = "yellow" })
+  local api = ach(env)
+  local p = api.connect("list_a")
+  local ok, code = p:declareCartList({ cart = "pokepink", board = "yellow" })
+  eq(code, "invalid_list", "a board can't be a game's")
+  ok, code = p:declareCartList({ cart = "Bad Cart!" })
+  eq(code, "invalid_list", "cart id checked")
+  ok, code = p:declareCartList({ cart = "pokepink", games = { "pong" } })
+  eq(code, "invalid_games", "games checked")
+  check(p:declareCartList({ cart = "pokepink" }), "board defaults to the cart id")
+  check(p:declareCartList({ cart = "pokepink" }), "declaring again is fine")
+  ok, code = api.connect("list_b"):declareCartList({ cart = "pokepink" })
+  eq(code, "list_taken", "one list per cart")
 end)
 
 test("official totals match the leaderboard's per-game maximums", function()

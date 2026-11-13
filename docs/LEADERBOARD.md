@@ -44,16 +44,17 @@ on Discord" button.
 
 ## What the Action checks
 
-- The game is Red, Blue, Yellow, Gold, Silver, Crystal, Ruby, Sapphire, FireRed, LeafGreen or Emerald.
+- The game is Red, Blue, Yellow, Gold, Silver, Crystal, Ruby, Sapphire, FireRed, LeafGreen or Emerald,
+  or a custom cart with its own list (Pokémon Pink, `pokepink`).
 - The trainer name is 1–12 characters with nothing the page can't show,
   and doesn't match `tools/name_blocklist.txt` (see "Name filter" below).
 - Points and achievements are whole numbers no higher than the game's
   RetroAchievements-list totals (Red 745/93, Blue 678/90, Yellow 458/76,
   Gold 685/72, Silver 616/75, Crystal 864/113, FireRed 453/61,
   LeafGreen 781/128, Emerald 2086/197, Ruby 485/49,
-  Sapphire 485/49). If the RA lists
-  change, update `GAMES` in `tools/leaderboard_ingest.py`; `tests/run.lua`
-  fails until the two agree.
+  Sapphire 485/49), or the cart list's own totals (Pokémon Pink 564/76).
+  If the RA lists change, update `GAMES` in `tools/leaderboard_ingest.py`;
+  `tests/run.lua` fails until the two agree.
 - The play time, if given, is H:MM. Cards from mod 1.1.0 have no TIME line
   and use the older "v1" check code without it; both are accepted. Ranking
   is by points, then the shorter play time (no time sorts after any time),
@@ -115,3 +116,22 @@ its menu. To stop all submissions, disable the workflow
 under **Actions**.
 
 Nothing on the board comes from or goes to RetroAchievements.
+
+## Custom carts with their own list
+
+A custom cart can bring its own main list in place of the RA list
+(docs/PROVIDER_API.md, "A custom cart's own list"). Its card's GAME is the
+list's board id, and the board takes it once the cart is added:
+
+1. `GAMES` in `tools/leaderboard_ingest.py`: the board id, its title, its
+   `maxPoints` and `total` (from the cart's list mod), and `"cart": True`,
+   which skips the RA catalog check.
+2. `GAMES`, `COLORS`, `MAX_POINTS`, the precheck message and the "Custom
+   carts" section in `discord/worker.js`, and the same section in
+   `tools/discord_board.py`.
+3. `GAME_CHOICES` in `tools/discord_register.py` (then re-register the
+   commands), the Game dropdowns in `.github/ISSUE_TEMPLATE/score.yml` and
+   `extra.yml` (by title: "Pink" for `pokepink`), and `GAMES` plus a colour
+   in `docs/index.html`.
+
+When the cart's list changes its totals, change them in all of these.

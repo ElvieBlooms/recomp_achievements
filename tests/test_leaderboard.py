@@ -212,10 +212,24 @@ class Ingest(unittest.TestCase):
     def test_game_limits_match_catalogs(self):
         import re as _re
         for game, info in L.GAMES.items():
+            if info.get("cart"):
+                continue  # a custom cart's own list has no RA catalog
             path = os.path.join(ROOT, "recomp_achievements", "catalog", game + ".lua")
             text = open(path, encoding="utf-8").read()
             pts = [int(x) for x in _re.findall(r"points = (\d+),", text)]
             self.assertEqual((sum(pts), len(pts)), (info["maxPoints"], info["total"]), game)
+
+    def test_custom_cart_submission(self):
+        # the form lists a cart by its title; the card's GAME is its board id
+        self.assertEqual(L.check_game("Pink"), "pokepink")
+        self.assertEqual(L.check_game("pokepink"), "pokepink")
+        # the check code is the card's, made from the board id
+        code = L.check_code("pokepink", "ASH", 102, 13, "ABC123", 90)
+        rc, reply = self.run_ingest(body(game="Pink", points="102", earned="13", time="1:30", code=code))
+        self.assertEqual(rc, 0, reply)
+        code = L.check_code("pokepink", "ASH", 565, 13, "ABC123", 90)
+        rc, reply = self.run_ingest(body(game="Pink", points="565", earned="13", time="1:30", code=code))
+        self.assertEqual(rc, 1, "over the list's total is refused")
 
     def test_gen2_submission(self):
         rc, reply = self.run_ingest(body(game="Crystal", points="100", earned="12", time="20:00"))

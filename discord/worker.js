@@ -58,12 +58,14 @@ const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 const GAMES = { red: "Pokemon Red", blue: "Pokemon Blue", yellow: "Pokemon Yellow",
                 gold: "Pokemon Gold", silver: "Pokemon Silver", crystal: "Pokemon Crystal",
                 firered: "Pokemon FireRed", leafgreen: "Pokemon LeafGreen", emerald: "Pokemon Emerald",
-                ruby: "Pokemon Ruby", sapphire: "Pokemon Sapphire" };
+                ruby: "Pokemon Ruby", sapphire: "Pokemon Sapphire",
+                // custom carts with their own list (docs/PROVIDER_API.md, cart lists)
+                pokepink: "Pokemon Pink" };
 const EPHEMERAL = 64;
 // Embed colours, taken from the light theme in docs/index.html.
 const COLORS = { red: 0xc0392b, blue: 0x2c5aa0, yellow: 0xc79a00, gold: 0xa8801a, silver: 0x6f7a86,
                  crystal: 0x2b8fa8, firered: 0xd9622b, leafgreen: 0x4f9a3a, emerald: 0x1f8f6a,
-                 ruby: 0xb0233a, sapphire: 0x2a4fb0 };
+                 ruby: 0xb0233a, sapphire: 0x2a4fb0, pokepink: 0xc2457a };
 
 // ---------------------------------------------------------- check code
 // These must match recomp_achievements/ui/share.lua and tools/leaderboard_ingest.py exactly.
@@ -216,7 +218,7 @@ function options(interaction) {
 // The Action checks everything again (limits, name filter, ownership) before saving.
 export function precheck(o) {
   const game = String(o.game || "").toLowerCase();
-  if (!GAMES[game]) return "Pick the game from the list (red, blue, yellow, gold, silver, crystal, ruby, sapphire, firered, leafgreen or emerald).";
+  if (!GAMES[game]) return "Pick the game from the list (red, blue, yellow, gold, silver, crystal, ruby, sapphire, firered, leafgreen, emerald or pokepink).";
   const name = String(o.name || "").trim();
   if (!name || [...name].length > 12) return "The trainer name must be 1 to 12 characters.";
   const points = Number(o.points), earned = Number(o.earned);
@@ -504,6 +506,7 @@ const GENERATIONS = [
   ["Generation II", ["gold", "silver", "crystal"], 0xa8801a],
   ["Generation III: Hoenn", ["ruby", "sapphire", "emerald"], 0x1f8f6a],
   ["Generation III: Kanto", ["firered", "leafgreen"], 0xd9622b],
+  ["Custom carts", ["pokepink"], 0xc2457a],
 ];
 const MEDALS = ["\u{1F947}", "\u{1F948}", "\u{1F949}"];
 const WEEK = 7 * 86400;
@@ -512,7 +515,8 @@ const ACCENT = 0x3d6b2a; // --accent on the site
 const BAR = 8;
 // GAMES in tools/leaderboard_ingest.py, for a board file without maxPoints
 const MAX_POINTS = { red: 745, blue: 678, yellow: 458, gold: 685, silver: 616, crystal: 864,
-                     firered: 453, leafgreen: 781, emerald: 2086, ruby: 485, sapphire: 485 };
+                     firered: 453, leafgreen: 781, emerald: 2086, ruby: 485, sapphire: 485,
+                     pokepink: 564 };
 
 // The site's monospace name column. Markdown doesn't apply inside it.
 function code(name) {

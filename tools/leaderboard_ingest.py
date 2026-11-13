@@ -55,6 +55,9 @@ GAMES = {
     "emerald":   {"title": "Pokemon Emerald",   "maxPoints": 2086, "total": 197},
     "ruby":      {"title": "Pokemon Ruby",      "maxPoints": 485, "total": 49},
     "sapphire":  {"title": "Pokemon Sapphire",  "maxPoints": 485, "total": 49},
+    # Custom carts with their own list (Recomp Achievements' cart lists).
+    # Their totals come from the cart's list mod, not an RA set.
+    "pokepink":  {"title": "Pokemon Pink",      "maxPoints": 564, "total": 76, "cart": True},
 }
 
 NAME_MAX = 12  # Gen 1 names are 7 characters, but later games and imports need more room
@@ -290,8 +293,12 @@ def check_game(raw):
     game = raw.strip().lower()
     game = game.replace("pokemon", "").replace("pokémon", "").strip()
     if game not in GAMES:
+        # a custom cart's title, as the form lists it ("Pink" for pokepink)
+        by_title = {g["title"].lower().replace("pokemon", "").strip(): k for k, g in GAMES.items()}
+        game = by_title.get(game, game)
+    if game not in GAMES:
         raise Rejected("Pick the game from the list (Red, Blue, Yellow, Gold, Silver, Crystal, "
-                       "Ruby, Sapphire, Emerald, FireRed or LeafGreen).")
+                       "Ruby, Sapphire, Emerald, FireRed, LeafGreen or Pink).")
     return game
 
 

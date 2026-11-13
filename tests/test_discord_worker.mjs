@@ -484,7 +484,7 @@ print(json.dumps(D.build(L.load_board(sys.argv[1]), "https://example.github.io/b
   assert.equal(js.embeds[0].author.name, "Recomp Achievements");
   const quiet = allBoard({ games: {}, extra: {} }, "https://x", NOW);
   assert.match(quiet.embeds[0].description, /A quiet week/);
-  assert.equal(quiet.embeds.length, 6);
+  assert.equal(quiet.embeds.length, 7);
 });
 
 await test("/check game:All posts the whole board", async () => {
@@ -498,7 +498,7 @@ await test("/check game:All posts the whole board", async () => {
   await Promise.all(c.jobs);
   const edit = calls.find((x) => x.url.includes("/messages/@original"));
   const body = JSON.parse(edit.init.body);
-  assert.equal(body.embeds.length, 6);
+  assert.equal(body.embeds.length, 7);
   assert.deepEqual(body.allowed_mentions, { parse: [] });
 });
 

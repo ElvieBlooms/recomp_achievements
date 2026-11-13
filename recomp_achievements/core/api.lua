@@ -22,12 +22,13 @@
 
 local Api = {}
 
-Api.VERSION = "1.5.0"
+Api.VERSION = "1.6.0"
 Api.CAPABILITIES = {
   register = true, register_many = true, unlock = true,
   progress = true, query = true, events = true, games_filter = true,
   hidden = true, official_totals = true, leaderboard_card = true, provider_tabs = true,
   extra_card = true, card_notes = true, card_note_press = true,
+  cart_lists = true,
 }
 
 -- Writes per provider per second before calls return "rate_limited".
@@ -141,6 +142,16 @@ function Api.install(mod, engine, util, Share)
       local row = k and engine:status(k)
       if not row then return fail("unknown_id") end
       return util.plain(row)
+    end)
+
+    -- declareCartList(spec) -> true | nil, code, msg  (since 1.6.0)
+    -- A custom cart's own main list, in place of the RA list on that cart:
+    -- everything this provider registers is the list. spec = { cart,
+    -- board, title, label, games }; see docs/PROVIDER_API.md.
+    handle.declareCartList = method(public, function(spec)
+      local list, code, message = registry:addList(providerId, spec)
+      if not list then return fail(code, message) end
+      return true
     end)
 
     handle.list = method(public, function()
@@ -261,6 +272,16 @@ function Api.install(mod, engine, util, Share)
       return fail("invalid_note", "fn and opts.onPress must be functions")
     end
     return true
+  end)
+
+  -- The running cart's own list (since 1.6.0):
+  -- { cart, board, title, label, provider }, or nil on the plain game,
+  -- on a cart without one, or before a save is loaded.
+  exports.cartList = method(exports, function()
+    local list = engine.active and engine:activeList() or nil
+    if not list then return nil end
+    return { cart = list.cart, board = list.board, title = list.title,
+             label = list.label, provider = list.provider }
   end)
 
   -- The active save's game, or nil before a save is loaded.

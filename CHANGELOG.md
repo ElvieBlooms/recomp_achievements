@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.8.0
+
+Custom carts can bring their own list.
+
+### New
+- **Cart lists** (API 1.6.0). A mod in a custom cart can declare that cart's
+  own main list (`declareCartList`), the way RetroAchievements has its own
+  set for a hack. On that cart the list takes the RA list's place: the
+  RA LIST tab becomes the list's own tab, the leaderboard card counts the
+  list and goes on the cart's own board, and the base game's RA-linked
+  achievements step aside. Bonus and other mods' achievements stay. Off its
+  cart the list isn't shown at all.
+- A cart list's entry can be earned by one of this mod's own checks
+  (`uses`), so a hack's list doesn't have to re-check what plays like the
+  base game. Entries can also carry RA's tags (`type`: progression,
+  win_condition, missable).
+- `cartList()` says which cart list is running.
+- The leaderboard takes **Pokémon Pink** (`pokepink`, 564 points, 76
+  achievements), the first cart list, under a new Custom carts section.
+
+### Upgrading
+- Update both zips together. Mods that add achievements don't need to
+  change anything.
+
 ## 2.7.1
 
 Link codes you can actually find.

@@ -1,4 +1,4 @@
-# Recomp Achievements — Provider API (v1.5.0)
+# Recomp Achievements — Provider API (v1.6.0)
 
 How another Gen1Recomp mod adds its own achievements, reports progress,
 and listens for unlocks. `achievement_sandbox/main.lua` is a complete,
@@ -31,8 +31,8 @@ return function(mod)
 
 `ach.supports(name)` answers for these capabilities: `register`,
 `register_many`, `unlock`, `progress`, `query`, `events`, `games_filter`,
-`hidden`, since 1.1.0 `official_totals` and `leaderboard_card`, and since
-1.3.0 `provider_tabs`.
+`hidden`, since 1.1.0 `official_totals` and `leaderboard_card`, since
+1.3.0 `provider_tabs`, and since 1.6.0 `cart_lists`.
 
 ## 3. Connect and register
 
@@ -49,6 +49,8 @@ return function(mod)
     category = "AUDIO",             -- optional, max 16 chars
     games = { "red", "blue" },      -- optional; omit for every game
     revision = 1,                   -- optional
+    type = "missable",              -- optional, since 1.6.0: progression,
+                                    -- win_condition or missable (see 6)
   })
 ```
 
@@ -151,7 +153,58 @@ Since 1.4.0:
 Nothing changes for a mod that adds achievements when the player also has
 Recomp Achievements Online: it only reads the cards above.
 
-## 6. What happens to your records
+## 6. A custom cart's own list
+
+A custom cart that is really a different game (a romhack ported as a
+cart, say) can bring its own main list in place of the RetroAchievements
+list, the way RA has its own set for a hack. Since 1.6.0:
+
+```lua
+  local handle = ach.connect(mod)
+  handle:declareCartList({
+    cart = "pokepink",        -- the cart's id, from its cart.json
+    board = "pokepink",       -- leaderboard id; defaults to cart
+    title = "Pokemon Pink",   -- shown on the card and the menu, max 32
+    label = "PINK",           -- the list's tab, max 12
+    games = { "yellow" },     -- optional: the versions the cart is built on
+  })
+  handle:registerMany(PINK_LIST)  -- everything you register is the list
+```
+
+An entry can be earned by one of this mod's own checks instead of yours:
+`uses = "<rule id>"` (a rule in `rules/*.lua`, such as `"off_pokedex"`; it
+returns `unknown_rule` otherwise), or a list of them, any of which earns
+it. With one check, the entry takes the check's goal and unit unless it
+sets its own. On the cart, the check earns your entry and
+no longer shows or counts as itself. Use it for the parts of a hack that
+play like the base game, and report the rest yourself as usual.
+
+On that cart, and only there:
+
+- Your entries are the main list. The menu's RA LIST tab becomes your
+  `label`, entries show as from `title`'s list, and `type = "missable"`
+  marks them MISSABLE the way RA's tag does.
+- The RA-linked achievements for the base game step aside: they aren't
+  listed and can't unlock. Bonus achievements and other mods' achievements
+  stay as they are.
+- `officialTotals()` and the leaderboard card count your list, and the
+  card's `game` is your `board` (with `title` for display). Your list is
+  left off Extra Credit, since it's on the main card.
+- `ach.cartList()` returns `{ cart, board, title, label, provider }`.
+
+On the plain game, or another cart, your entries aren't there: they don't
+show, count or unlock (`wrong_cart`), so a cart's list never turns up as
+a pile of locked achievements somewhere it can't be earned. One provider declares a cart's list; a second declaration
+for the same cart returns `list_taken`. A `board` can't be a game version's
+id (`invalid_list`).
+
+**The leaderboard.** The board only takes games it knows, each with a
+fixed total, so a cart's list goes on the main board once its board id
+and totals are added to `GAMES` in `tools/leaderboard_ingest.py` (and the
+board's other game lists: see docs/LEADERBOARD.md). Until then the card
+still works and shows the list's numbers; the board refuses it.
+
+## 7. What happens to your records
 
 - They live in the framework's save bucket, so they rewind with older
   saves and travel with Save Sync.
@@ -162,7 +215,7 @@ Recomp Achievements Online: it only reads the cards above.
 - A fresh New Game starts empty. That is the engine's rule for every
   mod's save data.
 
-## 7. Trust model
+## 8. Trust model
 
 The API is **cooperative**. The engine can't tell the framework which mod
 is calling, so a mod could call `connect("someone_else")`. Namespaces

@@ -111,13 +111,17 @@ function Share.card(engine)
   local name = type(save.player) == "table" and save.player.name
     or (type(save.name) == "string" and save.name ~= "" and save.name) or "?"
   local t = engine:officialTotals()
+  -- a cart with its own list goes on that list's board, not the game's
+  local list = engine.activeList and engine:activeList() or nil
   local f = {
-    game = engine.game, name = name, points = t.points, earned = t.earned,
+    game = list and list.board or engine.game, name = name, points = t.points, earned = t.earned,
     total = t.total, maxPoints = t.maxPoints, saveId = Share.saveId(save, data),
     -- play time when this score was reached (the last official unlock)
     time = engine:playTime() and math.floor((t.reachedAt or 0) / 60) or nil,
   }
   f.code = Share.code(f)
+  -- shown on the card in place of the board id; not part of the code
+  if list then f.title = list.title end
   return f
 end
 
@@ -164,7 +168,9 @@ function Share.extraSources(engine)
   for _, row in ipairs(ok and rows or {}) do
     local id
     if row.source == "core" and not row.official then id = "bonus"
-    elseif row.source ~= "core" and row.provider and not row.archived then id = row.provider end
+    elseif row.source ~= "core" and row.provider and not row.archived and not row.listed then
+      id = row.provider -- a cart's own list is on the main card, not here
+    end
     if id then
       local s = by[id]
       if not s then

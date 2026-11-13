@@ -136,7 +136,8 @@ function Browser.filtersFor(mod, engine)
   local ok, rows = pcall(function() return engine:rows() end)
   for _, row in ipairs(ok and rows or {}) do
     local id = row.provider
-    if row.source ~= "core" and not row.archived and id and not seen[id] then
+    -- a cart's own list has the list tab, not a mod tab
+    if row.source ~= "core" and not row.archived and not row.listed and id and not seen[id] then
       seen[id] = true
       local p = registry and registry.providers[id] or {}
       providers[#providers + 1] = { id = "mod:" .. id, provider = id,
@@ -145,8 +146,14 @@ function Browser.filtersFor(mod, engine)
   end
   table.sort(providers, function(a, b) return tostring(a.label):lower() < tostring(b.label):lower() end)
   local out = {}
+  local list = engine and engine.activeList and engine:activeList() or nil
   for _, f in ipairs(FILTERS) do
-    if f.id == "mods" and #providers > 0 then
+    if f.id == "official" and list then
+      -- a cart's own list in the RA list's place
+      out[#out + 1] = { id = "official", label = list.label, title = list.title .. " list" }
+    elseif f.id == "reference" and list then
+      -- RA's reference text is for the plain game, not this cart
+    elseif f.id == "mods" and #providers > 0 then
       if #providers > 1 then out[#out + 1] = f end
       for _, p in ipairs(providers) do out[#out + 1] = p end
     elseif not f.optional or mod.options:get("showReference") then
@@ -167,11 +174,11 @@ local function passes(filter, row)
   end
   -- RA's own missable tag: can be lost for good in a playthrough.
   if filter == "missable" then return row.raType == "missable" and not row.archived end
-  if filter == "official" then return row.source == "core" and row.official == true end
+  if filter == "official" then return row.official == true and (row.source == "core" or row.listed == true) end
   if filter == "bonus" then return row.source == "core" and not row.official end
-  if filter == "mods" then return row.source ~= "core" and not row.archived end
+  if filter == "mods" then return row.source ~= "core" and not row.archived and not row.listed end
   if filter:sub(1, 4) == "mod:" then
-    return row.source ~= "core" and not row.archived and row.provider == filter:sub(5)
+    return row.source ~= "core" and not row.archived and not row.listed and row.provider == filter:sub(5)
   end
   if filter == "archived" then return row.archived end
   return true
@@ -371,6 +378,9 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     local origin, credit
     if row.reference then
       origin, credit = "RA REFERENCE", row.author ~= "" and ("BY " .. row.author) or nil
+    elseif row.listed then
+      local label = tostring(row.listLabel or "CART")
+      origin = row.raType == "missable" and (label .. ": MISSABLE") or ("FROM " .. label)
     elseif row.source == "core" and row.official then
       origin = row.raType == "missable" and "RA LIST: MISSABLE" or "FROM THE RA LIST"
       credit = row.author and row.author ~= "" and ("BY " .. row.author) or nil
@@ -397,7 +407,11 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
       end
       y = y + 1
     end
-    if row.source ~= "core" then
+    if row.listed then
+      say(tostring(row.listTitle or "This cart") .. "'s own list, from the "
+        .. tostring(row.providerName or row.provider) .. " mod.")
+      if row.note then say(row.note) end
+    elseif row.source ~= "core" then
       say("Added by the " .. tostring(row.providerName or row.provider) .. " mod.")
     elseif row.fidelity == "interpretation" then
       say("This mod's check is a close local version of the goal:")

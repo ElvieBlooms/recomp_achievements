@@ -34,7 +34,7 @@ and each achievement's author, and are credited in the game. See
 ## Install
 
 1. In the launcher, open **MODS** and find Recomp Achievements under
-   **Find mods**, or download `recomp_achievements-2.7.1.zip` from
+   **Find mods**, or download `recomp_achievements-2.8.0.zip` from
    Releases and use **Import mod .zip** (dropping the zip on the launcher
    window works too). Unzipping by hand also works: put the files in
    `mods/recomp_achievements/`.
@@ -143,8 +143,9 @@ higher: that's your play time when you reached the score (your latest
 unlock from the RetroAchievements list), so playing on afterwards doesn't
 count against you.
 
-Only achievements from the RetroAchievements lists count; bonus achievements and
-achievements from other mods go on **Extra Credit** instead (below). The check code only catches typos, so
+Only achievements from the RetroAchievements lists count (on a custom cart
+with its own list, that list); bonus achievements and achievements from
+other mods go on **Extra Credit** instead (below). The check code only catches typos, so
 the board is an honor system. Trainer names are filtered for offensive
 words, and every row has a Report link. It has nothing to do with
 RetroAchievements or its leaderboards, and scores here mean nothing on
@@ -193,6 +194,12 @@ if found then
   ach:addProgress("chatterbox", 1)
 end
 ```
+
+A custom cart that is really its own game (a romhack ported as a cart)
+can bring its own main list in place of the RA list: on that cart it's the
+list the menu, the card and the leaderboard use, and its entries can reuse
+this mod's own checks for whatever plays like the base game. Pokémon Pink's
+cart is the first; see "A custom cart's own list" in the provider guide.
 
 The full contract is in [docs/PROVIDER_API.md](docs/PROVIDER_API.md), and
 `achievement_sandbox/` is a complete example mod.

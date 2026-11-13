@@ -27,6 +27,7 @@ body:
         - FireRed
         - LeafGreen
         - Emerald
+        - Pink
     validations:
       required: true
   - type: input

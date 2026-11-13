@@ -46,6 +46,9 @@ function Registry.new(util)
     providers = {},  -- provider id -> { id, name, version, count }
     catalogs = {},   -- game -> list of reference entries
     links = {},      -- core rule id -> { [game] = raAchievementId }
+    lists = {},      -- cart id -> a cart's own list (Registry:addList)
+    borrows = {},    -- core key -> { [provider] = provider key using its check }
+    listOf = {},     -- provider id -> the cart list it declared
   }, Registry)
 end
 
@@ -86,6 +89,10 @@ function Registry:clean(input, source)
       games[g] = true
     end
   end
+  -- RA's tags for an entry's role in a list: progression, win_condition
+  -- or missable. Anything else is dropped rather than refused.
+  local kind = input.type
+  if kind ~= "progression" and kind ~= "win_condition" and kind ~= "missable" then kind = nil end
   -- A category that isn't text falls back to GENERAL instead of erroring.
   local category = (util.text(input.category, L.category) or "GENERAL"):upper()
   if category == "" then category = "GENERAL" end
@@ -120,7 +127,23 @@ function Registry:clean(input, source)
     extra = source == "core" and input.extra == true or nil,
     fidelity = source == "core" and (input.fidelity == "interpretation" and "interpretation" or "exact") or nil,
     note = util.text(input.note, 300),
+    type = kind,
+    -- a cart list's entry can be earned by this mod's own checks:
+    -- uses = "<core rule id>" or a list of them, any of which earns it
+    -- (see Registry:add)
+    uses = source ~= "core" and Registry.usesOf(util, input.uses) or nil,
   }
+end
+
+-- `uses` as a list of core keys, or nil
+function Registry.usesOf(util, uses)
+  if uses == nil then return nil end
+  local ids = type(uses) == "table" and uses or { uses }
+  local out = {}
+  for _, id in ipairs(ids) do
+    out[#out + 1] = util.validId(id) and ("core:" .. id) or ("core:?" .. tostring(id))
+  end
+  return #out > 0 and out or nil
 end
 
 -- Register one definition under "core" or "mod:<provider>".
@@ -141,6 +164,16 @@ function Registry:add(sourceKind, providerId, input)
     end
     return nil, "duplicate_id", def.key .. " is already registered with different content"
   end
+  if def.uses then
+    for _, coreKey in ipairs(def.uses) do
+      if not self.defs[coreKey] then
+        return nil, "unknown_rule", coreKey .. " is not one of this mod's checks"
+      end
+    end
+    -- one check reports progress against its own goal
+    local rule = #def.uses == 1 and self.defs[def.uses[1]]
+    if rule and def.goal == nil then def.goal, def.unit = rule.goal, def.unit or rule.unit end
+  end
   if sourceKind ~= "core" then
     local p = self.providers[providerId]
     if p and p.count >= Registry.LIMITS.maxPerProvider then
@@ -150,6 +183,11 @@ function Registry:add(sourceKind, providerId, input)
   end
   self.defs[def.key] = def
   self.order[#self.order + 1] = def.key
+  for _, coreKey in ipairs(def.uses or {}) do
+    local by = self.borrows[coreKey]
+    if not by then by = {}; self.borrows[coreKey] = by end
+    by[providerId] = def.key
+  end
   return def
 end
 
@@ -167,6 +205,60 @@ function Registry:addProvider(id, info)
     count = 0,
   }
   return self.providers[id]
+end
+
+-- ------------------ cart lists
+-- A custom cart can bring its own main list in place of the RA list (a
+-- romhack ported as a cart, say). The provider that declares it owns the
+-- list: everything it registers is the list. On that cart the list is
+-- what the leaderboard card counts, under the list's own board id, and the
+-- RA-linked rules step aside. Elsewhere its entries are ordinary provider
+-- achievements.
+--   spec = { cart = "<cart id>", board = "<leaderboard id>", title = "...",
+--            label = "<tab label>", games = { "<base version>", ... } }
+function Registry:addList(providerId, spec)
+  local util = self.util
+  if type(spec) ~= "table" then return nil, "invalid_list", "expected a table" end
+  if not util.validId(spec.cart) then
+    return nil, "invalid_list", "cart must be a cart id (1-48 chars of a-z 0-9 _ -)"
+  end
+  local board = spec.board == nil and spec.cart or spec.board
+  if not util.validId(board) or Registry.GAMES[board] then
+    return nil, "invalid_list", "board must be an id of its own, not a game version"
+  end
+  local title = util.text(spec.title or board, 32)
+  local games
+  if spec.games ~= nil then
+    if type(spec.games) ~= "table" or #spec.games == 0 then
+      return nil, "invalid_games", "games must be a non-empty list of version ids"
+    end
+    games = {}
+    for _, g in ipairs(spec.games) do
+      if not Registry.GAMES[g] then return nil, "invalid_games", "unknown game version: " .. tostring(g) end
+      games[g] = true
+    end
+  end
+  local existing = self.lists[spec.cart]
+  if existing then
+    if existing.provider == providerId and existing.board == board then return existing, "already_registered" end
+    return nil, "list_taken", ("cart %s already has a list from %s"):format(spec.cart, existing.provider)
+  end
+  local list = {
+    cart = spec.cart, board = board, title = title,
+    label = util.text(spec.label or title, Registry.LIMITS.tabLabel):upper(),
+    games = games, provider = providerId,
+  }
+  self.lists[spec.cart] = list
+  self.listOf[providerId] = list
+  return list
+end
+
+-- The list for this cart on this version, or nil.
+function Registry:listFor(cart, game)
+  local list = type(cart) == "string" and self.lists[cart] or nil
+  if not list then return nil end
+  if list.games and not list.games[game] then return nil end
+  return list
 end
 
 -- Whether a definition applies to the running game version.

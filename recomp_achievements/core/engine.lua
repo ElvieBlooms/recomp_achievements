@@ -70,6 +70,61 @@ function Engine:setAdapter(adapter)
   self.adapter = adapter
 end
 
+-- ------------------ cart lists
+-- The running custom cart's id, or nil for the plain game. Read from the
+-- engine each time (engine_internals), since the cart is chosen before a
+-- save loads and never changes under one.
+function Engine:cartId()
+  local ok, SaveData = pcall(require, "src.core.SaveData")
+  if not (ok and type(SaveData) == "table" and type(SaveData.getCart) == "function") then return nil end
+  local okCart, cart = pcall(SaveData.getCart)
+  return okCart and type(cart) == "string" and cart or nil
+end
+
+-- The cart's own list when one is running and declared one for this
+-- version (Registry:addList), else nil.
+function Engine:activeList()
+  if not self.game then return nil end
+  return self.registry:listFor(self:cartId(), self.game)
+end
+
+-- A core rule that tracks an RA entry here. On a cart with its own list
+-- these step aside: that cart isn't the game RA's list is for.
+function Engine:tracksRa(def)
+  return def.source == "core" and not def.extra and self.registry:raIdFor(def, self.game) ~= nil
+end
+
+-- A cart list's entry outside its cart: it only exists there.
+function Engine:offItsCart(def)
+  if def.source == "core" then return false end
+  local own = self.registry.listOf[def.provider]
+  if not own then return false end
+  local list = self:activeList()
+  return not (list and list.provider == def.provider)
+end
+
+-- Where a check's result goes: its own key, or on a cart with its own list
+-- the list entry that borrows it (`uses`). nil when it has nowhere to go
+-- here (an RA-linked rule nobody on this cart's list borrows).
+function Engine:targetKey(def)
+  if def.source ~= "core" then return def.key end
+  local list = self:activeList()
+  if not list then return def.key end
+  local by = self.registry.borrows[def.key]
+  local borrower = by and by[list.provider]
+  if borrower then return borrower end
+  if self:tracksRa(def) then return nil end
+  return def.key
+end
+
+-- Award/progress take a key; a core key on a cart whose list borrows it
+-- goes to the borrower.
+function Engine:resolve(key)
+  local def = self.registry:get(key)
+  if not def or def.source ~= "core" then return key end
+  return self:targetKey(def) or key
+end
+
 -- ------------------ core rules
 function Engine:addRule(rule)
   local def, code, message = self.registry:add("core", "core", rule)
@@ -118,6 +173,8 @@ function Engine:canAward(key)
   if not def then return false, "unknown_id" end
   if not self.registry.appliesTo(def, self.game) then return false, "wrong_game" end
   if def.extra and not self:extrasOn() then return false, "disabled" end
+  if self:tracksRa(def) and self:activeList() then return false, "replaced" end
+  if self:offItsCart(def) then return false, "wrong_cart" end
   return true, def
 end
 
@@ -136,6 +193,7 @@ end
 -- opts.silent true skips the popup; backfill shows its own summary
 function Engine:award(key, opts)
   opts = opts or {}
+  key = self:resolve(key)
   local ok, def = self:canAward(key)
   if not ok then return false, def end
   if self.ledger:isUnlocked(key) then return false, "already_unlocked" end
@@ -173,6 +231,7 @@ end
 
 -- Set progress to a value, clamped to 0..goal. Reaching the goal awards it.
 function Engine:setProgress(key, value, opts)
+  key = self:resolve(key)
   local ok, def = self:canAward(key)
   if not ok then return false, def end
   if self.ledger:isUnlocked(key) then return false, "already_unlocked" end
@@ -194,6 +253,7 @@ function Engine:setProgress(key, value, opts)
 end
 
 function Engine:addProgress(key, by, opts)
+  key = self:resolve(key)
   local ok, why = self:canAward(key)
   if not ok then return false, why end
   if self.ledger:isUnlocked(key) then return false, "already_unlocked" end
@@ -230,14 +290,15 @@ function Engine:evaluateState(how, silent)
   local unlocked = 0
   for _, entry in ipairs(self.stateRules) do
     local def = entry.def
-    if self.registry.appliesTo(def, self.game) and not self.ledger:isUnlocked(def.key) then
+    local key = self:targetKey(def)
+    if key and self.registry.appliesTo(def, self.game) and not self.ledger:isUnlocked(key) then
       local result = self:try(entry, entry.rule.check, facts, self.game)
       if result == true then
-        if self:award(def.key, { how = how, silent = silent }) then unlocked = unlocked + 1 end
+        if self:award(key, { how = how, silent = silent }) then unlocked = unlocked + 1 end
       elseif type(result) == "number" and def.goal then
-        local wasUnlocked = self.ledger:isUnlocked(def.key)
-        self:setProgress(def.key, result, { how = how, silent = silent })
-        if not wasUnlocked and self.ledger:isUnlocked(def.key) then unlocked = unlocked + 1 end
+        local wasUnlocked = self.ledger:isUnlocked(key)
+        self:setProgress(key, result, { how = how, silent = silent })
+        if not wasUnlocked and self.ledger:isUnlocked(key) then unlocked = unlocked + 1 end
       end
     end
   end
@@ -253,13 +314,15 @@ end
 -- Act on a rule's result: true awards, a number is progress.
 -- Event rules add to it; trackers set it outright.
 function Engine:apply(def, result, additive)
+  local key = self:targetKey(def)
+  if not key then return end
   if result == true then
-    self:award(def.key, { how = "event" })
+    self:award(key, { how = "event" })
   elseif type(result) == "number" and def.goal then
     if additive then
-      if result > 0 then self:addProgress(def.key, result, { how = "event" }) end
+      if result > 0 then self:addProgress(key, result, { how = "event" }) end
     else
-      self:setProgress(def.key, result, { how = "event" })
+      self:setProgress(key, result, { how = "event" })
     end
   end
 end
@@ -285,7 +348,8 @@ function Engine:dispatch(name, payload)
     local facts, ctx
     for _, entry in ipairs(trackers) do
       local def = entry.def
-      if self.registry.appliesTo(def, self.game) and not self.ledger:isUnlocked(def.key) then
+      local key = self:targetKey(def)
+      if key and self.registry.appliesTo(def, self.game) and not self.ledger:isUnlocked(key) then
         facts = facts or self.adapter:facts()
         ctx = ctx or self:context()
         local result = self:try(entry, entry.rule.on[name], entry.state, payload, facts, ctx)
@@ -299,7 +363,8 @@ function Engine:dispatch(name, payload)
   local ctx = self:context()
   for _, entry in ipairs(list) do
     local def = entry.def
-    if self.registry.appliesTo(def, self.game) and not self.ledger:isUnlocked(def.key) then
+    local key = self:targetKey(def)
+    if key and self.registry.appliesTo(def, self.game) and not self.ledger:isUnlocked(key) then
       local result = self:try(entry, entry.rule.test, payload, facts, ctx)
       self:apply(def, result, true)
     end
@@ -605,6 +670,19 @@ function Engine:status(key)
     row.available = self.game ~= nil and self.registry.appliesTo(def, self.game)
       and not (def.extra and not self:extrasOn())
     row.archived = false
+    if self:offItsCart(def) then row.available, row.offCart = false, true end
+    local list = self.game and self:activeList()
+    if list then
+      local by = def.source == "core" and self.registry.borrows[def.key]
+      if self:tracksRa(def) or (by and by[list.provider]) then
+        -- the RA list steps aside for the cart's own, and so does a check
+        -- the list borrows
+        row.available, row.replaced = false, true
+      elseif def.source ~= "core" and def.provider == list.provider then
+        row.official, row.listed = true, true
+        row.raType, row.listTitle, row.listLabel = def.type, list.title, list.label
+      end
+    end
   else
     -- Saved, but nothing defines it this session: its provider is missing.
     row.title = record.title or key
@@ -668,12 +746,17 @@ function Engine:playTime()
 end
 
 -- Official RetroAchievements entries only, no bonus ones or other mods:
--- the numbers the leaderboard compares. `reachedAt` is the play time in
--- seconds of the latest official unlock, or nil if there are none.
+-- the numbers the leaderboard compares. On a cart with its own list, that
+-- list's entries instead. `reachedAt` is the play time in seconds of the
+-- latest official unlock, or nil if there are none.
 function Engine:officialTotals()
   local t = { earned = 0, total = 0, points = 0, maxPoints = 0 }
+  local list = self:activeList()
   for _, row in ipairs(self:rows()) do
-    if row.source == "core" and row.official and row.available then
+    local counts
+    if list then counts = row.listed == true
+    else counts = row.source == "core" and row.official end
+    if counts and row.available then
       t.total = t.total + 1
       t.maxPoints = t.maxPoints + (row.points or 0)
       if row.unlocked then
