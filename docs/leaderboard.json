@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-13T12:31:37Z",
+ "updated": "2026-11-13T12:32:46Z",
  "banned": [],
  "games": {
   "red": {
@@ -88,7 +88,7 @@
      "earned": 2,
      "saveId": "SZPZM4",
      "time": 9,
-     "owner": "online:dbecb704fdca30521f115aa0ec87c08d",
+     "owner": "discord:19f7e31d3cc343740b10454a66371bc1",
      "via": "online",
      "date": "2026-11-13T12:31:04Z",
      "first": "2026-11-13T12:31:04Z",
@@ -444,7 +444,7 @@
       }
      },
      "saveId": "SZPZM4",
-     "owner": "online:dbecb704fdca30521f115aa0ec87c08d",
+     "owner": "discord:19f7e31d3cc343740b10454a66371bc1",
      "via": "online",
      "date": "2026-11-13T12:31:37Z",
      "first": "2026-11-13T12:31:37Z",
