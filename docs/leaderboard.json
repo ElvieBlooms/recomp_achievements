@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-13T18:49:35Z",
+ "updated": "2026-11-13T23:58:07Z",
  "banned": [],
  "games": {
   "red": {
@@ -739,8 +739,8 @@
     },
     {
      "name": "JOtt",
-     "points": 49,
-     "earned": 8,
+     "points": 57,
+     "earned": 11,
      "sources": {
       "bonus": {
        "earned": 1,
@@ -756,12 +756,17 @@
        "earned": 0,
        "total": 14,
        "points": 0
+      },
+      "name_tags": {
+       "earned": 3,
+       "total": 13,
+       "points": 8
       }
      },
      "saveId": "BPWJVN",
      "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
      "via": "online",
-     "date": "2026-11-11T06:05:46Z",
+     "date": "2026-11-13T23:58:07Z",
      "first": "2026-11-09T08:06:01Z",
      "src": "online:89452be12559ab80407327dd3f8e8bd9"
     },
