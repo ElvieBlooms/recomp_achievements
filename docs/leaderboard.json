@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-13T13:20:57Z",
+ "updated": "2026-11-13T13:21:06Z",
  "banned": [],
  "games": {
   "red": {
@@ -120,6 +120,18 @@
      "date": "2026-11-12T20:25:37Z",
      "first": "2026-11-12T11:35:13Z",
      "src": "online:161ca197d233c27dd67382bf65a5e8de"
+    },
+    {
+     "name": "GOLD",
+     "points": 1,
+     "earned": 1,
+     "saveId": "0D4ZAD",
+     "time": 48,
+     "owner": "online:c78d29f00b202e6be004b2da7f781318",
+     "via": "online",
+     "date": "2026-11-13T13:21:06Z",
+     "first": "2026-11-13T13:21:06Z",
+     "src": "online:c78d29f00b202e6be004b2da7f781318"
     }
    ],
    "title": "Pokemon Gold",
