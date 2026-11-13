@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-13T06:01:13Z",
+ "updated": "2026-11-13T06:01:14Z",
  "banned": [],
  "games": {
   "red": {
@@ -376,6 +376,34 @@
      "via": "discord",
      "date": "2026-11-07T01:51:34Z",
      "first": "2026-11-07T01:51:34Z"
+    },
+    {
+     "name": "DAWN",
+     "points": 25,
+     "earned": 5,
+     "sources": {
+      "bonus": {
+       "earned": 1,
+       "total": 16,
+       "points": 2
+      },
+      "emerald_lens": {
+       "earned": 4,
+       "total": 10,
+       "points": 23
+      },
+      "facets": {
+       "earned": 0,
+       "total": 12,
+       "points": 0
+      }
+     },
+     "saveId": "60YBGM",
+     "owner": "online:90711ee70fa3196ce60165b2111e46cf",
+     "via": "online",
+     "date": "2026-11-13T06:01:14Z",
+     "first": "2026-11-13T06:01:14Z",
+     "src": "online:90711ee70fa3196ce60165b2111e46cf"
     }
    ]
   },
