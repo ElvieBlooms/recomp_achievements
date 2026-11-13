@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-12T22:27:18Z",
+ "updated": "2026-11-13T03:59:47Z",
  "banned": [],
  "games": {
   "red": {
@@ -231,6 +231,13 @@
    "title": "Pokemon Sapphire",
    "maxPoints": 485,
    "total": 49
+  },
+  "pokepink": {
+   "entries": [],
+   "title": "Pokemon Pink",
+   "maxPoints": 564,
+   "total": 76,
+   "cart": true
   }
  },
  "extra": {
@@ -517,12 +524,17 @@
        "earned": 5,
        "total": 14,
        "points": 30
+      },
+      "name_tags": {
+       "earned": 0,
+       "total": 13,
+       "points": 0
       }
      },
      "saveId": "RQ1SP6",
      "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
      "via": "online",
-     "date": "2026-11-12T13:11:16Z",
+     "date": "2026-11-13T03:59:47Z",
      "first": "2026-11-07T17:32:32Z",
      "src": "online:afa684f8bc5f1471024d000e56174a33"
     }
@@ -624,6 +636,9 @@
    "entries": []
   },
   "sapphire": {
+   "entries": []
+  },
+  "pokepink": {
    "entries": []
   }
  }
