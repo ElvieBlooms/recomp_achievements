@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-13T15:13:43Z",
+ "updated": "2026-11-13T15:14:49Z",
  "banned": [],
  "games": {
   "red": {
@@ -793,13 +793,13 @@
    "entries": [
     {
      "name": "PNKTEST",
-     "points": 25,
-     "earned": 5,
+     "points": 26,
+     "earned": 6,
      "sources": {
       "bonus": {
-       "earned": 1,
+       "earned": 2,
        "total": 16,
-       "points": 2
+       "points": 3
       },
       "emerald_lens": {
        "earned": 4,
@@ -820,7 +820,7 @@
      "saveId": "6T9EBZ",
      "owner": "discord:19f7e31d3cc343740b10454a66371bc1",
      "via": "online",
-     "date": "2026-11-13T15:09:42Z",
+     "date": "2026-11-13T15:14:49Z",
      "first": "2026-11-13T15:09:42Z",
      "src": "online:760ad69ee61dd969b695ad4e46e19a13"
     }
