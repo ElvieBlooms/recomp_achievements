@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-13T16:43:54Z",
+ "updated": "2026-11-13T16:52:00Z",
  "banned": [],
  "games": {
   "red": {
@@ -181,6 +181,18 @@
      "date": "2026-11-12T18:52:27Z",
      "first": "2026-11-07T16:55:25Z",
      "src": "online:ba3e635dd7059c3b5e9e024e54945059"
+    },
+    {
+     "name": "Chibi",
+     "points": 1,
+     "earned": 1,
+     "saveId": "A48KBX",
+     "time": 85,
+     "owner": "online:335655b0c6cb7cf70a83004c6ee49a12",
+     "via": "online",
+     "date": "2026-11-13T16:52:00Z",
+     "first": "2026-11-13T16:52:00Z",
+     "src": "online:335655b0c6cb7cf70a83004c6ee49a12"
     }
    ],
    "title": "Pokemon Crystal",
