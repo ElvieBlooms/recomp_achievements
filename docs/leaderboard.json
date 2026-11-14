@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-14T21:32:17Z",
+ "updated": "2026-11-14T21:32:22Z",
  "banned": [],
  "games": {
   "red": {
@@ -860,8 +860,8 @@
    "entries": [
     {
      "name": "ELVIE",
-     "points": 84,
-     "earned": 15,
+     "points": 87,
+     "earned": 16,
      "sources": {
       "bonus": {
        "earned": 3,
@@ -879,15 +879,15 @@
        "points": 25
       },
       "name_tags": {
-       "earned": 4,
+       "earned": 5,
        "total": 13,
-       "points": 10
+       "points": 13
       }
      },
      "saveId": "2JJB78",
      "owner": "online:7d2419d7ed1f98b0b5b79ef297105f7e",
      "via": "online",
-     "date": "2026-11-14T21:05:11Z",
+     "date": "2026-11-14T21:32:22Z",
      "first": "2026-11-14T13:26:48Z",
      "src": "online:7d2419d7ed1f98b0b5b79ef297105f7e"
     },
