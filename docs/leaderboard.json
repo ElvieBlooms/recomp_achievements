@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-14T00:34:26Z",
+ "updated": "2026-11-14T00:34:40Z",
  "banned": [],
  "games": {
   "red": {
@@ -212,6 +212,18 @@
      "date": "2026-11-12T13:58:38Z",
      "first": "2026-11-07T17:32:28Z",
      "src": "online:afa684f8bc5f1471024d000e56174a33"
+    },
+    {
+     "name": "Ash",
+     "points": 1,
+     "earned": 1,
+     "saveId": "R87VF4",
+     "time": 102,
+     "owner": "online:0cd439463d3d2cb7bcf753c4c9a4ad2d",
+     "via": "online",
+     "date": "2026-11-14T00:34:40Z",
+     "first": "2026-11-14T00:34:40Z",
+     "src": "online:0cd439463d3d2cb7bcf753c4c9a4ad2d"
     }
    ],
    "title": "Pokemon FireRed",
