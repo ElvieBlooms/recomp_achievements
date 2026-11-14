@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-14T13:35:04Z",
+ "updated": "2026-11-14T13:35:12Z",
  "banned": [],
  "games": {
   "red": {
@@ -307,6 +307,18 @@
   "pokepink": {
    "entries": [
     {
+     "name": "ELVIE",
+     "points": 4,
+     "earned": 4,
+     "saveId": "2JJB78",
+     "time": 48,
+     "owner": "online:7d2419d7ed1f98b0b5b79ef297105f7e",
+     "via": "online",
+     "date": "2026-11-14T13:35:12Z",
+     "first": "2026-11-14T13:26:41Z",
+     "src": "online:7d2419d7ed1f98b0b5b79ef297105f7e"
+    },
+    {
      "name": "PNKTEST",
      "points": 3,
      "earned": 3,
@@ -317,18 +329,6 @@
      "date": "2026-11-13T15:13:03Z",
      "first": "2026-11-13T15:09:35Z",
      "src": "online:760ad69ee61dd969b695ad4e46e19a13"
-    },
-    {
-     "name": "ELVIE",
-     "points": 3,
-     "earned": 3,
-     "saveId": "2JJB78",
-     "time": 42,
-     "owner": "online:7d2419d7ed1f98b0b5b79ef297105f7e",
-     "via": "online",
-     "date": "2026-11-14T13:26:41Z",
-     "first": "2026-11-14T13:26:41Z",
-     "src": "online:7d2419d7ed1f98b0b5b79ef297105f7e"
     }
    ],
    "title": "Pokemon Pink",
