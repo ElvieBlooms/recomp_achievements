@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-14T20:05:32Z",
+ "updated": "2026-11-14T20:39:00Z",
  "banned": [],
  "games": {
   "red": {
@@ -159,6 +159,18 @@
      "src": "online:fc537e27847b0f952d00d94ae8f4dbab"
     },
     {
+     "name": "THIAGO",
+     "points": 52,
+     "earned": 13,
+     "saveId": "WQZ72K",
+     "time": 115,
+     "owner": "discord:e8a2cf49696d151350a5d7a92073697c",
+     "via": "online",
+     "date": "2026-11-14T20:39:00Z",
+     "first": "2026-11-07T16:55:25Z",
+     "src": "online:ba3e635dd7059c3b5e9e024e54945059"
+    },
+    {
      "name": "AIDAN",
      "points": 51,
      "earned": 3,
@@ -169,18 +181,6 @@
      "date": "2026-11-12T22:27:16Z",
      "first": "2026-11-12T22:27:16Z",
      "src": "online:215b64749b574d9a3822aa7643f36686"
-    },
-    {
-     "name": "THIAGO",
-     "points": 47,
-     "earned": 12,
-     "saveId": "WQZ72K",
-     "time": 113,
-     "owner": "discord:e8a2cf49696d151350a5d7a92073697c",
-     "via": "online",
-     "date": "2026-11-14T20:05:32Z",
-     "first": "2026-11-07T16:55:25Z",
-     "src": "online:ba3e635dd7059c3b5e9e024e54945059"
     },
     {
      "name": "Chibi",
