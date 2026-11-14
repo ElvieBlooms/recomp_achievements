@@ -30,6 +30,8 @@ local function fakeFont(px)
   local f = { px = px }
   function f:getWidth(s) local n = 0 for _ in tostring(s):gmatch("[%z\1-\127\194-\244][\128-\191]*") do n = n + 1 end return n * px * 0.6 end
   function f:getHeight() return px end
+  function f:getAscent() return px * 0.8 end
+  function f:setFilter() end
   function f:getWrap(s, width)
     local lines, line = {}, ""
     for word in tostring(s):gmatch("%S+") do
@@ -43,10 +45,15 @@ local function fakeFont(px)
 end
 love.graphics = setmetatable({
   getColor = function() return 1, 1, 1, 1 end,
-  newFont = function(px) return fakeFont(px) end,
+  -- newFont(px) or newFont(path, px, hinting, dpiscale); H.fontsLoaded keeps the paths
+  newFont = function(a, b)
+    if type(a) == "string" then H.fontsLoaded[#H.fontsLoaded + 1] = a; return fakeFont(b) end
+    return fakeFont(a)
+  end,
   -- Window-space text from the modern menu is recorded the same way as Font.draw.
   print = function(s, x, y) drawn[#drawn + 1] = { text = tostring(s), tx = (x or 0) / 8, ty = (y or 0) / 8, window = true } end,
 }, { __index = function() return noop end })
+H.fontsLoaded = {}
 local clockNow = 0
 love.timer = { getTime = function() return clockNow end }
 function H.advance(seconds) clockNow = clockNow + seconds end

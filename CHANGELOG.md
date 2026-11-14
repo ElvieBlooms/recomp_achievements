@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.8.1
+
+Small screens get their letters back.
+
+### Fixed
+- On some handhelds (seen on an Anbernic RG DS) the modern menu's smaller
+  text lost strokes: "Collect every finite TM and HM" came out as "Collcct
+  cvcry finitc TM and IIM". The game was drawing bigger than the screen and
+  the picture was shrunk by dropping rows, which takes the thin lines out of
+  smooth text.
+
+### New
+- MENU FONT option: AUTO (default), SMOOTH or PIXEL. PIXEL draws the modern
+  menu and popups in the engine's Plain Pixel font at whole-pixel sizes,
+  which survive the shrink. AUTO switches to it when the window is bigger
+  than its screen or smooth text would be tiny.
+- Menu text is placed on whole screen pixels on high-DPI screens.
+
 ## 2.8.0
 
 Custom carts can bring their own list.

@@ -858,6 +858,32 @@ test("modern menu fits Gen 2 and Gen 3 screen shapes and hides spoilers", functi
   for game in pairs(Modern.GAME_NAMES) do check(Modern.ACCENTS[game], game .. " has an accent") end
 end)
 
+test("MENU FONT: pixel text for small or shrunk screens", function()
+  local Modern = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/modern.lua"))()
+  eq(Modern.resolveFont("smooth", 1), "smooth", "SMOOTH always")
+  eq(Modern.resolveFont("pixel", 9), "pixel", "PIXEL always")
+  eq(Modern.resolveFont("auto", 4), "smooth", "AUTO on a roomy window")
+  eq(Modern.resolveFont("auto", 1.5), "pixel", "AUTO when smooth text would be tiny")
+  local w, g = love.window, love.graphics.getPixelDimensions
+  love.window = { getDesktopDimensions = function() return 640, 480 end }
+  love.graphics.getPixelDimensions = function() return 960, 720 end
+  check(Modern.shrunk(), "a 960x720 window on a 640x480 screen is shrunk")
+  eq(Modern.resolveFont("auto", 4), "pixel", "AUTO when the picture is shrunk")
+  love.graphics.getPixelDimensions = function() return 640, 480 end
+  check(not Modern.shrunk(), "the screen's own size isn't")
+  love.window, love.graphics.getPixelDimensions = w, g
+
+  -- the menu itself loads Plain Pixel with PIXEL, and still draws everything
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env.loader.modOptions.recomp_achievements.menuFont = "pixel"
+  env:newGame()
+  openMenu(env)
+  H.fontsLoaded = {}
+  env:hud({ gameX = 0, gameY = 0, gameWidth = 640, gameHeight = 576, scale = 4 })
+  check(H.windowText():find("Achievements", 1, true), "draws")
+  check(H.fontsLoaded[1] and H.fontsLoaded[1]:find("PlainPixel", 1, true), "Plain Pixel loaded")
+end)
+
 test("CLASSIC MENU option brings back the Game Boy menu", function()
   local env = H.boot({ "recomp_achievements" }, { modern = true })
   env.loader.modOptions.recomp_achievements.classicMenu = true

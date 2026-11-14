@@ -93,8 +93,17 @@ Modern.GAME_HUE = {
 
 -- The colours in use, filled from the chosen palette by Modern.apply.
 local C = {}
+-- "smooth" or "pixel", also set by Modern.apply (see the text section)
+local fontMode = "smooth"
+local shrink = 1 -- Modern.shrinkRatio(), read once per draw by Modern.apply
 
-function Modern.apply(name)
+-- font: the MENU FONT option, resolved for u (see Modern.resolveFont).
+function Modern.apply(name, fontChoice, u)
+  -- resolveFont is defined further down; this also runs once at load
+  if Modern.resolveFont then
+    shrink = Modern.shrinkRatio()
+    fontMode = Modern.resolveFont(fontChoice, u)
+  end
   local theme = Modern.THEMES[name] or Modern.THEMES[Modern.DEFAULT_THEME]
   for k, v in pairs(theme) do C[k] = v end
   return theme
@@ -139,17 +148,112 @@ local function color(c, alpha)
   G.setColor(c[1], c[2], c[3], alpha or c[4] or 1)
 end
 
+-- ------------------ text
+-- SMOOTH is LÖVE's own face at whatever size u gives. PIXEL is the engine's
+-- Plain Pixel (assets/fonts/plainpixel, CC-BY 4.0, Douglas Vautour), the face
+-- its own TTF text mode uses, only at whole multiples of its 15px design em
+-- in real screen pixels so every stroke is a whole pixel wide.
+-- PIXEL is for screens that get the picture shrunk to fit: some handhelds
+-- render the window larger than the panel and drop rows to scale it down,
+-- which takes the thin strokes out of smooth text ("Collcct cvcry ... IIM").
+-- Pixel strokes are thick enough to survive that. AUTO picks PIXEL when the
+-- window is bigger than the screen it's on, or when smooth text would be
+-- tiny.
+local PIXEL_FONT = "assets/fonts/plainpixel/PlainPixel-Regular.ttf"
+local PIXEL_EM = 15
 local fonts = {}
-local function font(px)
+
+-- Screen pixels per LÖVE unit; 1 except on high-DPI windows (Android).
+local function dpi()
+  local d = G and G.getDPIScale and G.getDPIScale() or 1
+  return (type(d) == "number" and d > 0) and d or 1
+end
+
+-- How much the display shrinks the window: 1 when it shows every pixel,
+-- 2/3 for a 960x720 window on a 640x480 screen.
+function Modern.shrinkRatio()
+  local w = love and love.window
+  local g = love and love.graphics
+  if not (w and w.getDesktopDimensions and g and g.getPixelDimensions) then return 1 end
+  local okD, dw, dh = pcall(w.getDesktopDimensions)
+  local okP, pw, ph = pcall(g.getPixelDimensions)
+  if not (okD and okP and dw and dh and pw and ph) or dw <= 0 or dh <= 0 or pw <= 0 or ph <= 0 then
+    return 1
+  end
+  return math.min(1, dw / pw, dh / ph)
+end
+
+-- Whether the window draws more pixels than its display shows.
+function Modern.shrunk()
+  return Modern.shrinkRatio() < 0.98
+end
+
+-- choice: the MENU FONT option ("auto", "smooth", "pixel"); u: one Game Boy
+-- pixel in LÖVE units for the thing being drawn.
+function Modern.resolveFont(choice, u)
+  if choice == "pixel" or choice == "smooth" then return choice end
+  if Modern.shrunk() then return "pixel" end
+  -- the menu's small text, in screen pixels
+  if 4.6 * (u or 1) * dpi() < 11 then return "pixel" end
+  return "smooth"
+end
+
+local function smoothFont(px)
   px = math.max(6, math.floor(px + 0.5))
   if not fonts[px] then fonts[px] = G.newFont(px) end
   return fonts[px]
 end
 
+-- Plain Pixel's line box is twice its letters (28px at 15: a cap height of
+-- 11 and a descent of 3 sit inside 7px of air above and 10 below), so the
+-- layout uses the letters instead: top is the air to skip, height what's left.
+local PIXEL_CAP, PIXEL_DESCENT = 11, 3
+local pixelMetrics = setmetatable({}, { __mode = "k" })
+
+-- A font's line height for layout.
+local function fh(f)
+  local m = pixelMetrics[f]
+  return m and m.height or f:getHeight()
+end
+
+local function font(px)
+  if fontMode ~= "pixel" then return smoothFont(px) end
+  local d = dpi()
+  -- rounds up a little early, so headings stay bigger than body text; and
+  -- on a shrunk screen every stroke stays at least one pixel after the shrink
+  local k = math.max(1, math.floor(px * d / PIXEL_EM + 0.7),
+                     math.ceil(1 / shrink - 0.01))
+  local key = ("pixel%d@%g"):format(k, d)
+  if fonts[key] == nil then
+    -- size in units, rasterised at exactly PIXEL_EM * k screen pixels
+    local ok, f = pcall(G.newFont, PIXEL_FONT, PIXEL_EM * k / d, "mono", d)
+    if ok and f then
+      pcall(f.setFilter, f, "nearest", "nearest")
+      -- Plain Pixel has no … or dashes, and RA titles can have anything, so
+      -- missing letters come from the smooth face at the same size
+      pcall(f.setFallbacks, f, smoothFont(PIXEL_EM * k / d))
+      pixelMetrics[f] = { top = f:getAscent() - PIXEL_CAP * k / d,
+                          height = (PIXEL_CAP + PIXEL_DESCENT) * k / d }
+      fonts[key] = f
+    else
+      fonts[key] = false -- a trimmed build without the file: stay smooth
+    end
+  end
+  return fonts[key] or smoothFont(px)
+end
+
+-- Draw positions land on whole screen pixels, so a glyph texel maps to one
+-- pixel even when a unit is 1.5 of them.
+local function snap(v)
+  local d = dpi()
+  return math.floor(v * d + 0.5) / d
+end
+
 local function text(f, s, x, y, c, alpha)
   G.setFont(f)
   color(c, alpha)
-  G.print(s, math.floor(x + 0.5), math.floor(y + 0.5))
+  local m = pixelMetrics[f]
+  G.print(s, snap(x), snap(y - (m and m.top or 0)))
 end
 
 local function textRight(f, s, right, y, c)
@@ -227,7 +331,8 @@ local function keycap(x, y, h, label, f)
     G.polygon("fill", cx + s * 0.4, cy - s, cx + s * 0.4, cy + s, cx + s * 1.6, cy)
   else
     G.setFont(f)
-    G.print(label, math.floor(cx - f:getWidth(label) / 2 + 0.5), math.floor(cy - f:getHeight() / 2 + 0.5))
+    local m = pixelMetrics[f]
+    G.print(label, snap(cx - f:getWidth(label) / 2), snap(cy - fh(f) / 2 - (m and m.top or 0)))
   end
   return w
 end
@@ -301,13 +406,14 @@ end
 -- Unlock popups in the menu's style; ui/toast.lua decides when.
 -- c: { kind = "unlock" | "summary" | "more", title, points }
 -- shown: how far it has slid in, 0..1
--- opts: { style = "modern" | "corner", theme = palette name, game = game id }
+-- opts: { style = "modern" | "corner", theme = palette name, game = game id,
+--         font = the MENU FONT option }
 function Modern.drawToast(c, shown, vp, opts)
   G = love.graphics
-  Modern.apply(opts.theme)
   local x0, y0 = vp.gameX or 0, vp.gameY or 0
   local W, H = vp.gameWidth or 160, vp.gameHeight or 144
   local u = math.min(W / 160, H / 144)
+  Modern.apply(opts.theme, opts.font, u)
   local accent = Modern.accent(opts.game)
   local heading = c.kind == "summary" and "Welcome back" or c.kind == "more" and "More achievements"
     or "Achievement unlocked"
@@ -321,7 +427,7 @@ function Modern.drawToast(c, shown, vp, opts)
     local fTitle, fTiny = font(4.4 * u), font(3.6 * u)
     local pad, r = 2.6 * u, 3.4 * u
     local w = math.floor(W * 0.46)
-    local h = pad * 2 + fTiny:getHeight() + fTitle:getHeight()
+    local h = pad * 2 + fh(fTiny) + fh(fTitle)
     local x = x0 + W - 3 * u - w + (1 - ease) * (w + 4 * u)
     local y = y0 + 3 * u
     rrect("fill", x, y, w, h, 2.5 * u, C.panel, 0.96)
@@ -332,13 +438,13 @@ function Modern.drawToast(c, shown, vp, opts)
     local ptsW = pts ~= "" and fTiny:getWidth(pts) + 1.5 * u or 0
     text(fTiny, heading, tx, y + pad, C.faint)
     if pts ~= "" then textRight(fTiny, pts, x + w - pad, y + pad, accent) end
-    text(fTitle, Modern.ellipsize(fTitle, c.title or "", x + w - pad - tx), tx, y + pad + fTiny:getHeight(), C.text)
+    text(fTitle, Modern.ellipsize(fTitle, c.title or "", x + w - pad - tx), tx, y + pad + fh(fTiny), C.text)
   else
     -- modern: a banner that slides down across the top
     local fTitle, fSmall = font(5.6 * u), font(4.2 * u)
     local pad, r = 4 * u, 5 * u
     local w = W - 8 * u
-    local h = pad * 2 + fSmall:getHeight() + fTitle:getHeight() * 1.1
+    local h = pad * 2 + fh(fSmall) + fh(fTitle) * 1.1
     local x = x0 + 4 * u
     local y = y0 + 4 * u - (1 - ease) * (h + 6 * u)
     rrect("fill", x, y, w, h, 3 * u, C.panel, 0.97)
@@ -350,13 +456,13 @@ function Modern.drawToast(c, shown, vp, opts)
     local right = x + w - pad
     if pts ~= "" then
       local pw = fSmall:getWidth(pts) + 4 * u
-      local ph = fSmall:getHeight() + 1.6 * u
+      local ph = fh(fSmall) + 1.6 * u
       rrect("fill", right - pw, y + (h - ph) / 2, pw, ph, ph / 2, accent)
       text(fSmall, pts, right - pw + 2 * u, y + (h - ph) / 2 + 0.8 * u, C.onAccent)
       right = right - pw - 3 * u
     end
     text(fSmall, heading, tx, y + pad, C.faint)
-    text(fTitle, Modern.ellipsize(fTitle, c.title or "", right - tx), tx, y + pad + fSmall:getHeight(), C.text)
+    text(fTitle, Modern.ellipsize(fTitle, c.title or "", right - tx), tx, y + pad + fh(fSmall), C.text)
   end
   G.pop()
 end
@@ -365,17 +471,17 @@ end
 -- "3 / 50" and a bar, for a moment after an achievement moves along.
 function Modern.drawProgress(c, shown, vp, opts)
   G = love.graphics
-  Modern.apply(opts.theme)
   local x0, y0 = vp.gameX or 0, vp.gameY or 0
   local W, H = vp.gameWidth or 160, vp.gameHeight or 144
   local u = math.min(W / 160, H / 144)
+  Modern.apply(opts.theme, opts.font, u)
   local accent = Modern.accent(opts.game)
   local ease = 1 - (1 - shown) * (1 - shown)
   local fTitle, fTiny = font(3.9 * u), font(3.3 * u)
   local pad, r = 2.2 * u, 2.8 * u
   local w = math.floor(W * 0.42)
   local barH = math.max(2, 1.1 * u)
-  local h = pad * 2 + fTitle:getHeight() + barH + 1.4 * u
+  local h = pad * 2 + fh(fTitle) + barH + 1.4 * u
   local x = x0 + 3 * u - (1 - ease) * (w + 4 * u)
   local y = y0 + 3 * u + ((opts.slot or 1) - 1) * (h + 1.5 * u)
   local count = c.unit == "PCT" and (("%d%%"):format(c.value)) or ("%d / %d"):format(c.value, c.goal)
@@ -391,9 +497,9 @@ function Modern.drawProgress(c, shown, vp, opts)
   local tx = x + pad * 2 + r * 2
   local right = x + w - pad
   local cw = fTiny:getWidth(count)
-  text(fTiny, count, right - cw, y + pad + (fTitle:getHeight() - fTiny:getHeight()) / 2, accent)
+  text(fTiny, count, right - cw, y + pad + (fh(fTitle) - fh(fTiny)) / 2, accent)
   text(fTitle, Modern.ellipsize(fTitle, c.title or "", right - cw - 2 * u - tx), tx, y + pad, C.text, 0.95)
-  bar(tx, y + pad + fTitle:getHeight() + 0.8 * u, right - tx, barH, frac, accent)
+  bar(tx, y + pad + fh(fTitle) + 0.8 * u, right - tx, barH, frac, accent)
   G.pop()
 end
 
@@ -502,7 +608,7 @@ function Modern.newScreen(deps)
     local u = Modern.unit(vp, W, H)
     local portrait = size ~= "game" and H > W * 1.2
     local p = 6 * u
-    Modern.apply(mod.options:get("menuTheme"))
+    Modern.apply(mod.options:get("menuTheme"), mod.options:get("menuFont"), u)
     local accent = Modern.accent(engine.game)
     local fTitle, fBody, fSmall, fTiny = font(8 * u), font(5.4 * u), font(4.6 * u), font(4 * u)
     local hair = math.max(1, 0.35 * u)
@@ -525,19 +631,19 @@ function Modern.newScreen(deps)
       or Modern.GAME_NAMES[engine.game or ""] or (engine.game and engine.game:upper()) or "No save loaded"
     local nameW = fSmall:getWidth(gameName)
     local dotR = 1.6 * u
-    textRight(fSmall, gameName, x0 + W - p, hy + (fTitle:getHeight() - fSmall:getHeight()) / 2, C.muted)
-    color(accent); G.circle("fill", x0 + W - p - nameW - dotR * 2.4, hy + fTitle:getHeight() / 2, dotR)
+    textRight(fSmall, gameName, x0 + W - p, hy + (fh(fTitle) - fh(fSmall)) / 2, C.muted)
+    color(accent); G.circle("fill", x0 + W - p - nameW - dotR * 2.4, hy + fh(fTitle) / 2, dotR)
 
-    local by = hy + fTitle:getHeight() + 2.5 * u
+    local by = hy + fh(fTitle) + 2.5 * u
     local stats = ("%d / %d earned  ·  %d / %d pts"):format(t.earned, t.total, t.points, t.maxPoints)
     local statsW = fTiny:getWidth(stats)
     local barW = W - 2 * p - statsW - 5 * u
-    bar(hx, by + fTiny:getHeight() / 2 - 1.2 * u, barW, 2.4 * u, t.total > 0 and t.earned / t.total or 0, accent)
+    bar(hx, by + fh(fTiny) / 2 - 1.2 * u, barW, 2.4 * u, t.total > 0 and t.earned / t.total or 0, accent)
     textRight(fTiny, stats, x0 + W - p, by, C.muted)
 
     -- filter chips, scrolled so the current one stays on screen
-    local cy = by + fTiny:getHeight() + 3 * u
-    local chipH = fSmall:getHeight() + 2.4 * u
+    local cy = by + fh(fTiny) + 3 * u
+    local chipH = fh(fSmall) + 2.4 * u
     local chips, total = {}, 0
     for i, f in ipairs(filters) do
       local label = f.title or Modern.FILTER_LABELS[f.id] or f.label
@@ -566,7 +672,7 @@ function Modern.newScreen(deps)
     G.setScissor(x0, y0, W, H)
 
     -- ------------------ body
-    local footH = fTiny:getHeight() + 4 * u
+    local footH = fh(fTiny) + 4 * u
     local top = cy + chipH + 3.5 * u
     local bottom = y0 + H - footH
     -- Landscape puts the details beside the list, portrait puts them below.
@@ -582,14 +688,14 @@ function Modern.newScreen(deps)
       pw, ph = x0 + W - p - px, bottom - top
     end
     local lx = hx
-    local rowH = fBody:getHeight() + fTiny:getHeight() + 3.6 * u
+    local rowH = fh(fBody) + fh(fTiny) + 3.6 * u
     st.visible = math.max(1, math.floor((bottom - top) / rowH))
     if st.index - st.scroll > st.visible then st.scroll = st.index - st.visible end
     if st.index - st.scroll < 1 then st.scroll = math.max(0, st.index - 1) end
 
     if #st.list == 0 then
       local msg = engine.active and "Nothing here yet" or "Load a save to see achievements"
-      text(fBody, msg, lx + (listW - fBody:getWidth(msg)) / 2, top + (bottom - top) / 2 - fBody:getHeight(), C.faint)
+      text(fBody, msg, lx + (listW - fBody:getWidth(msg)) / 2, top + (bottom - top) / 2 - fh(fBody), C.faint)
     end
     -- only whole rows are drawn, since a part row would run under the footer
 
@@ -611,13 +717,13 @@ function Modern.newScreen(deps)
       local ptsW = pts ~= "" and fTiny:getWidth(pts) + 2 * u or 0
       local titleColor = (row.unlocked or n == st.index) and C.text or C.muted
       text(fBody, Modern.ellipsize(fBody, shown.title, listW - (tx - lx) - ptsW - 3 * u), tx, ry + 1.2 * u, titleColor)
-      if pts ~= "" then textRight(fTiny, pts, lx + listW - 3 * u, ry + 1.2 * u + (fBody:getHeight() - fTiny:getHeight()) / 2, C.faint) end
-      local sy = ry + 1.2 * u + fBody:getHeight() + 0.4 * u
+      if pts ~= "" then textRight(fTiny, pts, lx + listW - 3 * u, ry + 1.2 * u + (fh(fBody) - fh(fTiny)) / 2, C.faint) end
+      local sy = ry + 1.2 * u + fh(fBody) + 0.4 * u
       local subW = listW - (tx - lx) - 3 * u
       if not row.unlocked and row.goal and (row.progress or 0) > 0 then
         local label = ("%d / %d"):format(row.progress, row.goal)
         local lw = fTiny:getWidth(label)
-        bar(tx, sy + fTiny:getHeight() / 2 - 0.8 * u, subW - lw - 3 * u, 1.6 * u, row.progress / row.goal, C.progress)
+        bar(tx, sy + fh(fTiny) / 2 - 0.8 * u, subW - lw - 3 * u, 1.6 * u, row.progress / row.goal, C.progress)
         textRight(fTiny, label, tx + subW, sy, C.muted)
       else
         local sub
@@ -648,13 +754,13 @@ function Modern.newScreen(deps)
       icon(ix + bigR, iy + bigR, bigR, row)
       local label, scolor = Modern.status(row)
       local lx2 = ix + bigR * 2 + 4 * u
-      text(fSmall, Modern.ellipsize(fSmall, label, ix + iw - lx2), lx2, iy + bigR - fSmall:getHeight() / 2, scolor)
+      text(fSmall, Modern.ellipsize(fSmall, label, ix + iw - lx2), lx2, iy + bigR - fh(fSmall) / 2, scolor)
       local y = iy + bigR * 2 + 4 * u
-      local limit = py + ph - 1.2 * u - ip - fTiny:getHeight() - 2 * u
+      local limit = py + ph - 1.2 * u - ip - fh(fTiny) - 2 * u
       local function para(f, s, c, gap)
         for _, line in ipairs(wrap(f, s, iw)) do
-          if y + f:getHeight() > limit then return end
-          text(f, line, ix, y, c); y = y + f:getHeight()
+          if y + fh(f) > limit then return end
+          text(f, line, ix, y, c); y = y + fh(f)
         end
         y = y + (gap or 2.5 * u)
       end
@@ -668,10 +774,10 @@ function Modern.newScreen(deps)
         end
         if not row.unlocked and row.goal then
           local labelP = ("%d / %d %s"):format(row.progress or 0, row.goal, (row.unit or ""):lower())
-          if y + fTiny:getHeight() * 2 < limit then
+          if y + fh(fTiny) * 2 < limit then
             bar(ix, y, iw, 2 * u, (row.progress or 0) / row.goal, C.progress)
             y = y + 3.5 * u
-            text(fTiny, labelP, ix, y, C.muted); y = y + fTiny:getHeight() + 3 * u
+            text(fTiny, labelP, ix, y, C.muted); y = y + fh(fTiny) + 3 * u
           end
         end
         para(fTiny, Modern.origin(row), C.faint, 1 * u)
@@ -698,8 +804,8 @@ function Modern.newScreen(deps)
         para(fTiny, "Unlocked locally. Nothing is sent to RetroAchievements.", C.faint, 1 * u)
       end
       if not row.reference then
-        local hintY = py + ph - 1.2 * u - ip - fTiny:getHeight()
-        local capH = fTiny:getHeight() + 1.2 * u
+        local hintY = py + ph - 1.2 * u - ip - fh(fTiny)
+        local capH = fh(fTiny) + 1.2 * u
         local w = keycap(ix, hintY - 0.6 * u, capH, "A", fTiny)
         text(fTiny, st.page == 1 and "How it's checked" or "Back to details", ix + w + 2 * u, hintY, C.faint)
       end
@@ -707,7 +813,7 @@ function Modern.newScreen(deps)
 
     -- ------------------ footer
     local fy = y0 + H - footH + 1.2 * u
-    local capH = fTiny:getHeight() + 1.2 * u
+    local capH = fh(fTiny) + 1.2 * u
     local fx = hx
     local function hint(cap, label)
       local w = keycap(fx, fy, capH, cap, fTiny)
@@ -739,10 +845,10 @@ function Modern.newScreen(deps)
     for i, label in ipairs(tabs) do
       local active = (Share and i or 3) == st.modal
       text(fSmall, label, tx, y, active and C.text or C.faint)
-      if active then rrect("fill", tx, y + fSmall:getHeight() + 0.8 * u, fSmall:getWidth(label), 0.8 * u, 0.4 * u, accent) end
+      if active then rrect("fill", tx, y + fh(fSmall) + 0.8 * u, fSmall:getWidth(label), 0.8 * u, 0.4 * u, accent) end
       tx = tx + fSmall:getWidth(label) + 6 * u
     end
-    y = y + fSmall:getHeight() + 5 * u
+    y = y + fh(fSmall) + 5 * u
     local iw = mw - 2 * ip
     if st.modal == 1 and Share then
       local ok, card = pcall(Share.card, engine)
@@ -758,19 +864,19 @@ function Modern.newScreen(deps)
         }
         local labelW = fSmall:getWidth("Check code") + 6 * u
         for _, f in ipairs(fields) do
-          text(fSmall, f[1], x, y + (fBody:getHeight() - fSmall:getHeight()) / 2, C.faint)
+          text(fSmall, f[1], x, y + (fh(fBody) - fh(fSmall)) / 2, C.faint)
           text(fBody, f[2], x + labelW, y, f[1] == "Check code" and accent or C.text)
-          y = y + fBody:getHeight() + 1.4 * u
+          y = y + fh(fBody) + 1.4 * u
         end
         y = y + 2.5 * u
-        local stop = my + mh - ip - fTiny:getHeight() * 2 - 3 * u
+        local stop = my + mh - ip - fh(fTiny) * 2 - 3 * u
         local notes = Share.noteLines(card)
         local hint = #notes > 0 and table.concat(notes, " ")
           or ("Only achievements from the RetroAchievements list count. Enter these at " ..
               (deps.boardUrl or "") .. " or with /score on Discord.")
         for _, line in ipairs(wrap(fTiny, hint, iw)) do
-          if y + fTiny:getHeight() > stop then break end
-          text(fTiny, line, x, y, C.muted); y = y + fTiny:getHeight()
+          if y + fh(fTiny) > stop then break end
+          text(fTiny, line, x, y, C.muted); y = y + fh(fTiny)
         end
       end
     elseif st.modal == 2 and Share then
@@ -780,35 +886,35 @@ function Modern.newScreen(deps)
       else
         local labelW = fSmall:getWidth("Extra code") + 6 * u
         local function field(label, value, col)
-          text(fSmall, label, x, y + (fBody:getHeight() - fSmall:getHeight()) / 2, C.faint)
+          text(fSmall, label, x, y + (fh(fBody) - fh(fSmall)) / 2, C.faint)
           text(fBody, value, x + labelW, y, col or C.text)
-          y = y + fBody:getHeight() + 1.4 * u
+          y = y + fh(fBody) + 1.4 * u
         end
         field("Trainer", tostring(card.name))
         field("Save ID", card.saveId)
         y = y + 1.5 * u
-        local stop = my + mh - ip - fTiny:getHeight() * 5 - 3 * u
+        local stop = my + mh - ip - fh(fTiny) * 5 - 3 * u
         if #card.sources == 0 then
           text(fSmall, "No bonus or mod achievements here yet.", x, y, C.muted)
-          y = y + fSmall:getHeight() + 1.4 * u
+          y = y + fh(fSmall) + 1.4 * u
         end
         for i, src in ipairs(card.sources) do
-          if y + fBody:getHeight() > stop then
+          if y + fh(fBody) > stop then
             text(fTiny, ("…and %d more"):format(#card.sources - i + 1), x, y, C.muted)
-            y = y + fTiny:getHeight() + 1 * u
+            y = y + fh(fTiny) + 1 * u
             break
           end
           text(fBody, Share.extraLine(src), x, y, C.text)
           if src.label and src.label:lower() ~= src.id then
-            textRight(fTiny, src.label, x + iw, y + (fBody:getHeight() - fTiny:getHeight()) / 2, C.faint)
+            textRight(fTiny, src.label, x + iw, y + (fh(fBody) - fh(fTiny)) / 2, C.faint)
           end
-          y = y + fBody:getHeight() + 0.8 * u
+          y = y + fh(fBody) + 0.8 * u
         end
         y = y + 1.5 * u
         field("Extra code", card.code, accent)
         for _, line in ipairs(wrap(fTiny, ("%d point%s from %d achievement%s. For the Extra Credit board (bonus and mod achievements): enter each line above with /extra on Discord, or the Extra Credit form at %s."):format(card.points, card.points == 1 and "" or "s", card.earned, card.earned == 1 and "" or "s", deps.boardUrl or ""), iw)) do
-          if y + fTiny:getHeight() > my + mh - ip - fTiny:getHeight() * 2 - 3 * u then break end
-          text(fTiny, line, x, y, C.muted); y = y + fTiny:getHeight()
+          if y + fh(fTiny) > my + mh - ip - fh(fTiny) * 2 - 3 * u then break end
+          text(fTiny, line, x, y, C.muted); y = y + fh(fTiny)
         end
       end
     else
@@ -818,14 +924,14 @@ function Modern.newScreen(deps)
         "Not affiliated with, endorsed by or supported by RetroAchievements.",
       }) do
         for _, line in ipairs(wrap(fSmall, s, iw)) do
-          if y + fSmall:getHeight() > my + mh - ip - fTiny:getHeight() * 2 - 3 * u then break end
-          text(fSmall, line, x, y, C.muted); y = y + fSmall:getHeight()
+          if y + fh(fSmall) > my + mh - ip - fh(fTiny) * 2 - 3 * u then break end
+          text(fSmall, line, x, y, C.muted); y = y + fh(fSmall)
         end
         y = y + 3 * u
       end
     end
     -- button hints along the bottom edge
-    local capH = fTiny:getHeight() + 1.2 * u
+    local capH = fh(fTiny) + 1.2 * u
     local hy = my + mh - ip - capH
     local function capWidth(label) return math.max(capH, fTiny:getWidth(label) + capH * 0.6) end
     local closeX = mx + mw - ip - fTiny:getWidth("Close") - 1.6 * u - capWidth("B")

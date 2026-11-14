@@ -34,7 +34,7 @@ and each achievement's author, and are credited in the game. See
 ## Install
 
 1. In the launcher, open **MODS** and find Recomp Achievements under
-   **Find mods**, or download `recomp_achievements-2.8.0.zip` from
+   **Find mods**, or download `recomp_achievements-2.8.1.zip` from
    Releases and use **Import mod .zip** (dropping the zip on the launcher
    window works too). Unzipping by hand also works: put the files in
    `mods/recomp_achievements/`.
@@ -94,6 +94,10 @@ Options are in the Mods manager:
   Dark, Gruvbox Light, Nord or Midnight
 - **MENU SIZE**: Full Screen (default) or Game Area (only the game's own
   screen, which keeps it clear of a phone's on-screen pad in landscape)
+- **MENU FONT**: Auto (default), Smooth or Pixel. Pixel draws the modern
+  menu and popups in the engine's Plain Pixel font, for screens that shrink
+  the picture to fit and wash out thin letters. Auto uses it when the window
+  is bigger than its screen or the text would be tiny.
 - **CLASSIC MENU**: the game's own menu style instead of the modern one
   (Gen 1 and Gen 2 text box, Gen 3 windows)
 - **SHOW RA REFERENCE**: adds a page listing every RA entry for the game

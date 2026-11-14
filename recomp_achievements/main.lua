@@ -74,6 +74,9 @@ return function(mod)
                   { "GRUVBOX LIGHT", "gruvbox_light" }, { "NORD", "nord" }, { "MIDNIGHT", "midnight" } } },
     { key = "menuSize", type = "choice", label = "MENU SIZE", default = "full",
       choices = { { "FULL SCREEN", "full" }, { "GAME AREA", "game" } } },
+    -- PIXEL for screens that shrink the picture to fit (ui/modern.lua, text)
+    { key = "menuFont", type = "choice", label = "MENU FONT", default = "auto",
+      choices = { { "AUTO", "auto" }, { "SMOOTH", "smooth" }, { "PIXEL", "pixel" } } },
     { key = "classicMenu", type = "toggle", label = "CLASSIC MENU", default = false },
     { key = "debug", type = "toggle", label = "DEBUG LOG", default = false },
   })

@@ -194,7 +194,7 @@ function Toast:draw(vp)
     for i, card in ipairs(cards) do
       self.Modern.drawProgress(card[1], card[2], vp, {
         theme = self.mod.options:get("menuTheme"), game = self.gameOf and self.gameOf() or nil,
-        slot = i,
+        font = self.mod.options:get("menuFont"), slot = i,
       })
     end
   end
@@ -204,7 +204,7 @@ function Toast:draw(vp)
   if style ~= "classic" and self.Modern then
     return self.Modern.drawToast(c, shown, vp, {
       style = style, theme = self.mod.options:get("menuTheme"),
-      game = self.gameOf and self.gameOf() or nil,
+      game = self.gameOf and self.gameOf() or nil, font = self.mod.options:get("menuFont"),
     })
   end
   -- Classic: Game Boy pixel space (160 x 144), scaled onto the window.
