@@ -57,7 +57,7 @@ GAMES = {
     "sapphire":  {"title": "Pokemon Sapphire",  "maxPoints": 485, "total": 49},
     # Custom carts with their own list (Recomp Achievements' cart lists).
     # Their totals come from the cart's list mod, not an RA set.
-    "pokepink":  {"title": "Pokemon Pink",      "maxPoints": 564, "total": 76, "cart": True},
+    "pokepink":  {"title": "Pokemon Pink",      "maxPoints": 567, "total": 77, "cart": True},
 }
 
 NAME_MAX = 12  # Gen 1 names are 7 characters, but later games and imports need more room

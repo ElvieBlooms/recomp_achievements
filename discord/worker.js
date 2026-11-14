@@ -516,7 +516,7 @@ const BAR = 8;
 // GAMES in tools/leaderboard_ingest.py, for a board file without maxPoints
 const MAX_POINTS = { red: 745, blue: 678, yellow: 458, gold: 685, silver: 616, crystal: 864,
                      firered: 453, leafgreen: 781, emerald: 2086, ruby: 485, sapphire: 485,
-                     pokepink: 564 };
+                     pokepink: 567 };
 
 // The site's monospace name column. Markdown doesn't apply inside it.
 function code(name) {

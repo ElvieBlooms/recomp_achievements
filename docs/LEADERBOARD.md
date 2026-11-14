@@ -52,7 +52,7 @@ on Discord" button.
   RetroAchievements-list totals (Red 745/93, Blue 678/90, Yellow 458/76,
   Gold 685/72, Silver 616/75, Crystal 864/113, FireRed 453/61,
   LeafGreen 781/128, Emerald 2086/197, Ruby 485/49,
-  Sapphire 485/49), or the cart list's own totals (Pokémon Pink 564/76).
+  Sapphire 485/49), or the cart list's own totals (Pokémon Pink 567/77).
   If the RA lists change, update `GAMES` in `tools/leaderboard_ingest.py`;
   `tests/run.lua` fails until the two agree.
 - The play time, if given, is H:MM. Cards from mod 1.1.0 have no TIME line

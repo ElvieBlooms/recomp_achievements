@@ -227,9 +227,10 @@ class Ingest(unittest.TestCase):
         code = L.check_code("pokepink", "ASH", 102, 13, "ABC123", 90)
         rc, reply = self.run_ingest(body(game="Pink", points="102", earned="13", time="1:30", code=code))
         self.assertEqual(rc, 0, reply)
-        code = L.check_code("pokepink", "ASH", 565, 13, "ABC123", 90)
-        rc, reply = self.run_ingest(body(game="Pink", points="565", earned="13", time="1:30", code=code))
+        code = L.check_code("pokepink", "ASH", 568, 13, "ABC123", 90)
+        rc, reply = self.run_ingest(body(game="Pink", points="568", earned="13", time="1:30", code=code))
         self.assertEqual(rc, 1, "over the list's total is refused")
+        self.assertIn("567", reply, "for being over the total, not a bad code")
 
     def test_gen2_submission(self):
         rc, reply = self.run_ingest(body(game="Crystal", points="100", earned="12", time="20:00"))
