@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-14T21:32:22Z",
+ "updated": "2026-11-15T00:52:26Z",
  "banned": [],
  "games": {
   "red": {
@@ -263,6 +263,18 @@
   },
   "emerald": {
    "entries": [
+    {
+     "name": "ANTHONY",
+     "points": 238,
+     "earned": 48,
+     "saveId": "KVR6E7",
+     "time": 1756,
+     "owner": "online:a0026c663dc288a8069113206cdef0ef",
+     "via": "online",
+     "date": "2026-11-15T00:52:26Z",
+     "first": "2026-11-15T00:52:26Z",
+     "src": "online:a0026c663dc288a8069113206cdef0ef"
+    },
     {
      "name": "JOtt",
      "points": 6,
