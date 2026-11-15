@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-15T14:05:34Z",
+ "updated": "2026-11-15T14:13:29Z",
  "banned": [],
  "games": {
   "red": {
@@ -322,6 +322,18 @@
      "date": "2026-11-15T01:10:27Z",
      "first": "2026-11-15T01:10:27Z",
      "src": "online:46866d66f41c795dd00bf08f633685d6"
+    },
+    {
+     "name": "MAY",
+     "points": 1,
+     "earned": 1,
+     "saveId": "Y5PK50",
+     "time": 1,
+     "owner": "online:6367aff938a81e82b1308d3a4c71650c",
+     "via": "online",
+     "date": "2026-11-15T14:13:29Z",
+     "first": "2026-11-15T14:13:29Z",
+     "src": "online:6367aff938a81e82b1308d3a4c71650c"
     },
     {
      "name": "JOtts",
