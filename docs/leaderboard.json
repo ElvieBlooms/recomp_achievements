@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-15T06:29:12Z",
+ "updated": "2026-11-15T06:50:14Z",
  "banned": [],
  "games": {
   "red": {
@@ -203,13 +203,13 @@
    "entries": [
     {
      "name": "JOtt",
-     "points": 96,
-     "earned": 21,
+     "points": 101,
+     "earned": 22,
      "saveId": "RQ1SP6",
-     "time": 822,
+     "time": 911,
      "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
      "via": "online",
-     "date": "2026-11-12T13:58:38Z",
+     "date": "2026-11-15T06:50:14Z",
      "first": "2026-11-07T17:32:28Z",
      "src": "online:afa684f8bc5f1471024d000e56174a33"
     },
