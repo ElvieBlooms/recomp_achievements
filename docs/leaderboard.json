@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-15T22:53:05Z",
+ "updated": "2026-11-15T22:53:10Z",
  "banned": [],
  "games": {
   "red": {
@@ -288,14 +288,14 @@
      "src": "online:a0026c663dc288a8069113206cdef0ef"
     },
     {
-     "name": "MAIKE",
+     "name": "Ryu",
      "points": 164,
      "earned": 39,
      "saveId": "C5JC47",
      "time": 267,
      "owner": "online:c16850d1cab56b7a6718b472c11dfb4b",
      "via": "online",
-     "date": "2026-11-15T22:12:15Z",
+     "date": "2026-11-15T22:53:10Z",
      "first": "2026-11-15T13:02:26Z",
      "src": "online:c16850d1cab56b7a6718b472c11dfb4b"
     },
