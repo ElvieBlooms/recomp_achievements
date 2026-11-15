@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-15T19:13:54Z",
+ "updated": "2026-11-15T19:17:46Z",
  "banned": [],
  "games": {
   "red": {
@@ -956,8 +956,8 @@
     },
     {
      "name": "MAIKE",
-     "points": 20,
-     "earned": 4,
+     "points": 25,
+     "earned": 5,
      "sources": {
       "bonus": {
        "earned": 0,
@@ -965,9 +965,9 @@
        "points": 0
       },
       "max_raids": {
-       "earned": 4,
+       "earned": 5,
        "total": 14,
-       "points": 20
+       "points": 25
       },
       "national_dex_gen3": {
        "earned": 0,
@@ -978,7 +978,7 @@
      "saveId": "C5JC47",
      "owner": "online:c16850d1cab56b7a6718b472c11dfb4b",
      "via": "online",
-     "date": "2026-11-15T13:27:14Z",
+     "date": "2026-11-15T19:17:46Z",
      "first": "2026-11-15T13:02:25Z",
      "src": "online:c16850d1cab56b7a6718b472c11dfb4b"
     },
