@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-15T18:44:36Z",
+ "updated": "2026-11-15T19:13:54Z",
  "banned": [],
  "games": {
   "red": {
@@ -289,13 +289,13 @@
     },
     {
      "name": "MAIKE",
-     "points": 126,
-     "earned": 30,
+     "points": 128,
+     "earned": 31,
      "saveId": "C5JC47",
-     "time": 178,
+     "time": 218,
      "owner": "online:c16850d1cab56b7a6718b472c11dfb4b",
      "via": "online",
-     "date": "2026-11-15T16:19:06Z",
+     "date": "2026-11-15T19:13:54Z",
      "first": "2026-11-15T13:02:26Z",
      "src": "online:c16850d1cab56b7a6718b472c11dfb4b"
     },
