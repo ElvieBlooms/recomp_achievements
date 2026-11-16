@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-16T12:11:54Z",
+ "updated": "2026-11-16T12:11:59Z",
  "banned": [],
  "games": {
   "red": {
@@ -121,6 +121,18 @@
   },
   "gold": {
    "entries": [
+    {
+     "name": "GOLD",
+     "points": 1,
+     "earned": 1,
+     "saveId": "R7JS59",
+     "time": 17,
+     "owner": "online:1b4458386617dcdbc5c13e28cb954092",
+     "via": "online",
+     "date": "2026-11-16T12:11:59Z",
+     "first": "2026-11-16T12:11:59Z",
+     "src": "online:1b4458386617dcdbc5c13e28cb954092"
+    },
     {
      "name": "KARL",
      "points": 1,
