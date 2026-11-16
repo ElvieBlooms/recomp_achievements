@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-16T06:22:39Z",
+ "updated": "2026-11-16T06:23:32Z",
  "banned": [],
  "games": {
   "red": {
@@ -408,7 +408,7 @@
      "earned": 1,
      "saveId": "19FPEV",
      "time": 13,
-     "owner": "online:f106e320e63954653214763faf0c8d95",
+     "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
      "via": "online",
      "date": "2026-11-16T06:21:10Z",
      "first": "2026-11-16T06:21:10Z",
@@ -1173,7 +1173,7 @@
       }
      },
      "saveId": "19FPEV",
-     "owner": "online:f106e320e63954653214763faf0c8d95",
+     "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
      "via": "online",
      "date": "2026-11-16T06:22:39Z",
      "first": "2026-11-16T06:22:39Z",
