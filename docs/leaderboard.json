@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-16T00:44:27Z",
+ "updated": "2026-11-16T00:58:51Z",
  "banned": [],
  "games": {
   "red": {
@@ -447,6 +447,24 @@
      "date": "2026-11-16T00:12:06Z",
      "first": "2026-11-15T23:34:18Z",
      "src": "online:9ffd7f43fb84a071d76145d6e3a5fb19"
+    },
+    {
+     "name": "RED",
+     "points": 2,
+     "earned": 1,
+     "sources": {
+      "bonus": {
+       "earned": 1,
+       "total": 16,
+       "points": 2
+      }
+     },
+     "saveId": "SWZDYR",
+     "owner": "online:e8c17c6c61094cf6bcd6ec584aaeb852",
+     "via": "online",
+     "date": "2026-11-16T00:58:51Z",
+     "first": "2026-11-16T00:58:51Z",
+     "src": "online:e8c17c6c61094cf6bcd6ec584aaeb852"
     }
    ]
   },
