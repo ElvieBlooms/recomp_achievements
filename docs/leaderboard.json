@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-16T17:45:18Z",
+ "updated": "2026-11-16T18:02:14Z",
  "banned": [],
  "games": {
   "red": {
@@ -183,6 +183,18 @@
      "src": "online:fc537e27847b0f952d00d94ae8f4dbab"
     },
     {
+     "name": "THIAGO",
+     "points": 69,
+     "earned": 16,
+     "saveId": "WQZ72K",
+     "time": 132,
+     "owner": "discord:e8a2cf49696d151350a5d7a92073697c",
+     "via": "online",
+     "date": "2026-11-16T18:02:14Z",
+     "first": "2026-11-07T16:55:25Z",
+     "src": "online:ba3e635dd7059c3b5e9e024e54945059"
+    },
+    {
      "name": "KRIS",
      "points": 68,
      "earned": 6,
@@ -193,18 +205,6 @@
      "date": "2026-11-15T13:04:59Z",
      "first": "2026-11-15T12:59:41Z",
      "src": "online:af16bc4c71e682eb6a927ab5f782a302"
-    },
-    {
-     "name": "THIAGO",
-     "points": 59,
-     "earned": 15,
-     "saveId": "WQZ72K",
-     "time": 131,
-     "owner": "discord:e8a2cf49696d151350a5d7a92073697c",
-     "via": "online",
-     "date": "2026-11-16T17:45:18Z",
-     "first": "2026-11-07T16:55:25Z",
-     "src": "online:ba3e635dd7059c3b5e9e024e54945059"
     },
     {
      "name": "AIDAN",
