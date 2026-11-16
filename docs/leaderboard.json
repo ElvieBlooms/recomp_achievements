@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-16T00:58:51Z",
+ "updated": "2026-11-16T05:12:52Z",
  "banned": [],
  "games": {
   "red": {
@@ -869,8 +869,8 @@
    "entries": [
     {
      "name": "JOtt",
-     "points": 109,
-     "earned": 19,
+     "points": 119,
+     "earned": 20,
      "sources": {
       "bonus": {
        "earned": 1,
@@ -883,9 +883,9 @@
        "points": 68
       },
       "max_raids": {
-       "earned": 5,
+       "earned": 6,
        "total": 14,
-       "points": 30
+       "points": 40
       },
       "name_tags": {
        "earned": 4,
@@ -901,7 +901,7 @@
      "saveId": "RQ1SP6",
      "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
      "via": "online",
-     "date": "2026-11-15T06:29:12Z",
+     "date": "2026-11-16T05:12:52Z",
      "first": "2026-11-07T17:32:32Z",
      "src": "online:afa684f8bc5f1471024d000e56174a33"
     }
