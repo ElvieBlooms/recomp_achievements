@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-16T13:18:44Z",
+ "updated": "2026-11-16T13:33:26Z",
  "banned": [],
  "games": {
   "red": {
@@ -122,6 +122,18 @@
   "gold": {
    "entries": [
     {
+     "name": "KARL",
+     "points": 6,
+     "earned": 2,
+     "saveId": "2Z93NV",
+     "time": 65,
+     "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
+     "via": "online",
+     "date": "2026-11-16T13:33:26Z",
+     "first": "2026-11-12T11:35:13Z",
+     "src": "online:161ca197d233c27dd67382bf65a5e8de"
+    },
+    {
      "name": "GOLD",
      "points": 1,
      "earned": 1,
@@ -132,18 +144,6 @@
      "date": "2026-11-16T12:11:59Z",
      "first": "2026-11-16T12:11:59Z",
      "src": "online:1b4458386617dcdbc5c13e28cb954092"
-    },
-    {
-     "name": "KARL",
-     "points": 1,
-     "earned": 1,
-     "saveId": "2Z93NV",
-     "time": 26,
-     "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
-     "via": "online",
-     "date": "2026-11-12T20:25:37Z",
-     "first": "2026-11-12T11:35:13Z",
-     "src": "online:161ca197d233c27dd67382bf65a5e8de"
     },
     {
      "name": "GOLD",
