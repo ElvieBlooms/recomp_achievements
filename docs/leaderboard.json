@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-16T21:19:25Z",
+ "updated": "2026-11-16T21:28:53Z",
  "banned": [],
  "games": {
   "red": {
@@ -668,7 +668,7 @@
      "saveId": "2Z93NV",
      "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
      "via": "online",
-     "date": "2026-11-16T20:36:32Z",
+     "date": "2026-11-16T21:28:53Z",
      "first": "2026-11-12T11:35:18Z",
      "src": "online:161ca197d233c27dd67382bf65a5e8de"
     },
