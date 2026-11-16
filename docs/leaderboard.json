@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-16T17:11:45Z",
+ "updated": "2026-11-16T17:18:51Z",
  "banned": [],
  "games": {
   "red": {
@@ -300,6 +300,18 @@
   "emerald": {
    "entries": [
     {
+     "name": "Ryu",
+     "points": 238,
+     "earned": 53,
+     "saveId": "C5JC47",
+     "time": 404,
+     "owner": "online:c16850d1cab56b7a6718b472c11dfb4b",
+     "via": "online",
+     "date": "2026-11-16T17:18:51Z",
+     "first": "2026-11-15T13:02:26Z",
+     "src": "online:c16850d1cab56b7a6718b472c11dfb4b"
+    },
+    {
      "name": "ANTHONY",
      "points": 238,
      "earned": 48,
@@ -310,18 +322,6 @@
      "date": "2026-11-15T18:44:36Z",
      "first": "2026-11-15T00:52:26Z",
      "src": "online:a0026c663dc288a8069113206cdef0ef"
-    },
-    {
-     "name": "Ryu",
-     "points": 235,
-     "earned": 52,
-     "saveId": "C5JC47",
-     "time": 398,
-     "owner": "online:c16850d1cab56b7a6718b472c11dfb4b",
-     "via": "online",
-     "date": "2026-11-16T17:11:45Z",
-     "first": "2026-11-15T13:02:26Z",
-     "src": "online:c16850d1cab56b7a6718b472c11dfb4b"
     },
     {
      "name": "JOtt",
