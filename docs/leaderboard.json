@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-16T05:54:53Z",
+ "updated": "2026-11-16T06:21:10Z",
  "banned": [],
  "games": {
   "red": {
@@ -401,6 +401,18 @@
      "date": "2026-11-13T15:13:03Z",
      "first": "2026-11-13T15:09:35Z",
      "src": "online:760ad69ee61dd969b695ad4e46e19a13"
+    },
+    {
+     "name": "JOTT",
+     "points": 1,
+     "earned": 1,
+     "saveId": "19FPEV",
+     "time": 13,
+     "owner": "online:f106e320e63954653214763faf0c8d95",
+     "via": "online",
+     "date": "2026-11-16T06:21:10Z",
+     "first": "2026-11-16T06:21:10Z",
+     "src": "online:f106e320e63954653214763faf0c8d95"
     }
    ],
    "title": "Pokemon Pink",
