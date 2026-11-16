@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-16T14:22:48Z",
+ "updated": "2026-11-16T14:33:31Z",
  "banned": [],
  "games": {
   "red": {
@@ -1028,8 +1028,8 @@
     },
     {
      "name": "Ryu",
-     "points": 25,
-     "earned": 5,
+     "points": 55,
+     "earned": 8,
      "sources": {
       "bonus": {
        "earned": 0,
@@ -1037,9 +1037,9 @@
        "points": 0
       },
       "max_raids": {
-       "earned": 5,
+       "earned": 8,
        "total": 14,
-       "points": 25
+       "points": 55
       },
       "national_dex_gen3": {
        "earned": 0,
@@ -1050,7 +1050,7 @@
      "saveId": "C5JC47",
      "owner": "online:c16850d1cab56b7a6718b472c11dfb4b",
      "via": "online",
-     "date": "2026-11-15T22:53:05Z",
+     "date": "2026-11-16T14:33:31Z",
      "first": "2026-11-15T13:02:25Z",
      "src": "online:c16850d1cab56b7a6718b472c11dfb4b"
     },
