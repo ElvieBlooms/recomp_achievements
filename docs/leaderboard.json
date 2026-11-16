@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-16T22:38:25Z",
+ "updated": "2026-11-16T23:48:21Z",
  "banned": [],
  "games": {
   "red": {
@@ -129,7 +129,7 @@
      "time": 94,
      "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
      "via": "online",
-     "date": "2026-11-16T21:50:16Z",
+     "date": "2026-11-16T23:48:21Z",
      "first": "2026-11-12T11:35:13Z",
      "src": "online:161ca197d233c27dd67382bf65a5e8de"
     },
