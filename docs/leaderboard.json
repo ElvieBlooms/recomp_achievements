@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-15T23:46:57Z",
+ "updated": "2026-11-16T00:11:59Z",
  "banned": [],
  "games": {
   "red": {
@@ -22,13 +22,13 @@
     },
     {
      "name": "RED",
-     "points": 11,
-     "earned": 3,
+     "points": 16,
+     "earned": 4,
      "saveId": "E2C18G",
-     "time": 44,
+     "time": 159,
      "owner": "online:9ffd7f43fb84a071d76145d6e3a5fb19",
      "via": "online",
-     "date": "2026-11-15T23:46:57Z",
+     "date": "2026-11-16T00:11:59Z",
      "first": "2026-11-15T23:34:16Z",
      "src": "online:9ffd7f43fb84a071d76145d6e3a5fb19"
     }
