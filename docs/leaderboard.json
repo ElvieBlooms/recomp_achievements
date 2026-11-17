@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-17T08:06:00Z",
+ "updated": "2026-11-17T08:06:03Z",
  "banned": [],
  "games": {
   "red": {
@@ -1227,8 +1227,8 @@
     },
     {
      "name": "JOTT",
-     "points": 30,
-     "earned": 8,
+     "points": 32,
+     "earned": 9,
      "sources": {
       "bonus": {
        "earned": 3,
@@ -1246,15 +1246,15 @@
        "points": 0
       },
       "name_tags": {
-       "earned": 1,
+       "earned": 2,
        "total": 13,
-       "points": 1
+       "points": 3
       }
      },
      "saveId": "HTP103",
      "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
      "via": "online",
-     "date": "2026-11-17T07:57:12Z",
+     "date": "2026-11-17T08:06:03Z",
      "first": "2026-11-17T07:39:54Z",
      "src": "online:f4a40aecc783a71a6deb5fda82e981c8"
     },
