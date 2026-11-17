@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-17T22:52:48Z",
+ "updated": "2026-11-17T23:05:44Z",
  "banned": [],
  "games": {
   "red": {
@@ -913,6 +913,39 @@
      "src": "online:ba3e635dd7059c3b5e9e024e54945059"
     },
     {
+     "name": "Ryu",
+     "points": 29,
+     "earned": 7,
+     "sources": {
+      "bonus": {
+       "earned": 3,
+       "total": 17,
+       "points": 6
+      },
+      "emerald_lens": {
+       "earned": 4,
+       "total": 9,
+       "points": 23
+      },
+      "facets": {
+       "earned": 0,
+       "total": 10,
+       "points": 0
+      },
+      "national_dex_gen3": {
+       "earned": 0,
+       "total": 33,
+       "points": 0
+      }
+     },
+     "saveId": "NY13YM",
+     "owner": "online:4a6e5b5dee31e1cd10bedb0c1169afb4",
+     "via": "online",
+     "date": "2026-11-17T23:05:44Z",
+     "first": "2026-11-17T00:05:57Z",
+     "src": "online:4a6e5b5dee31e1cd10bedb0c1169afb4"
+    },
+    {
      "name": "ELVIE",
      "points": 25,
      "earned": 5,
@@ -962,34 +995,6 @@
      "date": "2026-11-15T13:05:00Z",
      "first": "2026-11-15T12:59:35Z",
      "src": "online:af16bc4c71e682eb6a927ab5f782a302"
-    },
-    {
-     "name": "Ryu",
-     "points": 6,
-     "earned": 3,
-     "sources": {
-      "bonus": {
-       "earned": 3,
-       "total": 17,
-       "points": 6
-      },
-      "facets": {
-       "earned": 0,
-       "total": 10,
-       "points": 0
-      },
-      "national_dex_gen3": {
-       "earned": 0,
-       "total": 33,
-       "points": 0
-      }
-     },
-     "saveId": "NY13YM",
-     "owner": "online:4a6e5b5dee31e1cd10bedb0c1169afb4",
-     "via": "online",
-     "date": "2026-11-17T22:52:48Z",
-     "first": "2026-11-17T00:05:57Z",
-     "src": "online:4a6e5b5dee31e1cd10bedb0c1169afb4"
     },
     {
      "name": "AIDAN",
