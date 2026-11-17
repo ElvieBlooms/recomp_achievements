@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-17T00:05:57Z",
+ "updated": "2026-11-17T00:30:02Z",
  "banned": [],
  "games": {
   "red": {
@@ -217,6 +217,18 @@
      "date": "2026-11-12T22:27:16Z",
      "first": "2026-11-12T22:27:16Z",
      "src": "online:215b64749b574d9a3822aa7643f36686"
+    },
+    {
+     "name": "Ryu",
+     "points": 1,
+     "earned": 1,
+     "saveId": "NY13YM",
+     "time": 7,
+     "owner": "online:4a6e5b5dee31e1cd10bedb0c1169afb4",
+     "via": "online",
+     "date": "2026-11-17T00:30:02Z",
+     "first": "2026-11-17T00:30:02Z",
+     "src": "online:4a6e5b5dee31e1cd10bedb0c1169afb4"
     },
     {
      "name": "Chibi",
