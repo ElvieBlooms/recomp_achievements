@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-17T14:43:49Z",
+ "updated": "2026-11-17T14:53:46Z",
  "banned": [],
  "games": {
   "red": {
@@ -703,6 +703,34 @@
      "date": "2026-11-16T22:01:48Z",
      "first": "2026-11-16T22:01:48Z",
      "src": "online:eaa3225ee66c19ca48520a43c89e3fd1"
+    },
+    {
+     "name": "Ryu",
+     "points": 2,
+     "earned": 1,
+     "sources": {
+      "bonus": {
+       "earned": 0,
+       "total": 16,
+       "points": 0
+      },
+      "national_dex_gen3": {
+       "earned": 0,
+       "total": 33,
+       "points": 0
+      },
+      "pika_remastered": {
+       "earned": 1,
+       "total": 5,
+       "points": 2
+      }
+     },
+     "saveId": "QC4E55",
+     "owner": "online:975df4e40d66465ad4c31d90f0e3b34d",
+     "via": "online",
+     "date": "2026-11-17T14:53:46Z",
+     "first": "2026-11-17T14:53:46Z",
+     "src": "online:975df4e40d66465ad4c31d90f0e3b34d"
     }
    ]
   },
