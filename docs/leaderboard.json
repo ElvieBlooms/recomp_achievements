@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-17T23:05:44Z",
+ "updated": "2026-11-17T23:20:08Z",
  "banned": [],
  "games": {
   "red": {
@@ -914,8 +914,8 @@
     },
     {
      "name": "Ryu",
-     "points": 29,
-     "earned": 7,
+     "points": 39,
+     "earned": 8,
      "sources": {
       "bonus": {
        "earned": 3,
@@ -928,9 +928,9 @@
        "points": 23
       },
       "facets": {
-       "earned": 0,
+       "earned": 1,
        "total": 10,
-       "points": 0
+       "points": 10
       },
       "national_dex_gen3": {
        "earned": 0,
@@ -941,7 +941,7 @@
      "saveId": "NY13YM",
      "owner": "online:4a6e5b5dee31e1cd10bedb0c1169afb4",
      "via": "online",
-     "date": "2026-11-17T23:05:44Z",
+     "date": "2026-11-17T23:20:08Z",
      "first": "2026-11-17T00:05:57Z",
      "src": "online:4a6e5b5dee31e1cd10bedb0c1169afb4"
     },
