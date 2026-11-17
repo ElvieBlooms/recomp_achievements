@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-17T08:06:03Z",
+ "updated": "2026-11-17T11:53:32Z",
  "banned": [],
  "games": {
   "red": {
@@ -313,13 +313,13 @@
    "entries": [
     {
      "name": "Ryu",
-     "points": 309,
-     "earned": 65,
+     "points": 314,
+     "earned": 66,
      "saveId": "C5JC47",
-     "time": 493,
+     "time": 501,
      "owner": "online:c16850d1cab56b7a6718b472c11dfb4b",
      "via": "online",
-     "date": "2026-11-16T22:38:25Z",
+     "date": "2026-11-17T11:53:32Z",
      "first": "2026-11-15T13:02:26Z",
      "src": "online:c16850d1cab56b7a6718b472c11dfb4b"
     },
