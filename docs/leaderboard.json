@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-17T07:48:23Z",
+ "updated": "2026-11-17T07:48:28Z",
  "banned": [],
  "games": {
   "red": {
@@ -437,6 +437,18 @@
      "date": "2026-11-13T15:13:03Z",
      "first": "2026-11-13T15:09:35Z",
      "src": "online:760ad69ee61dd969b695ad4e46e19a13"
+    },
+    {
+     "name": "JOTT",
+     "points": 1,
+     "earned": 1,
+     "saveId": "HTP103",
+     "time": 8,
+     "owner": "online:f4a40aecc783a71a6deb5fda82e981c8",
+     "via": "online",
+     "date": "2026-11-17T07:48:28Z",
+     "first": "2026-11-17T07:48:28Z",
+     "src": "online:f4a40aecc783a71a6deb5fda82e981c8"
     },
     {
      "name": "JOTT",
