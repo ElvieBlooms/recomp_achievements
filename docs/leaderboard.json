@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-17T19:38:02Z",
+ "updated": "2026-11-17T22:52:48Z",
  "banned": [],
  "games": {
   "red": {
@@ -973,6 +973,11 @@
        "total": 17,
        "points": 6
       },
+      "facets": {
+       "earned": 0,
+       "total": 10,
+       "points": 0
+      },
       "national_dex_gen3": {
        "earned": 0,
        "total": 33,
@@ -982,7 +987,7 @@
      "saveId": "NY13YM",
      "owner": "online:4a6e5b5dee31e1cd10bedb0c1169afb4",
      "via": "online",
-     "date": "2026-11-17T16:21:18Z",
+     "date": "2026-11-17T22:52:48Z",
      "first": "2026-11-17T00:05:57Z",
      "src": "online:4a6e5b5dee31e1cd10bedb0c1169afb4"
     },
