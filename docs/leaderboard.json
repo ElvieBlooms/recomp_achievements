@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-17T04:49:15Z",
+ "updated": "2026-11-17T07:39:54Z",
  "banned": [],
  "games": {
   "red": {
@@ -1278,6 +1278,39 @@
      "date": "2026-11-16T06:22:39Z",
      "first": "2026-11-16T06:22:39Z",
      "src": "online:f106e320e63954653214763faf0c8d95"
+    },
+    {
+     "name": "JOTT",
+     "points": 25,
+     "earned": 5,
+     "sources": {
+      "bonus": {
+       "earned": 1,
+       "total": 16,
+       "points": 2
+      },
+      "emerald_lens": {
+       "earned": 4,
+       "total": 10,
+       "points": 23
+      },
+      "facets": {
+       "earned": 0,
+       "total": 12,
+       "points": 0
+      },
+      "name_tags": {
+       "earned": 0,
+       "total": 13,
+       "points": 0
+      }
+     },
+     "saveId": "HTP103",
+     "owner": "online:f4a40aecc783a71a6deb5fda82e981c8",
+     "via": "online",
+     "date": "2026-11-17T07:39:54Z",
+     "first": "2026-11-17T07:39:54Z",
+     "src": "online:f4a40aecc783a71a6deb5fda82e981c8"
     },
     {
      "name": "ELVIE",
