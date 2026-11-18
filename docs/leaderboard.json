@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-18T04:50:16Z",
+ "updated": "2026-11-18T05:36:31Z",
  "banned": [],
  "games": {
   "red": {
@@ -430,6 +430,18 @@
      "date": "2026-11-12T09:21:04Z",
      "first": "2026-11-12T09:21:04Z",
      "src": "online:04e523393d58a5419adee8806e75bb80"
+    },
+    {
+     "name": "Theeohn",
+     "points": 1,
+     "earned": 1,
+     "saveId": "0ZSFN4",
+     "time": 35,
+     "owner": "online:3d20a63dbf416c7f5a5bdace45efc104",
+     "via": "online",
+     "date": "2026-11-18T05:36:31Z",
+     "first": "2026-11-18T05:36:31Z",
+     "src": "online:3d20a63dbf416c7f5a5bdace45efc104"
     }
    ],
    "title": "Pokemon Emerald",
