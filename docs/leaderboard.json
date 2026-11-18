@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-18T08:59:51Z",
+ "updated": "2026-11-18T09:19:59Z",
  "banned": [],
  "games": {
   "red": {
@@ -397,13 +397,13 @@
     },
     {
      "name": "Harled",
-     "points": 2,
-     "earned": 2,
+     "points": 5,
+     "earned": 3,
      "saveId": "8BTQT2",
-     "time": 16,
+     "time": 24,
      "owner": "online:a1883e7e6fa508888ccf6baa98bba17c",
      "via": "online",
-     "date": "2026-11-18T08:59:51Z",
+     "date": "2026-11-18T09:19:59Z",
      "first": "2026-11-17T02:57:22Z",
      "src": "online:a1883e7e6fa508888ccf6baa98bba17c"
     },
