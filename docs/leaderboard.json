@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-18T02:56:28Z",
+ "updated": "2026-11-18T03:33:09Z",
  "banned": [],
  "games": {
   "red": {
@@ -571,6 +571,39 @@
      "date": "2026-11-12T14:01:58Z",
      "first": "2026-11-12T14:01:58Z",
      "src": "online:68f28a9850cf345a6f1d202d61f2066d"
+    },
+    {
+     "name": "ELVIE",
+     "points": 7,
+     "earned": 2,
+     "sources": {
+      "bonus": {
+       "earned": 0,
+       "total": 16,
+       "points": 0
+      },
+      "emerald_lens": {
+       "earned": 2,
+       "total": 9,
+       "points": 7
+      },
+      "facets": {
+       "earned": 0,
+       "total": 11,
+       "points": 0
+      },
+      "name_tags": {
+       "earned": 0,
+       "total": 13,
+       "points": 0
+      }
+     },
+     "saveId": "MDFRK5",
+     "owner": "online:bbc4dcaa0ba2f27bb83eee8cb171c1e5",
+     "via": "online",
+     "date": "2026-11-18T03:33:09Z",
+     "first": "2026-11-18T03:33:09Z",
+     "src": "online:bbc4dcaa0ba2f27bb83eee8cb171c1e5"
     }
    ]
   },
