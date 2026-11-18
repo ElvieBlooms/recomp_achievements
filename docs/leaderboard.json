@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-18T05:36:31Z",
+ "updated": "2026-11-18T05:36:37Z",
  "banned": [],
  "games": {
   "red": {
@@ -1310,6 +1310,49 @@
      "date": "2026-11-16T14:33:31Z",
      "first": "2026-11-15T13:02:25Z",
      "src": "online:c16850d1cab56b7a6718b472c11dfb4b"
+    },
+    {
+     "name": "Theeohn",
+     "points": 28,
+     "earned": 5,
+     "sources": {
+      "bonus": {
+       "earned": 0,
+       "total": 1,
+       "points": 0
+      },
+      "emerald_lens": {
+       "earned": 5,
+       "total": 11,
+       "points": 28
+      },
+      "facets": {
+       "earned": 0,
+       "total": 9,
+       "points": 0
+      },
+      "max_raids": {
+       "earned": 0,
+       "total": 14,
+       "points": 0
+      },
+      "national_dex_gen3": {
+       "earned": 0,
+       "total": 33,
+       "points": 0
+      },
+      "play_nav": {
+       "earned": 0,
+       "total": 63,
+       "points": 0
+      }
+     },
+     "saveId": "0ZSFN4",
+     "owner": "online:3d20a63dbf416c7f5a5bdace45efc104",
+     "via": "online",
+     "date": "2026-11-18T05:36:37Z",
+     "first": "2026-11-18T05:36:37Z",
+     "src": "online:3d20a63dbf416c7f5a5bdace45efc104"
     },
     {
      "name": "JOtts",
