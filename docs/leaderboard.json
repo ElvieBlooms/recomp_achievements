@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-17T23:40:49Z",
+ "updated": "2026-11-18T01:13:40Z",
  "banned": [],
  "games": {
   "red": {
@@ -296,6 +296,18 @@
      "date": "2026-11-14T01:03:56Z",
      "first": "2026-11-14T00:34:40Z",
      "src": "online:0cd439463d3d2cb7bcf753c4c9a4ad2d"
+    },
+    {
+     "name": "Chibi",
+     "points": 1,
+     "earned": 1,
+     "saveId": "W431MM",
+     "time": 153,
+     "owner": "online:45c2a9b430d65baf103ca249450805c6",
+     "via": "online",
+     "date": "2026-11-18T01:13:40Z",
+     "first": "2026-11-18T01:13:40Z",
+     "src": "online:45c2a9b430d65baf103ca249450805c6"
     }
    ],
    "title": "Pokemon FireRed",
