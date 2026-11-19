@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-19T16:26:16Z",
+ "updated": "2026-11-19T16:31:55Z",
  "banned": [],
  "games": {
   "red": {
@@ -1309,6 +1309,44 @@
      "date": "2026-11-17T04:49:15Z",
      "first": "2026-11-07T17:32:32Z",
      "src": "online:afa684f8bc5f1471024d000e56174a33"
+    },
+    {
+     "name": "Chibi",
+     "points": 85,
+     "earned": 11,
+     "sources": {
+      "bonus": {
+       "earned": 0,
+       "total": 1,
+       "points": 0
+      },
+      "facets": {
+       "earned": 0,
+       "total": 9,
+       "points": 0
+      },
+      "max_raids": {
+       "earned": 0,
+       "total": 14,
+       "points": 0
+      },
+      "national_dex_gen3": {
+       "earned": 0,
+       "total": 33,
+       "points": 0
+      },
+      "play_nav": {
+       "earned": 11,
+       "total": 63,
+       "points": 85
+      }
+     },
+     "saveId": "DGMAC7",
+     "owner": "online:e50c2e6c434dc93119483a5647a9a01e",
+     "via": "online",
+     "date": "2026-11-19T16:31:55Z",
+     "first": "2026-11-19T16:31:55Z",
+     "src": "online:e50c2e6c434dc93119483a5647a9a01e"
     }
    ]
   },
