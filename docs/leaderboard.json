@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-19T09:06:03Z",
+ "updated": "2026-11-19T09:19:07Z",
  "banned": [],
  "games": {
   "red": {
@@ -461,7 +461,20 @@
    "total": 197
   },
   "ruby": {
-   "entries": [],
+   "entries": [
+    {
+     "name": "MAY",
+     "points": 1,
+     "earned": 1,
+     "saveId": "76V7RZ",
+     "time": 5,
+     "owner": "online:9cba43c5ec82d57eefd58e8d48ae1836",
+     "via": "online",
+     "date": "2026-11-19T09:19:07Z",
+     "first": "2026-11-19T09:19:07Z",
+     "src": "online:9cba43c5ec82d57eefd58e8d48ae1836"
+    }
+   ],
    "title": "Pokemon Ruby",
    "maxPoints": 485,
    "total": 49
