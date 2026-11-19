@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-18T21:33:55Z",
+ "updated": "2026-11-19T08:42:28Z",
  "banned": [],
  "games": {
   "red": {
@@ -555,6 +555,24 @@
      "date": "2026-11-16T00:12:06Z",
      "first": "2026-11-15T23:34:18Z",
      "src": "online:9ffd7f43fb84a071d76145d6e3a5fb19"
+    },
+    {
+     "name": "Fero",
+     "points": 5,
+     "earned": 2,
+     "sources": {
+      "bonus": {
+       "earned": 2,
+       "total": 16,
+       "points": 5
+      }
+     },
+     "saveId": "Y9M59K",
+     "owner": "online:80a03eeb4277ffbf11f134d645209ce0",
+     "via": "online",
+     "date": "2026-11-19T08:42:28Z",
+     "first": "2026-11-19T08:42:28Z",
+     "src": "online:80a03eeb4277ffbf11f134d645209ce0"
     },
     {
      "name": "RED",
