@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-19T16:07:42Z",
+ "updated": "2026-11-19T16:21:26Z",
  "banned": [],
  "games": {
   "red": {
@@ -948,6 +948,24 @@
   },
   "silver": {
    "entries": [
+    {
+     "name": "Harled",
+     "points": 7,
+     "earned": 2,
+     "sources": {
+      "bonus": {
+       "earned": 2,
+       "total": 17,
+       "points": 7
+      }
+     },
+     "saveId": "6SA54S",
+     "owner": "online:4de120fa2f1b15545ecf3e8084a57366",
+     "via": "online",
+     "date": "2026-11-19T16:21:26Z",
+     "first": "2026-11-19T16:21:26Z",
+     "src": "online:4de120fa2f1b15545ecf3e8084a57366"
+    },
     {
      "name": "SILVA",
      "points": 2,
