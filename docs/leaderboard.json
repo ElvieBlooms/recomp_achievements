@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-20T04:26:38Z",
+ "updated": "2026-11-20T04:26:47Z",
  "banned": [],
  "games": {
   "red": {
@@ -1260,6 +1260,44 @@
    "entries": [
     {
      "name": "Chibi",
+     "points": 385,
+     "earned": 21,
+     "sources": {
+      "bonus": {
+       "earned": 0,
+       "total": 1,
+       "points": 0
+      },
+      "facets": {
+       "earned": 0,
+       "total": 9,
+       "points": 0
+      },
+      "max_raids": {
+       "earned": 0,
+       "total": 14,
+       "points": 0
+      },
+      "national_dex_gen3": {
+       "earned": 0,
+       "total": 33,
+       "points": 0
+      },
+      "play_nav": {
+       "earned": 21,
+       "total": 63,
+       "points": 385
+      }
+     },
+     "saveId": "APT6AB",
+     "owner": "online:e4339123b146de3911708d4c99e53cac",
+     "via": "online",
+     "date": "2026-11-20T04:26:47Z",
+     "first": "2026-11-20T03:37:49Z",
+     "src": "online:e4339123b146de3911708d4c99e53cac"
+    },
+    {
+     "name": "Chibi",
      "points": 335,
      "earned": 35,
      "sources": {
@@ -1371,44 +1409,6 @@
      "date": "2026-11-17T04:49:15Z",
      "first": "2026-11-07T17:32:32Z",
      "src": "online:afa684f8bc5f1471024d000e56174a33"
-    },
-    {
-     "name": "Chibi",
-     "points": 5,
-     "earned": 1,
-     "sources": {
-      "bonus": {
-       "earned": 0,
-       "total": 1,
-       "points": 0
-      },
-      "facets": {
-       "earned": 0,
-       "total": 9,
-       "points": 0
-      },
-      "max_raids": {
-       "earned": 0,
-       "total": 14,
-       "points": 0
-      },
-      "national_dex_gen3": {
-       "earned": 0,
-       "total": 33,
-       "points": 0
-      },
-      "play_nav": {
-       "earned": 1,
-       "total": 63,
-       "points": 5
-      }
-     },
-     "saveId": "APT6AB",
-     "owner": "online:e4339123b146de3911708d4c99e53cac",
-     "via": "online",
-     "date": "2026-11-20T03:37:49Z",
-     "first": "2026-11-20T03:37:49Z",
-     "src": "online:e4339123b146de3911708d4c99e53cac"
     }
    ]
   },
