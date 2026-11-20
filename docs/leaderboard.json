@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-20T06:05:50Z",
+ "updated": "2026-11-20T13:22:44Z",
  "banned": [],
  "games": {
   "red": {
@@ -608,19 +608,19 @@
    "entries": [
     {
      "name": "RED",
-     "points": 13,
-     "earned": 4,
+     "points": 16,
+     "earned": 5,
      "sources": {
       "bonus": {
-       "earned": 4,
+       "earned": 5,
        "total": 16,
-       "points": 13
+       "points": 16
       }
      },
      "saveId": "W6Y6FC",
      "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
      "via": "online",
-     "date": "2026-11-12T20:26:59Z",
+     "date": "2026-11-20T13:22:44Z",
      "first": "2026-11-12T13:51:41Z",
      "src": "online:192d979615f2b23e6b032c61ca2b435c"
     },
