@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-20T04:55:21Z",
+ "updated": "2026-11-20T05:09:30Z",
  "banned": [],
  "games": {
   "red": {
@@ -278,6 +278,18 @@
      "date": "2026-11-18T10:11:57Z",
      "first": "2026-11-17T00:30:02Z",
      "src": "online:4a6e5b5dee31e1cd10bedb0c1169afb4"
+    },
+    {
+     "name": "Harled",
+     "points": 1,
+     "earned": 1,
+     "saveId": "BG0A9N",
+     "time": 4,
+     "owner": "online:8e372eb9c2571905ad47424fa05560d2",
+     "via": "online",
+     "date": "2026-11-20T05:09:30Z",
+     "first": "2026-11-20T05:09:30Z",
+     "src": "online:8e372eb9c2571905ad47424fa05560d2"
     },
     {
      "name": "Chibi",
