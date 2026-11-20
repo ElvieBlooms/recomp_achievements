@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-20T04:26:47Z",
+ "updated": "2026-11-20T04:31:36Z",
  "banned": [],
  "games": {
   "red": {
@@ -199,7 +199,20 @@
    "total": 72
   },
   "silver": {
-   "entries": [],
+   "entries": [
+    {
+     "name": "Harled",
+     "points": 1,
+     "earned": 1,
+     "saveId": "6SA54S",
+     "time": 5,
+     "owner": "online:4de120fa2f1b15545ecf3e8084a57366",
+     "via": "online",
+     "date": "2026-11-20T04:31:36Z",
+     "first": "2026-11-20T04:31:36Z",
+     "src": "online:4de120fa2f1b15545ecf3e8084a57366"
+    }
+   ],
    "title": "Pokemon Silver",
    "maxPoints": 616,
    "total": 75
