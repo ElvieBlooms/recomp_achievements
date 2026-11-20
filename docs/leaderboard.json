@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-20T17:42:48Z",
+ "updated": "2026-11-20T17:53:12Z",
  "banned": [],
  "games": {
   "red": {
@@ -43,6 +43,18 @@
      "date": "2026-11-19T09:05:54Z",
      "first": "2026-11-19T09:05:54Z",
      "src": "online:80a03eeb4277ffbf11f134d645209ce0"
+    },
+    {
+     "name": "BIBI",
+     "points": 1,
+     "earned": 1,
+     "saveId": "RSPET0",
+     "time": 20,
+     "owner": "online:c004423ee8b48ca0dac4545ba46cbf2d",
+     "via": "online",
+     "date": "2026-11-20T17:53:12Z",
+     "first": "2026-11-20T17:53:12Z",
+     "src": "online:c004423ee8b48ca0dac4545ba46cbf2d"
     }
    ]
   },
