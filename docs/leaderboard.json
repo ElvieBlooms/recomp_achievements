@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-20T04:31:36Z",
+ "updated": "2026-11-20T04:55:21Z",
  "banned": [],
  "games": {
   "red": {
@@ -1225,6 +1225,24 @@
      "date": "2026-11-15T13:05:00Z",
      "first": "2026-11-15T12:59:35Z",
      "src": "online:af16bc4c71e682eb6a927ab5f782a302"
+    },
+    {
+     "name": "Harled",
+     "points": 7,
+     "earned": 2,
+     "sources": {
+      "bonus": {
+       "earned": 2,
+       "total": 17,
+       "points": 7
+      }
+     },
+     "saveId": "BG0A9N",
+     "owner": "online:8e372eb9c2571905ad47424fa05560d2",
+     "via": "online",
+     "date": "2026-11-20T04:55:21Z",
+     "first": "2026-11-20T04:55:21Z",
+     "src": "online:8e372eb9c2571905ad47424fa05560d2"
     },
     {
      "name": "AIDAN",
