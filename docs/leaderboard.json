@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-20T17:53:14Z",
+ "updated": "2026-11-21T02:05:07Z",
  "banned": [],
  "games": {
   "red": {
@@ -1520,6 +1520,44 @@
      "issue": 3
     },
     {
+     "name": "Ryu",
+     "points": 93,
+     "earned": 14,
+     "sources": {
+      "bonus": {
+       "earned": 0,
+       "total": 1,
+       "points": 0
+      },
+      "emerald_lens": {
+       "earned": 6,
+       "total": 11,
+       "points": 38
+      },
+      "facets": {
+       "earned": 0,
+       "total": 9,
+       "points": 0
+      },
+      "max_raids": {
+       "earned": 8,
+       "total": 14,
+       "points": 55
+      },
+      "national_dex_gen3": {
+       "earned": 0,
+       "total": 33,
+       "points": 0
+      }
+     },
+     "saveId": "C5JC47",
+     "owner": "online:c16850d1cab56b7a6718b472c11dfb4b",
+     "via": "online",
+     "date": "2026-11-21T02:05:07Z",
+     "first": "2026-11-15T13:02:25Z",
+     "src": "online:c16850d1cab56b7a6718b472c11dfb4b"
+    },
+    {
      "name": "AA",
      "points": 84,
      "earned": 12,
@@ -1579,34 +1617,6 @@
      "date": "2026-11-14T00:34:26Z",
      "first": "2026-11-09T08:06:01Z",
      "src": "online:89452be12559ab80407327dd3f8e8bd9"
-    },
-    {
-     "name": "Ryu",
-     "points": 55,
-     "earned": 8,
-     "sources": {
-      "bonus": {
-       "earned": 0,
-       "total": 1,
-       "points": 0
-      },
-      "max_raids": {
-       "earned": 8,
-       "total": 14,
-       "points": 55
-      },
-      "national_dex_gen3": {
-       "earned": 0,
-       "total": 33,
-       "points": 0
-      }
-     },
-     "saveId": "C5JC47",
-     "owner": "online:c16850d1cab56b7a6718b472c11dfb4b",
-     "via": "online",
-     "date": "2026-11-16T14:33:31Z",
-     "first": "2026-11-15T13:02:25Z",
-     "src": "online:c16850d1cab56b7a6718b472c11dfb4b"
     },
     {
      "name": "Theeohn",
