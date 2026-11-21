@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-21T07:04:54Z",
+ "updated": "2026-11-21T07:04:57Z",
  "banned": [],
  "games": {
   "red": {
@@ -455,6 +455,18 @@
      "date": "2026-11-15T18:44:36Z",
      "first": "2026-11-15T00:52:26Z",
      "src": "online:a0026c663dc288a8069113206cdef0ef"
+    },
+    {
+     "name": "Lana",
+     "points": 18,
+     "earned": 6,
+     "saveId": "G07B5K",
+     "time": 74,
+     "owner": "online:043d74ab9cfb0ba1c1647b3d3ca1f9cc",
+     "via": "online",
+     "date": "2026-11-21T07:04:57Z",
+     "first": "2026-11-21T07:04:57Z",
+     "src": "online:043d74ab9cfb0ba1c1647b3d3ca1f9cc"
     },
     {
      "name": "JOtt",
