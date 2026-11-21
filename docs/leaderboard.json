@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-21T06:45:03Z",
+ "updated": "2026-11-21T07:04:54Z",
  "banned": [],
  "games": {
   "red": {
@@ -1693,6 +1693,39 @@
      "date": "2026-11-12T09:21:12Z",
      "first": "2026-11-12T09:21:12Z",
      "src": "online:04e523393d58a5419adee8806e75bb80"
+    },
+    {
+     "name": "Lana",
+     "points": 2,
+     "earned": 1,
+     "sources": {
+      "bonus": {
+       "earned": 0,
+       "total": 1,
+       "points": 0
+      },
+      "emerald_lens": {
+       "earned": 1,
+       "total": 11,
+       "points": 2
+      },
+      "facets": {
+       "earned": 0,
+       "total": 9,
+       "points": 0
+      },
+      "national_dex_gen3": {
+       "earned": 0,
+       "total": 33,
+       "points": 0
+      }
+     },
+     "saveId": "G07B5K",
+     "owner": "online:043d74ab9cfb0ba1c1647b3d3ca1f9cc",
+     "via": "online",
+     "date": "2026-11-21T07:04:54Z",
+     "first": "2026-11-21T07:04:54Z",
+     "src": "online:043d74ab9cfb0ba1c1647b3d3ca1f9cc"
     }
    ]
   },
