@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-21T13:52:24Z",
+ "updated": "2026-11-21T14:01:28Z",
  "banned": [],
  "games": {
   "red": {
@@ -164,6 +164,18 @@
      "via": "discord",
      "date": "2026-11-07T01:48:36Z",
      "first": "2026-11-07T01:48:36Z"
+    },
+    {
+     "name": "WES",
+     "points": 1,
+     "earned": 1,
+     "saveId": "ZTEM2H",
+     "time": 25,
+     "owner": "online:2d7bdffcf787cbc39bb60bd6e3a07352",
+     "via": "online",
+     "date": "2026-11-21T14:01:28Z",
+     "first": "2026-11-21T14:01:28Z",
+     "src": "online:2d7bdffcf787cbc39bb60bd6e3a07352"
     }
    ]
   },
