@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-21T12:59:32Z",
+ "updated": "2026-11-21T13:52:24Z",
  "banned": [],
  "games": {
   "red": {
@@ -976,6 +976,24 @@
      "date": "2026-11-16T22:01:48Z",
      "first": "2026-11-16T22:01:48Z",
      "src": "online:eaa3225ee66c19ca48520a43c89e3fd1"
+    },
+    {
+     "name": "WES",
+     "points": 2,
+     "earned": 1,
+     "sources": {
+      "bonus": {
+       "earned": 1,
+       "total": 16,
+       "points": 2
+      }
+     },
+     "saveId": "ZTEM2H",
+     "owner": "online:2d7bdffcf787cbc39bb60bd6e3a07352",
+     "via": "online",
+     "date": "2026-11-21T13:52:24Z",
+     "first": "2026-11-21T13:52:24Z",
+     "src": "online:2d7bdffcf787cbc39bb60bd6e3a07352"
     }
    ]
   },
