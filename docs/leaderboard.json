@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-21T18:38:09Z",
+ "updated": "2026-11-21T18:38:15Z",
  "banned": [],
  "games": {
   "red": {
@@ -1167,8 +1167,8 @@
     },
     {
      "name": "THIAGO",
-     "points": 90,
-     "earned": 17,
+     "points": 115,
+     "earned": 18,
      "sources": {
       "bonus": {
        "earned": 10,
@@ -1176,9 +1176,9 @@
        "points": 42
       },
       "emerald_lens": {
-       "earned": 7,
+       "earned": 8,
        "total": 9,
-       "points": 48
+       "points": 73
       },
       "facets": {
        "earned": 0,
@@ -1189,7 +1189,7 @@
      "saveId": "WQZ72K",
      "owner": "discord:e8a2cf49696d151350a5d7a92073697c",
      "via": "online",
-     "date": "2026-11-18T08:47:20Z",
+     "date": "2026-11-21T18:38:15Z",
      "first": "2026-11-07T16:55:33Z",
      "src": "online:ba3e635dd7059c3b5e9e024e54945059"
     },
