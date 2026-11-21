@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-21T05:07:16Z",
+ "updated": "2026-11-21T05:13:56Z",
  "banned": [],
  "games": {
   "red": {
@@ -1351,11 +1351,6 @@
        "total": 14,
        "points": 0
       },
-      "national_dex_gen3": {
-       "earned": 0,
-       "total": 33,
-       "points": 0
-      },
       "play_nav": {
        "earned": 44,
        "total": 63,
@@ -1365,7 +1360,7 @@
      "saveId": "APT6AB",
      "owner": "online:e4339123b146de3911708d4c99e53cac",
      "via": "online",
-     "date": "2026-11-21T05:07:16Z",
+     "date": "2026-11-21T05:13:56Z",
      "first": "2026-11-20T03:37:49Z",
      "src": "online:e4339123b146de3911708d4c99e53cac"
     },
