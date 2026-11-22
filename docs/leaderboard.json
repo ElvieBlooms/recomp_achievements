@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-22T23:39:59Z",
+ "updated": "2026-11-22T23:45:27Z",
  "banned": [],
  "games": {
   "red": {
@@ -183,13 +183,13 @@
    "entries": [
     {
      "name": "KARL",
-     "points": 41,
-     "earned": 9,
+     "points": 51,
+     "earned": 10,
      "saveId": "2Z93NV",
-     "time": 128,
+     "time": 166,
      "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
      "via": "online",
-     "date": "2026-11-19T13:34:20Z",
+     "date": "2026-11-22T23:45:27Z",
      "first": "2026-11-12T11:35:13Z",
      "src": "online:161ca197d233c27dd67382bf65a5e8de"
     },
