@@ -225,6 +225,10 @@ TROPHIES app in Kanto Gear). Two ways to share it:
   screen, have `detected()` return false and drop our `push` calls; we
   repaint the moment `detected()` is true again, and our last `setEnabled`
   is the one to apply when you let go.
+- Or, if you push to the bridge yourself, export `secondScreenShown()`
+  and tell us your mod id (we check `max_raids`, Galar Rising, today):
+  while it's true we push nothing, poll no touches and leave the display's
+  power alone.
 - Ask whether we're on it: `ach.secondScreenShown()` is true while our
   menu wants the second screen, the same name Galar Rising exports, so a
   mod that steps aside for one can step aside for both.

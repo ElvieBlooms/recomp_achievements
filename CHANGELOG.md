@@ -17,7 +17,7 @@ other screen.
   Gear installed it's the TROPHIES app in Gear's Silph Store (not Gear's own
   ACHIEVEMENTS, which are its stamps) and Close hands the screen back;
   without it, SECOND SCREEN turns it on and opening TROPHIES brings it back
-  after Close. It waits its turn behind NaviPlay, and other mods can ask
+  after Close. It waits its turn behind NaviPlay and Galar Rising's raid pad, and other mods can ask
   `secondScreenShown()` (docs/PROVIDER_API.md).
 
 ### Changed

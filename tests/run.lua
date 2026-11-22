@@ -2004,6 +2004,71 @@ test("second screen: touches, hits and the drawn frame", function()
   eq(enabled, true, "TROPHIES brings it back")
 end)
 
+test("second screen and tracker keep off Galar Rising's raid", function()
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env.loader.modOptions.recomp_achievements.secondScreen = "on"
+  env:newGame()
+  -- Galar Rising, as other mods see it: a raid that can be on, its pad on the second screen
+  local raidOn, padOn = false, false
+  env.loader.mods.max_raids = { enabled = true, manifest = { version = "0.6.4" } }
+  env.loader.exports.max_raids = {
+    raid = { active = function() return raidOn end },
+    secondScreenShown = function() return padOn end,
+  }
+  local pushed, touches, enabled = 0, {}, nil
+  local screen = {
+    usable = function() return true end, detected = function() return true end,
+    push = function() pushed = pushed + 1; return true end,
+    pollTouch = function() return table.remove(touches, 1) end,
+    setEnabled = function(on) enabled = on end,
+  }
+  openMenu(env)
+  env:press("b"); env:frame(); env:frame()
+  local Runtime = require("src.mods.Runtime")
+  local function compose() Runtime.call("render.compose", function() return false end, {}, { secondScreen = screen }) end
+  compose()
+  eq(pushed, 1, "ours before the raid")
+  -- the raid starts and its pad takes the screen
+  raidOn, padOn = true, true
+  local before = pushed
+  touches[1] = "tap,10,10"
+  for _ = 1, 3 do compose() end
+  eq(pushed, before, "no frames over the raid pad")
+  eq(#touches, 1, "its touches left alone")
+  check(env:exports("recomp_achievements").secondScreenShown() == false, "we don't claim it meanwhile")
+  table.remove(touches, 1)
+  -- SECOND SCREEN off during the raid: the power change waits
+  env.loader.modOptions.recomp_achievements.secondScreen = "off"
+  compose()
+  eq(enabled, true, "display left on for the pad")
+  env.loader.modOptions.recomp_achievements.secondScreen = "on"
+  -- the raid ends: back at once
+  raidOn, padOn = false, false
+  compose()
+  eq(pushed, before + 1, "repainted as the raid ends")
+
+  -- the tracker: pinned cards hide during the raid
+  local Engine = env:exports("recomp_achievements")
+  env.game.save.inventory.BOULDERBADGE = 1
+  local menu = openMenu(env)
+  env:press("start"); env:frame()
+  env:press("b"); env:frame(); env:frame()
+  local function trackerDrawn()
+    local before = #H.drawn
+    Runtime.call("render.hud", function() end, env.game, BIG)
+    for i = before + 1, #H.drawn do
+      if H.drawn[i].window and H.drawn[i].text ~= "" then return true end
+    end
+    return false
+  end
+  local pinned = 0
+  for _, r in ipairs(Engine.list({ unlocked = false })) do if r.pinned then pinned = pinned + 1 end end
+  eq(pinned, 1, "one pinned for the tracker")
+  check(trackerDrawn(), "tracker shows with no raid")
+  raidOn = true
+  check(not trackerDrawn(), "tracker hidden during a raid")
+end)
+
 test("second screen: Extras chip, thick text kept to the canvas", function()
   local Browser = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/browser.lua"))()
   local rows = {

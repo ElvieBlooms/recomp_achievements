@@ -99,6 +99,14 @@ return function(mod)
   toast.gameOf = function() return engine.game end -- popup accent colour
   -- the pinned tracker, when a save is loaded
   toast.pinnedRows = function() return engine.active and engine:pinnedRows() or {} end
+  -- the tracker keeps off Galar Rising's raid, which fills the window
+  toast.busy = function()
+    local other = mod.find and mod.find("max_raids")
+    local raid = other and type(other.exports) == "table" and other.exports.raid
+    if type(raid) ~= "table" or type(raid.active) ~= "function" then return false end
+    local ok, on = pcall(raid.active)
+    return ok and on == true
+  end
 
   -- ------------------ built-in content
   -- Each generation gets an adapter (save to facts), its RA-list rules,
@@ -185,7 +193,7 @@ return function(mod)
   Browser.onOpen = function() second:show() end
   -- for mods that share the second screen (NaviPlay steps aside for Galar
   -- Rising's function of the same name): true while our menu wants it
-  mod.exports.secondScreenShown = function() return second:up() == true end
+  mod.exports.secondScreenShown = function() return second:up() == true and not second.held end
   mod.events:on("mod.options_changed", function(ev)
     if type(ev) == "table" and ev.mod == mod.id and ev.key == "secondScreen" then second:show() end
   end)

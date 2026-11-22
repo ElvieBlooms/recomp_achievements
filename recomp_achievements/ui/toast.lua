@@ -199,7 +199,8 @@ end
 
 function Toast:draw(vp, game)
   if self.pinnedRows and vp and vp.gameWidth and vp.gameWidth > 0 and self.Modern and self.Modern.drawTracker
-    and self.mod.options:get("tracker") ~= "off" and not menuUp(game) then
+    and self.mod.options:get("tracker") ~= "off" and not menuUp(game)
+    and not (self.busy and self.busy()) then
     local ok, rows = pcall(self.pinnedRows)
     if ok and rows and #rows > 0 then
       self.Modern.drawTracker(rows, vp, {

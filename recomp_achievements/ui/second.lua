@@ -12,7 +12,9 @@
 -- The bridge has no way to share, so two mods showing at once take turns
 -- frame by frame. Gear is what keeps them apart, and NaviPlay's gate: it
 -- wraps render.compose outside us and hands us a stand-in bridge that drops
--- our frames while NaviPlay is on the screen.
+-- our frames while NaviPlay is on the screen. Galar Rising pushes its raid
+-- pad straight to the bridge instead, and says so with secondScreenShown();
+-- while it does we stay off the screen entirely (Second.OTHERS).
 -- ------------------
 
 local Second = {}
@@ -54,6 +56,10 @@ function Second.hitAt(hits, x, y)
   return nil
 end
 
+-- mods that put something on the second screen outside render.compose and
+-- export secondScreenShown() while they do
+Second.OTHERS = { "max_raids" }
+
 function Second.new(o)
   local self = {
     mod = o.mod, engine = o.engine, Browser = o.Browser, Modern = o.Modern,
@@ -72,6 +78,21 @@ end
 function Second:up()
   if self.viaGear then return self.gearOpen end
   return self.mod.options:get("secondScreen") == "on" and self.open
+end
+
+-- true while another mod has the screen (Second.OTHERS)
+function Second:othersHold()
+  local find = self.mod.find
+  if not find then return false end
+  for _, id in ipairs(Second.OTHERS) do
+    local other = find(id)
+    local fn = other and type(other.exports) == "table" and other.exports.secondScreenShown
+    if type(fn) == "function" then
+      local ok, on = pcall(fn)
+      if ok and on == true then return true end
+    end
+  end
+  return false
 end
 
 function Second:rows()
@@ -219,6 +240,13 @@ end
 function Second:compose(ctx)
   local screen = type(ctx) == "table" and ctx.secondScreen
   local up = self:up()
+  if (up or self.wasUp) and self:othersHold() then
+    -- not a frame, a touch or a power change until they're done: turning the
+    -- display off now would blank their pad. Repaint as soon as they let go.
+    self.away, self.held = true, true
+    return
+  end
+  self.held = false
   if up ~= self.wasUp then
     self.wasUp, self.dirty = up, true
     if screen and screen.setEnabled and not self.viaGear then
