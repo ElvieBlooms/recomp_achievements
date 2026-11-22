@@ -15,7 +15,10 @@
 
 local Second = {}
 
-Second.W, Second.H = 540, 620
+-- The bridge can't say how big the screen is; it fits whatever we send and
+-- fills the rest. So draw at the AYN Thor's bottom screen shape (1240x1080,
+-- landscape) so it fills that one edge to edge. Other screens get bars.
+Second.W, Second.H = 720, 628
 -- refresh at least this often while shown, for unlocks and progress
 Second.REFRESH = 1
 
