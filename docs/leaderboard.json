@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-22T08:23:10Z",
+ "updated": "2026-11-22T08:25:17Z",
  "banned": [],
  "games": {
   "red": {
@@ -339,10 +339,10 @@
      "points": 206,
      "earned": 29,
      "saveId": "RQ1SP6",
-     "time": 1070,
+     "time": 1071,
      "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
      "via": "online",
-     "date": "2026-11-22T08:23:04Z",
+     "date": "2026-11-22T08:25:17Z",
      "first": "2026-11-07T17:32:28Z",
      "src": "online:afa684f8bc5f1471024d000e56174a33"
     },
