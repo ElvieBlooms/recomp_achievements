@@ -10,7 +10,8 @@ Pin it, track it, put it on the other screen.
   top right of the game with their progress (PINNED TRACKER). Earning one
   unpins it. Pins live in the ledger, so they ride in the save.
 - **Second screen.** The menu on a second display, by touch: the AYN Thor's
-  bottom screen, or the desktop companion window. Filter chips, the list,
+  bottom screen, or the desktop companion window, in heavier text. Filter
+  chips (Extras shows the Extra Credit ones with their own count), the list,
   an achievement's details with Pin, drag to scroll, and Close. With Kanto
   Gear installed it's the TROPHIES app in Gear's Silph Store (not Gear's own
   ACHIEVEMENTS, which are its stamps) and Close hands the screen back;

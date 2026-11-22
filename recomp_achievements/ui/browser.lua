@@ -181,6 +181,10 @@ local function passes(filter, row)
     return row.source ~= "core" and not row.archived and not row.listed and row.provider == filter:sub(5)
   end
   if filter == "archived" then return row.archived end
+  -- the Extra Credit set: bonus and from other mods (the second screen's tab)
+  if filter == "extras" then
+    return passes("bonus", row) or passes("mods", row)
+  end
   return true
 end
 

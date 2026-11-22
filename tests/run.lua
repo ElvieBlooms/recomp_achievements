@@ -2002,6 +2002,45 @@ test("second screen: touches, hits and the drawn frame", function()
   eq(enabled, true, "TROPHIES brings it back")
 end)
 
+test("second screen: Extras chip, thick text kept to the canvas", function()
+  local Browser = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/browser.lua"))()
+  local rows = {
+    { key = "a", source = "core", official = true },
+    { key = "b", source = "core", official = false },
+    { key = "c", source = "sandbox", provider = "x" },
+    { key = "d", source = "sandbox", provider = "x", archived = true },
+    { key = "e", source = "cart", listed = true, official = true },
+  }
+  local got = {}
+  for _, r in ipairs(Browser.filtered(rows, "extras")) do got[#got + 1] = r.key end
+  eq(table.concat(got, ","), "b,c", "bonus and mod ones, not RA, archived or the cart's list")
+  local Second = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/second.lua"))()
+  local ids = {}
+  for _, c in ipairs(Second.CHIPS) do ids[#ids + 1] = c.id end
+  eq(table.concat(ids, ","), "all,missing,progress,missable,extras,pinned", "chips")
+  eq(Second.CHIPS[#Second.CHIPS].id, "pinned", "Pinned stays last for its button")
+
+  local Modern = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/modern.lua"))()
+  local function prints(fn)
+    local before = #H.drawn
+    fn()
+    local n = {}
+    for i = before + 1, #H.drawn do n[H.drawn[i].text] = (n[H.drawn[i].text] or 0) + 1 end
+    return n
+  end
+  local n = prints(function()
+    Modern.drawSecond({ W = 720, H = 628, chips = {}, list = {}, Browser = Browser, heading = "Extra Credit" })
+  end)
+  eq(n["Extra Credit"], 2, "heading printed twice: thick")
+  -- a failed draw still hands back normal text after endSecond
+  pcall(Modern.drawSecond, { W = 720, H = 628, chips = {}, list = { {} }, Browser = {} })
+  Modern.endSecond()
+  n = prints(function()
+    Modern.drawProgress({ title = "Plain", value = 1, goal = 2 }, 1, { gameWidth = 160, gameHeight = 144 }, {})
+  end)
+  eq(n["1 / 2"], 1, "popups print once")
+end)
+
 print(("\n%d passed, %d failed"):format(passed, failed))
 H.cleanup()
 os.exit(failed == 0 and 0 or 1)

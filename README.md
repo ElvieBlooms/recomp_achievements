@@ -75,7 +75,8 @@ them. Pins are kept in your save, so they follow Save Sync.
 
 **Second screen.** On a device with a second display (the AYN Thor's
 bottom screen, or the desktop companion window) the menu can live there,
-by touch: filter chips along the top, tap an achievement for its details
+by touch: filter chips along the top (Extras is the Extra Credit set,
+bonus and from other mods, with its own count), tap an achievement for its details
 and a Pin button, drag to scroll. With **Kanto Gear** installed it's the
 TROPHIES app in Gear: install it from the Silph Store and open it from
 there, and **Close** hands the screen back to Gear and its other apps.

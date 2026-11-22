@@ -22,12 +22,14 @@ Second.W, Second.H = 720, 628
 -- refresh at least this often while shown, for unlocks and progress
 Second.REFRESH = 1
 
--- the chips along the top; "pinned" is ours, the rest are Browser filters
+-- the chips along the top; "pinned" is ours, the rest are Browser filters.
+-- Extras are the Extra Credit ones: bonus and from other mods.
 Second.CHIPS = {
   { id = "all", label = "All" },
   { id = "missing", label = "Missing" },
   { id = "progress", label = "In progress" },
   { id = "missable", label = "Missable" },
+  { id = "extras", label = "Extras" },
   { id = "pinned", label = "Pinned" },
 }
 
@@ -168,6 +170,17 @@ function Second:frame(screen)
   local chips = {}
   for i, c in ipairs(Second.CHIPS) do chips[i] = { label = c.label, active = i == self.chip } end
   local ok, t = pcall(engine.totals, engine)
+  if Second.CHIPS[self.chip].id == "extras" then
+    -- Extra Credit's own count, as the board keeps it apart
+    t = { earned = 0, total = 0, points = 0, maxPoints = 0 }
+    for _, row in ipairs(list) do
+      if row.available ~= false then
+        t.total, t.maxPoints = t.total + 1, t.maxPoints + (row.points or 0)
+        if row.unlocked then t.earned, t.points = t.earned + 1, t.points + (row.points or 0) end
+      end
+    end
+    ok = true
+  end
   local pins = engine.active and #engine.ledger:pins() or 0
   self.canvas = self.canvas or love.graphics.newCanvas(Second.W, Second.H, { dpiscale = 1 })
   love.graphics.push("all")
@@ -177,10 +190,12 @@ function Second:frame(screen)
     gameTitle = engine.game and self.titles and self.titles[engine.game] or nil,
     totals = engine.active and ok and t or nil, chips = chips, list = list, scroll = self.scroll,
     detail = detailRow, pins = pins, pinMax = engine.ledger.PIN_MAX,
+    heading = Second.CHIPS[self.chip].id == "extras" and "Extra Credit" or nil,
     pinnedOnly = self.chip == #Second.CHIPS,
     flash = self.flash and self:now() < self.flashUntil and self.flash or nil,
     Browser = self.Browser, reveal = mod.options:get("showHidden") == true,
   })
+  if self.Modern.endSecond then self.Modern.endSecond() end
   love.graphics.setCanvas()
   love.graphics.pop()
   if not okD then

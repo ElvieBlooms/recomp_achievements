@@ -172,6 +172,10 @@ local fonts = {}
 
 -- Screen pixels per LÖVE unit; 1 except on high-DPI windows (Android).
 local onCanvas = false -- Modern.drawSecond: a 1:1 canvas, not the window
+-- Modern.drawSecond: thicken text by printing it twice a pixel apart. There's
+-- no bold face to load, and the second screen is scaled up and read at arm's
+-- length, where the plain weight looked thin.
+local thick = false
 local function dpi()
   if onCanvas then return 1 end
   local d = G and G.getDPIScale and G.getDPIScale() or 1
@@ -263,6 +267,7 @@ local function text(f, s, x, y, c, alpha)
   color(c, alpha)
   local m = pixelMetrics[f]
   G.print(s, snap(x), snap(y - (m and m.top or 0)))
+  if thick then G.print(s, snap(x) + 1, snap(y - (m and m.top or 0))) end
 end
 
 local function textRight(f, s, right, y, c)
@@ -598,29 +603,32 @@ end
 -- simpler. Returns the tap targets: { x, y, w, h, action, arg }.
 -- v = { W, H, theme, game, gameTitle, totals, chips = { { label, active } },
 --       list, scroll, detail, pins, pinMax, flash, Browser, reveal,
---       closeLabel }
+--       closeLabel, heading }
 Modern.SECOND = { header = 92, chips = 50, row = 70, footer = 72 }
 
 function Modern.drawSecond(v)
   G = love.graphics
   Modern.apply(v.theme, "smooth")
-  onCanvas = true
+  onCanvas, thick = true, true
+  -- brighter greys than the menu: the dim ones get lost on a scaled-up panel
+  local muted = { (C.muted[1] + C.text[1]) / 2, (C.muted[2] + C.text[2]) / 2, (C.muted[3] + C.text[3]) / 2, 1 }
+  local faint = C.muted
   local W, H, L = v.W, v.H, Modern.SECOND
   local hits = {}
   local accent = Modern.accent(v.game)
-  local fTitle, fBody, fSmall, fTiny = font(26), font(20), font(17), font(15)
+  local fTitle, fBody, fSmall, fTiny = font(27), font(21), font(18), font(16)
   local pad = 18
   G.push("all")
   G.origin()
   G.clear(C.backdrop[1], C.backdrop[2], C.backdrop[3], 1)
 
   -- header: game, totals, bar
-  text(fTitle, "Achievements", pad, 14, C.text)
+  text(fTitle, v.heading or "Achievements", pad, 14, C.text)
   if v.gameTitle then textRight(fSmall, v.gameTitle, W - pad, 14 + (fh(fTitle) - fh(fSmall)) / 2, accent) end
   local t = v.totals
   if t then
     local s = ("%d / %d earned · %d / %d pts"):format(t.earned, t.total, t.points, t.maxPoints)
-    text(fSmall, s, pad, 14 + fh(fTitle) + 8, C.muted)
+    text(fSmall, s, pad, 14 + fh(fTitle) + 8, muted)
     bar(pad, L.header - 12, W - pad * 2, 5, t.total > 0 and t.earned / t.total or 0, accent)
   end
 
@@ -632,9 +640,9 @@ function Modern.drawSecond(v)
     if cx + cw > W - pad then break end
     if chip.active then rrect("fill", cx, cy, cw, chipH, chipH / 2, accent)
     else
-      G.setLineWidth(2); rrect("line", cx + 1, cy + 1, cw - 2, chipH - 2, chipH / 2, C.faint)
+      G.setLineWidth(2); rrect("line", cx + 1, cy + 1, cw - 2, chipH - 2, chipH / 2, faint)
     end
-    text(fSmall, chip.label, cx + 13, cy + (chipH - fh(fSmall)) / 2, chip.active and C.backdrop or C.muted)
+    text(fSmall, chip.label, cx + 13, cy + (chipH - fh(fSmall)) / 2, chip.active and C.backdrop or muted)
     hits[#hits + 1] = { x = cx, y = cy, w = cw, h = chipH, action = "filter", arg = i }
     cx = cx + cw + 8
   end
@@ -650,7 +658,7 @@ function Modern.drawSecond(v)
     icon(pad + rr, y + rr, rr, row)
     local label, scolor = Modern.status(row)
     text(fSmall, label, pad + rr * 2 + 14, y + 2, scolor)
-    text(fSmall, ("%d points"):format(row.points or 0), pad + rr * 2 + 14, y + 4 + fh(fSmall), C.muted)
+    text(fSmall, ("%d points"):format(row.points or 0), pad + rr * 2 + 14, y + 4 + fh(fSmall), muted)
     y = y + rr * 2 + 14
     local function para(f, str, c, gap)
       for _, line in ipairs(wrap(f, str or "", W - pad * 2)) do
@@ -660,17 +668,17 @@ function Modern.drawSecond(v)
       y = y + (gap or 0)
     end
     para(fTitle, shown.title, C.text, 6)
-    para(fBody, shown.description, C.muted, 12)
+    para(fBody, shown.description, muted, 12)
     if not row.unlocked and row.goal and row.goal > 0 then
       local count = ("%d / %d"):format(row.progress or 0, row.goal)
       bar(pad, y + fh(fSmall) / 2 - 3, W - pad * 3 - fSmall:getWidth(count), 6, (row.progress or 0) / row.goal, C.progress)
-      textRight(fSmall, count, W - pad, y, C.muted)
+      textRight(fSmall, count, W - pad, y, muted)
       y = y + fh(fSmall) + 14
     end
     if not row.reference then
       para(fSmall, "How it's checked", C.text, 2)
-      para(fTiny, Modern.howChecked(row), C.faint, 8)
-      para(fTiny, Modern.origin(row), C.faint, 0)
+      para(fTiny, Modern.howChecked(row), faint, 8)
+      para(fTiny, Modern.origin(row), faint, 0)
     end
     if not (row.reference or row.unlocked or row.archived) then
       buttons[#buttons + 1] = { label = row.pinned and "Unpin" or "Pin", action = "pin", accent = not row.pinned }
@@ -682,7 +690,7 @@ function Modern.drawSecond(v)
     G.setScissor(0, top, W, bottom - top)
     if #v.list == 0 then
       local msg = v.totals and "Nothing here yet" or "Load a save to see achievements"
-      text(fBody, msg, (W - fBody:getWidth(msg)) / 2, top + 40, C.faint)
+      text(fBody, msg, (W - fBody:getWidth(msg)) / 2, top + 40, faint)
     end
     for n, row in ipairs(v.list) do
       local ry = top + (n - 1) * rowH - (v.scroll or 0)
@@ -698,22 +706,22 @@ function Modern.drawSecond(v)
         local pts = (row.points or 0) > 0 and tostring(row.points) or ""
         local ptsW = pts ~= "" and fSmall:getWidth(pts) + 10 or 0
         text(fBody, Modern.ellipsize(fBody, shown.title, W - pad - tx - ptsW), tx, ry + 10,
-             row.unlocked and C.text or C.muted)
-        if pts ~= "" then textRight(fSmall, pts, W - pad, ry + 12, C.faint) end
+             row.unlocked and C.text or muted)
+        if pts ~= "" then textRight(fSmall, pts, W - pad, ry + 12, faint) end
         local sy = ry + 14 + fh(fBody)
         local subW = W - pad - tx
         if not row.unlocked and row.goal and (row.progress or 0) > 0 then
           local count = ("%d / %d"):format(row.progress, row.goal)
           local cw = fTiny:getWidth(count)
           bar(tx, sy + fh(fTiny) / 2 - 2, subW - cw - 12, 4, row.progress / row.goal, C.progress)
-          textRight(fTiny, count, W - pad, sy, C.muted)
+          textRight(fTiny, count, W - pad, sy, muted)
         else
           local sub
           if row.unlocked and row.at then sub = "Earned " .. (dateOf(row.at) or "")
           elseif row.pinned then sub = "Pinned · " .. tostring(shown.description or "")
           elseif row.raType == "missable" then sub = "Missable · " .. tostring(shown.description or "")
           else sub = shown.description end
-          text(fTiny, Modern.ellipsize(fTiny, sub or "", subW), tx, sy, C.faint)
+          text(fTiny, Modern.ellipsize(fTiny, sub or "", subW), tx, sy, faint)
         end
         local hy, hh = math.max(ry, top), math.min(ry + rowH, bottom) - math.max(ry, top)
         if hh > 8 then hits[#hits + 1] = { x = 0, y = hy, w = W, h = hh, action = "open", arg = n } end
@@ -725,7 +733,7 @@ function Modern.drawSecond(v)
       local thumbH = math.max(30, trackH * trackH / (#v.list * rowH))
       local maxScroll = #v.list * rowH - trackH
       local thumbY = top + (trackH - thumbH) * ((v.scroll or 0) / math.max(1, maxScroll))
-      rrect("fill", W - 6, thumbY, 3, thumbH, 1.5, C.faint, 0.7)
+      rrect("fill", W - 6, thumbY, 3, thumbH, 1.5, faint, 0.7)
     end
     buttons[#buttons + 1] = { label = ("Pinned %d/%d"):format(v.pins or 0, v.pinMax or 3), action = "pinned",
                               accent = v.pinnedOnly }
@@ -751,8 +759,14 @@ function Modern.drawSecond(v)
   if v.flash then text(fSmall, v.flash, pad, fy + (bh - fh(fSmall)) / 2, accent) end
 
   G.pop()
-  onCanvas = false
+  onCanvas, thick = false, false
   return hits
+end
+
+-- after Modern.drawSecond, even if it failed partway, so the main menu
+-- doesn't come out thick or think it's on the canvas
+function Modern.endSecond()
+  onCanvas, thick = false, false
 end
 
 -- ------------------ screen
