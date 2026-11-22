@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-22T08:27:42Z",
+ "updated": "2026-11-22T18:01:40Z",
  "banned": [],
  "games": {
   "red": {
@@ -470,13 +470,13 @@
     },
     {
      "name": "POOT",
-     "points": 91,
-     "earned": 20,
+     "points": 96,
+     "earned": 21,
      "saveId": "BQY9M1",
-     "time": 1244,
+     "time": 1282,
      "owner": "online:77a690f2d16cfeeb3a4ed57cf8242292",
      "via": "online",
-     "date": "2026-11-22T07:36:18Z",
+     "date": "2026-11-22T18:01:40Z",
      "first": "2026-11-22T07:36:18Z",
      "src": "online:77a690f2d16cfeeb3a4ed57cf8242292"
     },
