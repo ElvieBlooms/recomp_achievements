@@ -1,8 +1,9 @@
 # Changelog
 
-## 2.9.0
+## 2.9.0: It's Free Real Estate
 
-Pin it, track it, put it on the other screen.
+The bottom screen was just sitting there. Pin it, track it, put it on the
+other screen.
 
 ### New
 - **Pins.** START on an achievement in the menu pins it, up to three. Pinned
