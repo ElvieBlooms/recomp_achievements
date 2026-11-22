@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.9.0: It's Free Real Estate
+## 2.9.0
 
 The bottom screen was just sitting there. Pin it, track it, put it on the
 other screen.
