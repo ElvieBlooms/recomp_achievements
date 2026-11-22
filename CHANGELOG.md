@@ -12,9 +12,10 @@ Pin it, track it, put it on the other screen.
 - **Second screen.** The menu on a second display, by touch: the AYN Thor's
   bottom screen, or the desktop companion window. Filter chips, the list,
   an achievement's details with Pin, drag to scroll, and Close. With Kanto
-  Gear installed it's an app in Gear and Close hands the screen back; without
-  it, SECOND SCREEN turns it on and opening TROPHIES brings it back after
-  Close.
+  Gear installed it's the TROPHIES app in Gear's Silph Store (not Gear's own
+  ACHIEVEMENTS, which are its stamps) and Close hands the screen back;
+  without it, SECOND SCREEN turns it on and opening TROPHIES brings it back
+  after Close.
 
 ### Changed
 - START in the menu pins instead of closing it. B still closes.

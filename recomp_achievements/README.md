@@ -20,8 +20,8 @@ and choose **TROPHIES** (**TROPHY** in Gen 1 and Gen 2).
 Press START on an achievement in the menu to pin it (three at most). Pinned
 ones sit at the top of the list and show at the top right of the game with
 their progress until you earn them. With a second screen, like the AYN
-Thor's, the menu can live there too: turn on SECOND SCREEN, or open it
-from Kanto Gear.
+Thor's, the menu can live there too: turn on SECOND SCREEN, or install
+TROPHIES from Kanto Gear's Silph Store.
 
 ## Online scores
 

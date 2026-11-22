@@ -5,7 +5,7 @@
 -- also gives us that screen's touches.
 --
 -- It only takes the screen while it's open, since other mods use it too:
---   * with Kanto Gear installed it's an app in Gear, opened from there, and
+--   * with Kanto Gear installed it's the TROPHIES app in Gear, opened from there, and
 --     CLOSE hands the screen back to Gear;
 --   * otherwise SECOND SCREEN: ON shows it, CLOSE hides it, and opening
 --     TROPHIES on the main screen brings it back.
@@ -249,8 +249,11 @@ function Second.install(o)
       rows[r] = table.concat(row)
     end
     local ok, registered = pcall(modules.register, {
-      id = "recomp_achievements", label = "Achievements", category = "Games", accent = "green",
-      description = { "Your achievements for this game,", "with progress and pinned ones,", "on the second screen." },
+      -- TROPHIES, as on the START menu: Gear has its own ACHIEVEMENTS app
+      -- (its stamps), and two of the same name in the store would be a guess.
+      -- Capitals to sit with Gear's own apps.
+      id = "recomp_achievements", label = "TROPHIES", category = "ADVENTURE", accent = "amber",
+      description = { "RECOMP ACHIEVEMENTS BY TOUCH.", "RETROACHIEVEMENTS LISTS, PINS", "AND PROGRESS. NOT GEAR STAMPS." },
       icon = { pal = { g = "e0b040", d = "7a5a10", p = "fff3c0" }, rows = rows },
       open = function() self.gearOpen, self.dirty = true, true; return true end,
       shown = function() return self.gearOpen end,

@@ -76,9 +76,10 @@ them. Pins are kept in your save, so they follow Save Sync.
 **Second screen.** On a device with a second display (the AYN Thor's
 bottom screen, or the desktop companion window) the menu can live there,
 by touch: filter chips along the top, tap an achievement for its details
-and a Pin button, drag to scroll. With **Kanto Gear** installed it's an
-app in Gear: open it from there, and **Close** hands the screen back to
-Gear and its other apps. Without Gear, turn on **SECOND SCREEN** in the
+and a Pin button, drag to scroll. With **Kanto Gear** installed it's the
+TROPHIES app in Gear: install it from the Silph Store and open it from
+there, and **Close** hands the screen back to Gear and its other apps.
+(Gear's own ACHIEVEMENTS app is its stamps, a separate thing.) Without Gear, turn on **SECOND SCREEN** in the
 options. **Close** puts it away, and opening TROPHIES brings it back.
 
 A gold disc with a tick means earned, a ring means locked, a partly green
@@ -111,7 +112,7 @@ Options are in the Mods manager:
 - **PINNED TRACKER**: On (default) or Off, for the pinned achievements at
   the top right of the game
 - **SECOND SCREEN**: Off (default) or On, the menu on a second display
-  (with Kanto Gear it's an app there instead)
+  (with Kanto Gear it's the TROPHIES app there instead)
 - **MENU FONT**: Auto (default), Smooth or Pixel. Pixel draws the modern
   menu and popups in the engine's Plain Pixel font, for screens that shrink
   the picture to fit and wash out thin letters. Auto uses it when the window
