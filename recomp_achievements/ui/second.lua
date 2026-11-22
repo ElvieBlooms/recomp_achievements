@@ -10,7 +10,9 @@
 --   * otherwise SECOND SCREEN: ON shows it, CLOSE hides it, and opening
 --     TROPHIES on the main screen brings it back.
 -- The bridge has no way to share, so two mods showing at once take turns
--- frame by frame. Gear is what keeps them apart.
+-- frame by frame. Gear is what keeps them apart, and NaviPlay's gate: it
+-- wraps render.compose outside us and hands us a stand-in bridge that drops
+-- our frames while NaviPlay is on the screen.
 -- ------------------
 
 local Second = {}
@@ -226,6 +228,15 @@ function Second:compose(ctx)
     end
   end
   if not (up and screen and screen.push and screen.usable and screen.usable()) then return end
+  -- Another mod can hold the screen for a while (NaviPlay's gate reports it
+  -- gone, detected() false, and drops our frames). Repaint the moment it's
+  -- back rather than up to a second later. Frames still go out meanwhile: on
+  -- some bridges detected() only turns true after the first one.
+  if screen.detected then
+    local okS, seen = pcall(screen.detected)
+    if okS and seen == false then self.away = true
+    elseif self.away then self.away, self.dirty = false, true end
+  end
   for _ = 1, 64 do
     local event = screen.pollTouch and screen.pollTouch()
     if not event then break end

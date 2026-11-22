@@ -82,6 +82,8 @@ TROPHIES app in Gear: install it from the Silph Store and open it from
 there, and **Close** hands the screen back to Gear and its other apps.
 (Gear's own ACHIEVEMENTS app is its stamps, a separate thing.) Without Gear, turn on **SECOND SCREEN** in the
 options. **Close** puts it away, and opening TROPHIES brings it back.
+With **NaviPlay** installed, the menu waits while NaviPlay is on the second
+screen and comes back when you close NaviPlay.
 
 A gold disc with a tick means earned, a ring means locked, a partly green
 ring shows progress, and a slashed ring means archived (earned with a mod

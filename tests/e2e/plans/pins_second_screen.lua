@@ -49,6 +49,7 @@ return function(ctx)
       ctx.frames, ctx.touches = 0, {}
       S.usable = function() return true end
       S.available = function() return true end
+      S.detected = function() return true end
       S.setEnabled = function(on) ctx.log("second screen enabled=%s", tostring(on)) end
       S.pollTouch = function() return table.remove(ctx.touches, 1) end
       S.push = function(img, w, h)

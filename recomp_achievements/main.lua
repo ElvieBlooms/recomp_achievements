@@ -183,6 +183,9 @@ return function(mod)
   local second = Second.install({ mod = mod, engine = engine, Browser = Browser, Modern = Modern,
                                   titles = Modern.GAME_NAMES })
   Browser.onOpen = function() second:show() end
+  -- for mods that share the second screen (NaviPlay steps aside for Galar
+  -- Rising's function of the same name): true while our menu wants it
+  mod.exports.secondScreenShown = function() return second:up() == true end
   mod.events:on("mod.options_changed", function(ev)
     if type(ev) == "table" and ev.mod == mod.id and ev.key == "secondScreen" then second:show() end
   end)

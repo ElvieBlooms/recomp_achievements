@@ -215,6 +215,20 @@ still works and shows the list's numbers; the board refuses it.
 - A fresh New Game starts empty. That is the engine's rule for every
   mod's save data.
 
+## 8. Sharing the second screen
+
+Since 2.9.0 the menu can show on a second display (SECOND SCREEN, or the
+TROPHIES app in Kanto Gear). Two ways to share it:
+
+- Wrap `render.compose` outside ours (a priority above 0) and hand us a
+  stand-in `ctx.secondScreen`, as NaviPlay's gate does. While you hold the
+  screen, have `detected()` return false and drop our `push` calls; we
+  repaint the moment `detected()` is true again, and our last `setEnabled`
+  is the one to apply when you let go.
+- Ask whether we're on it: `ach.secondScreenShown()` is true while our
+  menu wants the second screen, the same name Galar Rising exports, so a
+  mod that steps aside for one can step aside for both.
+
 ## 8. Trust model
 
 The API is **cooperative**. The engine can't tell the framework which mod
