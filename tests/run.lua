@@ -1875,6 +1875,113 @@ test("main mod alone never touches the network", function()
   eq(hits, "", "no network calls in the main mod")
 end)
 
+-- ------------------ pins, tracker, second screen
+test("pins: START pins in the menu, top of the list, tracker, unpinned on unlock", function()
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env:newGame()
+  env.game.save.inventory.BOULDERBADGE = 1
+  env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+  local screen = openMenu(env)
+  -- the first locked row in ALL
+  local target
+  for i, row in ipairs(screen.state.list) do
+    if not row.unlocked then target = i break end
+  end
+  check(target, "a locked row")
+  local key = screen.state.list[target].key
+  screen.state.index = target
+  env:press("start"); env:hud(BIG)
+  check(screen.state.list[1].key == key and screen.state.list[1].pinned, "pinned row goes first")
+  check(H.windowText():find("Pinned", 1, true), "says so")
+  local ledger = env.game.save.modData.recomp_achievements.ledger
+  eq(ledger.pinned[1], key, "kept in the save")
+  check(not env.game.stack.states[#env.game.stack.states].closing, "START no longer closes the menu")
+  -- earned rows can't be pinned
+  for i, row in ipairs(screen.state.list) do
+    if row.unlocked then screen.state.index = i break end
+  end
+  env:press("start"); env:hud(BIG)
+  eq(#ledger.pinned, 1, "an earned one isn't pinned")
+  check(H.windowText():find("Already earned", 1, true), "and the menu says why")
+  -- tracker draws with the menu closed, not with it open
+  env:hud(BIG)
+  local title = screen.state.list[1].title
+  env:press("b"); env:frame(); env:frame()
+  check(#env.game.stack.states == 0 or not env.game.stack.states[#env.game.stack.states].modern, "closed")
+  env:hud(BIG)
+  check(H.windowText():find(title:sub(1, 6), 1, true), "tracker shows the pinned one")
+  env.loader.modOptions.recomp_achievements.tracker = "off"
+  env:hud(BIG)
+  check(not H.windowText():find(title:sub(1, 6), 1, true), "PINNED TRACKER off")
+  env.loader.modOptions.recomp_achievements.tracker = nil
+end)
+
+test("pins: ledger keeps three at most and drops bad keys", function()
+  local Ledger = assert(loadfile(H.PROJECT .. "/recomp_achievements/core/ledger.lua"))()
+  local saved = {}
+  local fakeMod = { save = { get = function(_, k) return saved[k] end, set = function(_, k, v) saved[k] = v end } }
+  local util = { plain = function(v) return v end, text = function(s) return s end }
+  local L = Ledger.new(fakeMod, util)
+  eq(L:setPinned("red", "core:a", true), true, "pin one")
+  L:setPinned("red", "core:b", true); L:setPinned("red", "core:c", true)
+  local full, why = L:setPinned("red", "core:d", true)
+  check(full == nil and why == "full", "a fourth is refused")
+  eq(L:setPinned("red", "core:b", false), false, "unpin")
+  eq(table.concat(L:pins(), ","), "core:a,core:c", "order kept")
+  saved.ledger.pinned = { "core:a", "core:a", "bad key", 7, "core:x", "core:y", "core:z" }
+  L:get("red")
+  eq(table.concat(saved.ledger.pinned, ","), "core:a,core:x,core:y", "repaired: no repeats, valid keys, three")
+  L:unlock("red", "core:x", { how = "event" })
+  eq(table.concat(L:pins(), ","), "core:a,core:y", "unlocking unpins")
+end)
+
+test("second screen: touches, hits and the drawn frame", function()
+  local Second = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/second.lua"))()
+  local a, x, y = Second.parseTouch("down,10,20")
+  check(a == "down" and x == 10 and y == 20, "action,x,y")
+  a, x, y = Second.parseTouch("30,40")
+  check(a == "tap" and x == 30 and y == 40, "older x,y is a tap")
+  check(Second.parseTouch("nonsense") == nil, "junk ignored")
+  local hits = { { x = 0, y = 0, w = 100, h = 100, action = "open" }, { x = 10, y = 10, w = 20, h = 20, action = "pin" } }
+  eq(Second.hitAt(hits, 15, 15).action, "pin", "topmost wins")
+  eq(Second.hitAt(hits, 50, 50).action, "open", "under it")
+  check(Second.hitAt(hits, 500, 5) == nil, "miss")
+
+  -- drive it with a fake bridge through render.compose's ctx
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env.loader.modOptions.recomp_achievements.secondScreen = "on"
+  env:newGame()
+  env.game.save.inventory.BOULDERBADGE = 1
+  env:setFlag("EVENT_BEAT_BROCK"); env:frame()
+  local pushed, touches, enabled = 0, {}, nil
+  local screen = {
+    usable = function() return true end,
+    push = function(img, w, h) pushed = pushed + 1; return true end,
+    pollTouch = function() return table.remove(touches, 1) end,
+    setEnabled = function(on) enabled = on end,
+  }
+  openMenu(env) -- opening TROPHIES brings it up and installs the hook
+  env:press("b"); env:frame(); env:frame()
+  local Runtime = require("src.mods.Runtime")
+  local function compose() Runtime.call("render.compose", function() return false end, {}, { secondScreen = screen }) end
+  compose()
+  eq(enabled, true, "turned the display on")
+  eq(pushed, 1, "pushed a frame")
+  compose()
+  eq(pushed, 1, "nothing new, no push")
+  -- tap the Close button: bottom right
+  touches[1] = ("tap,%d,%d"):format(Second.W - 40, Second.H - 30)
+  compose()
+  compose()
+  eq(enabled, false, "CLOSE turns it off")
+  local before = pushed
+  compose()
+  eq(pushed, before, "closed: no pushes")
+  openMenu(env)
+  compose()
+  eq(enabled, true, "TROPHIES brings it back")
+end)
+
 print(("\n%d passed, %d failed"):format(passed, failed))
 H.cleanup()
 os.exit(failed == 0 and 0 or 1)

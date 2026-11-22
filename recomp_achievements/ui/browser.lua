@@ -14,8 +14,8 @@
 --   | ...              |
 --   +------------------+
 --
--- UP/DOWN move, LEFT/RIGHT change filter, A opens details, B or START goes
--- back. Earned is a filled square, locked is hollow and archived is
+-- UP/DOWN move, LEFT/RIGHT change filter, A opens details, START pins or
+-- unpins (pinned rows sit at the top), B goes back. Earned is a filled square, locked is hollow and archived is
 -- slashed, so nothing depends on colour.
 --
 -- Rows come fresh from engine:rows() on open and on each filter change.
@@ -209,12 +209,30 @@ function Browser.model(engine, opts)
   return rows
 end
 
+-- Pinned rows go first, in list order;
+-- everything else keeps its order.
 function Browser.filtered(rows, filter)
-  local out = {}
+  local pinned, rest = {}, {}
   for _, row in ipairs(rows) do
-    if passes(filter, row) then out[#out + 1] = row end
+    if passes(filter, row) then
+      if row.pinned then pinned[#pinned + 1] = row else rest[#rest + 1] = row end
+    end
   end
-  return out
+  for _, row in ipairs(rest) do pinned[#pinned + 1] = row end
+  return pinned
+end
+
+-- START on a row: pin or unpin it. Returns a short message for the screen.
+function Browser.togglePin(engine, row)
+  if not row or row.reference then return nil end
+  local ok, now, why = pcall(engine.togglePin, engine, row.key)
+  if not ok then return nil end
+  if now == true then return "PINNED" end
+  if now == false then return "UNPINNED" end
+  if why == "full" then return ("%d ALREADY PINNED"):format(engine.ledger.PIN_MAX or 3) end
+  if why == "unlocked" then return "ALREADY EARNED" end
+  if why == "no_save" then return "LOAD A SAVE FIRST" end
+  return nil
 end
 
 -- What a row may show. Hidden and still locked means no spoilers.
@@ -243,6 +261,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
   local page = 1     -- detail page: 1 = summary, 2 = how it's checked
   local about = false -- SELECT page: 1 leaderboard card, 2 extra credit, 3 credits
   local clock = 0     -- drives the selected row's title scroll
+  local flash, flashUntil = nil, 0 -- a pin message where the filter name goes
   local reveal = mod.options:get("showHidden") == true
   local closing, settled = false, false -- same trick as Modern's update
 
@@ -273,13 +292,30 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
       if about == 1 then pcall(engine.dispatch, engine, "ui.card_opened", {}) end
       return
     end
+    if input:wasPressed("start") then
+      local row = detail or list[index]
+      local msg = Browser.togglePin(engine, row)
+      if msg then
+        flash, flashUntil = msg, clock + 1.5
+        local key = row.key
+        rebuild()
+        if detail then
+          for _, r in ipairs(rows) do if r.key == key then detail = r end end
+        else
+          for i, r in ipairs(list) do if r.key == key then index = i end end
+          if index - scroll > VISIBLE then scroll = index - VISIBLE end
+          if index - scroll < 1 then scroll = math.max(0, index - 1) end
+        end
+      end
+      return
+    end
     if detail then
       if input:wasPressed("b") or input:wasPressed("a") then detail, page = nil, 1
       elseif input:wasPressed("right") then page = 2
       elseif input:wasPressed("left") then page = 1 end
       return
     end
-    if input:wasPressed("b") or input:wasPressed("start") then
+    if input:wasPressed("b") then
       closing = true
       return
     end
@@ -311,7 +347,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     Font.drawBox(0, 0, 20, 4)
     Text.draw(Font, ("%d/%d"):format(t.earned, t.total), 1, 1)
     Text.drawRight(Font, ("PTS %d/%d"):format(t.points, t.maxPoints), 19, 1)
-    local label = Text.fit(filters[filterIndex].label, 16)
+    local label = Text.fit(flash and clock < flashUntil and flash or filters[filterIndex].label, 16)
     Text.arrow("left", 1, 2)
     Text.draw(Font, label, 10 - math.floor(Text.len(label) / 2), 2)
     Text.arrow("right", 18, 2)
@@ -327,7 +363,7 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
       if not row then break end
       local ty = LIST_TOP + i - 1
       local kind = row.reference and "reference" or row.archived and "archived"
-        or row.unlocked and "earned" or "locked"
+        or row.unlocked and "earned" or row.pinned and "pinned" or "locked"
       Text.mark(kind, 2, ty)
       local shown = Browser.display(row, reveal)
       local right = ""
@@ -392,7 +428,12 @@ function Browser.newScreen(mod, engine, util, Text, game, Share)
     Text.draw(Font, Text.fit(origin, 18), 1, 14)
     if row.archived then credit = "MOD NOT LOADED" end
     if credit then Text.draw(Font, Text.fit(credit, 18), 1, 15) end
-    Text.draw(Font, "LOCAL ONLY", 1, 16)
+    if row.reference or row.archived or row.unlocked then
+      Text.draw(Font, "LOCAL ONLY", 1, 16)
+    else
+      local msg = flash and clock < flashUntil and flash
+      Text.draw(Font, Text.fit(msg or (row.pinned and "START: UNPIN" or "START: PIN"), 18), 1, 16)
+    end
     if not row.reference then Text.arrow("right", 18, 16) end
   end
 
@@ -501,6 +542,8 @@ function Browser.install(mod, engine, util, Text, Share, Modern, Native3)
   Browser.Share = Share
   mod.content.screens:register(Browser.SCREEN_ID, {
     new = function(game)
+      -- the second screen comes back when the menu opens (ui/second.lua)
+      if Browser.onOpen then pcall(Browser.onOpen) end
       -- CLASSIC MENU: Gen 1 and 2 use their tile font and text-box frame
       -- (this file), Gen 3 its GBA windows and font (ui/native3.lua) when
       -- the engine has them.

@@ -188,7 +188,26 @@ function Toast:style()
   return "modern"
 end
 
-function Toast:draw(vp)
+-- Whether a menu is up, so the tracker steps aside. Our own screens and the
+-- game's start menu set isMenu.
+local function menuUp(game)
+  local stack = type(game) == "table" and game.stack
+  if type(stack) ~= "table" or type(stack.top) ~= "function" then return false end
+  local ok, top = pcall(stack.top, stack)
+  return ok and type(top) == "table" and top.isMenu == true
+end
+
+function Toast:draw(vp, game)
+  if self.pinnedRows and vp and vp.gameWidth and vp.gameWidth > 0 and self.Modern and self.Modern.drawTracker
+    and self.mod.options:get("tracker") ~= "off" and not menuUp(game) then
+    local ok, rows = pcall(self.pinnedRows)
+    if ok and rows and #rows > 0 then
+      self.Modern.drawTracker(rows, vp, {
+        theme = self.mod.options:get("menuTheme"), game = self.gameOf and self.gameOf() or nil,
+        font = self.mod.options:get("menuFont"),
+      })
+    end
+  end
   local cards = self:tickProgress()
   if #cards > 0 and vp and vp.gameWidth and vp.gameWidth > 0 and self.Modern and self.Modern.drawProgress then
     for i, card in ipairs(cards) do
@@ -231,7 +250,7 @@ end
 function Toast:install()
   self.mod.hooks:wrap("render.hud", function(nextFn, game, vp, ...)
     local result = nextFn(game, vp, ...)
-    local ok, err = pcall(self.draw, self, vp)
+    local ok, err = pcall(self.draw, self, vp, game)
     if not ok and not self.warned then
       self.warned = true
       self.mod.log:warn("popup draw failed: %s", tostring(err))

@@ -14,6 +14,7 @@
 --   ui/text.lua        font-safe text and status marks
 --   ui/toast.lua       unlock popups, drawn on the render.hud hook
 --   ui/browser.lua     the ACHIEVEMENTS screen opened from START
+--   ui/second.lua      the same menu on a second display, by touch
 --
 -- Definitions are rebuilt from code each session; records live in the save.
 -- Nothing saved is ever a function, so a save still loads without this mod.
@@ -65,6 +66,13 @@ return function(mod)
     { key = "popupStyle", type = "choice", label = "POPUP STYLE", default = "modern",
       choices = { { "MODERN", "modern" }, { "CORNER", "corner" }, { "CLASSIC GB", "classic" } } },
     { key = "progressPopups", type = "toggle", label = "PROGRESS POPUPS", default = true },
+    -- pinned achievements at the top right (START on one in the menu)
+    { key = "tracker", type = "choice", label = "PINNED TRACKER", default = "on",
+      choices = { { "ON", "on" }, { "OFF", "off" } } },
+    -- the menu on a second display (ui/second.lua); with Kanto Gear it's an
+    -- app there instead
+    { key = "secondScreen", type = "choice", label = "SECOND SCREEN", default = "off",
+      choices = { { "OFF", "off" }, { "ON", "on" } } },
     { key = "unlockSound", type = "toggle", label = "UNLOCK SOUND", default = true },
     { key = "extras", type = "toggle", label = "BONUS ACHIEVEMENTS", default = true },
     { key = "showHidden", type = "toggle", label = "REVEAL HIDDEN", default = false },
@@ -89,6 +97,8 @@ return function(mod)
     mod = mod, util = util, ledger = ledger, registry = registry, toast = toast,
   })
   toast.gameOf = function() return engine.game end -- popup accent colour
+  -- the pinned tracker, when a save is loaded
+  toast.pinnedRows = function() return engine.active and engine:pinnedRows() or {} end
 
   -- ------------------ built-in content
   -- Each generation gets an adapter (save to facts), its RA-list rules,
@@ -168,5 +178,13 @@ return function(mod)
   -- ------------------ UI
   -- The START menu row, the achievements screen and the popups.
   Browser.install(mod, engine, util, Text, Share, Modern, Native3)
+  -- the menu on a second display, when there is one
+  local Second = import("ui/second.lua")
+  local second = Second.install({ mod = mod, engine = engine, Browser = Browser, Modern = Modern,
+                                  titles = Modern.GAME_NAMES })
+  Browser.onOpen = function() second:show() end
+  mod.events:on("mod.options_changed", function(ev)
+    if type(ev) == "table" and ev.mod == mod.id and ev.key == "secondScreen" then second:show() end
+  end)
   toast:install()
 end

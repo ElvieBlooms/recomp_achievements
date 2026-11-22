@@ -50,6 +50,8 @@ love.graphics = setmetatable({
     if type(a) == "string" then H.fontsLoaded[#H.fontsLoaded + 1] = a; return fakeFont(b) end
     return fakeFont(a)
   end,
+  -- a canvas whose image is a plain table, for the second screen's push
+  newCanvas = function(w, h) return { w = w, h = h, newImageData = function(c) return { w = c.w, h = c.h } end } end,
   -- Window-space text from the modern menu is recorded the same way as Font.draw.
   print = function(s, x, y) drawn[#drawn + 1] = { text = tostring(s), tx = (x or 0) / 8, ty = (y or 0) / 8, window = true } end,
 }, { __index = function() return noop end })

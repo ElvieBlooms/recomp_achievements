@@ -13,6 +13,7 @@
 --     progress = { [key] = number },
 --     counters = { [name] = number }, -- private tallies for core rules
 --     quarantine = { [key] = original }, -- malformed records, kept not lost
+--     pinned   = { key, ... },     -- up to Ledger.PIN_MAX, the order they were pinned
 --   }
 --   record = {
 --     at = <os.time()>, how = "event" | "backfill" | "api",
@@ -34,6 +35,7 @@ Ledger.__index = Ledger
 Ledger.SCHEMA = 1
 Ledger.KEY = "ledger"
 Ledger.TITLE_MAX = 40 -- bytes of last-known title kept per record
+Ledger.PIN_MAX = 3    -- achievements the tracker can follow at once
 
 -- Each step upgrades schema N to N+1. Steps must cope with a half-upgraded
 -- table, in case a crash lands mid-migration.
@@ -73,6 +75,20 @@ function Ledger:repair(data)
     if type(name) ~= "string" or type(value) ~= "number" or value ~= value then
       data.counters[name] = nil
     end
+  end
+  -- pins: valid keys only, no repeats, no more than PIN_MAX. Older saves
+  -- have none, which needs no schema step.
+  if data.pinned ~= nil then
+    local pins, seen = {}, {}
+    if type(data.pinned) == "table" then
+      for _, key in ipairs(data.pinned) do
+        if validKey(key) and not seen[key] and #pins < Ledger.PIN_MAX then
+          seen[key] = true
+          pins[#pins + 1] = key
+        end
+      end
+    end
+    data.pinned = pins
   end
   return data
 end
@@ -139,6 +155,12 @@ function Ledger:unlock(game, key, fields)
     pt = tonumber(fields.pt) and math.floor(tonumber(fields.pt)) or nil,
   }
   data.progress[key] = nil -- the record supersedes partial progress
+  -- an earned one stops being tracked, freeing its pin
+  if type(data.pinned) == "table" then
+    for i = #data.pinned, 1, -1 do
+      if data.pinned[i] == key then table.remove(data.pinned, i) end
+    end
+  end
   return true
 end
 
@@ -156,6 +178,41 @@ function Ledger:bumpCounter(game, name, by)
   local data = self:get(game)
   data.counters[name] = (data.counters[name] or 0) + (by or 1)
   return data.counters[name]
+end
+
+-- Pinned keys, oldest first. Never creates the ledger.
+function Ledger:pins()
+  local data = self:peek()
+  local out = {}
+  if data and type(data.pinned) == "table" then
+    for _, key in ipairs(data.pinned) do
+      if type(key) == "string" then out[#out + 1] = key end
+    end
+  end
+  return out
+end
+
+function Ledger:isPinned(key)
+  for _, k in ipairs(self:pins()) do
+    if k == key then return true end
+  end
+  return false
+end
+
+-- Pin or unpin. Returns true when it's now pinned, false when it isn't, or
+-- nil and "full" when PIN_MAX are already pinned.
+function Ledger:setPinned(game, key, on)
+  local data = self:get(game)
+  local pins = {}
+  for _, k in ipairs(type(data.pinned) == "table" and data.pinned or {}) do
+    if k ~= key then pins[#pins + 1] = k end
+  end
+  if on then
+    if #pins >= Ledger.PIN_MAX then return nil, "full" end
+    pins[#pins + 1] = key
+  end
+  data.pinned = pins
+  return on and true or false
 end
 
 -- Forget one record, for testing. Other mods can't reach this.

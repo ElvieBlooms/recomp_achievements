@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.9.0
+
+Pin it, track it, put it on the other screen.
+
+### New
+- **Pins.** START on an achievement in the menu pins it, up to three. Pinned
+  ones go to the top of every list, get a mark in the list, and show at the
+  top right of the game with their progress (PINNED TRACKER). Earning one
+  unpins it. Pins live in the ledger, so they ride in the save.
+- **Second screen.** The menu on a second display, by touch: the AYN Thor's
+  bottom screen, or the desktop companion window. Filter chips, the list,
+  an achievement's details with Pin, drag to scroll, and Close. With Kanto
+  Gear installed it's an app in Gear and Close hands the screen back; without
+  it, SECOND SCREEN turns it on and opening TROPHIES brings it back after
+  Close.
+
+### Changed
+- START in the menu pins instead of closing it. B still closes.
+
+### Upgrading
+- Update both zips together if you use Recomp Achievements Online.
+
 ## 2.8.1
 
 Small screens get their letters back.

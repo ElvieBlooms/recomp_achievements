@@ -657,6 +657,7 @@ function Engine:status(key)
     at = record and record.at,
     how = record and record.how,
     progress = record == nil and self.ledger:progress(key) or nil,
+    pinned = record == nil and self.ledger:isPinned(key) or nil,
   }
   if def then
     local shown = self:display(def)
@@ -716,6 +717,34 @@ function Engine:rows()
     if not seen[key] then rows[#rows + 1] = self:status(key) end
   end
   return rows
+end
+
+-- ------------------ pins
+-- Achievements the player is following: first in the menu, and in the
+-- tracker (ui/toast.lua) and on the second screen. Kept in the ledger, so
+-- they ride in the save. Unlocking one unpins it (Ledger:unlock).
+
+-- Rows for the pinned keys that still apply here and aren't earned yet.
+function Engine:pinnedRows()
+  local out = {}
+  if not self.game then return out end
+  for _, key in ipairs(self.ledger:pins()) do
+    local row = self:status(key)
+    if row and row.available and not row.unlocked and not row.archived then out[#out + 1] = row end
+  end
+  return out
+end
+
+-- Pin or unpin key. Returns true (pinned), false (unpinned), or nil and a
+-- reason: "no_save", "unknown", "unlocked" or "full".
+function Engine:togglePin(key)
+  if not self.game then return nil, "no_save" end
+  local row = self:status(key)
+  if not row or row.reference then return nil, "unknown" end
+  if self.ledger:isPinned(key) then return self.ledger:setPinned(self.game, key, false) end
+  if row.unlocked then return nil, "unlocked" end
+  if not row.available or row.archived then return nil, "unknown" end
+  return self.ledger:setPinned(self.game, key, true)
 end
 
 -- Totals only count achievements you can earn here, never catalog entries

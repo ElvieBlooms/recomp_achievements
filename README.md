@@ -34,7 +34,7 @@ and each achievement's author, and are credited in the game. See
 ## Install
 
 1. In the launcher, open **MODS** and find Recomp Achievements under
-   **Find mods**, or download `recomp_achievements-2.8.1.zip` from
+   **Find mods**, or download `recomp_achievements-2.9.0.zip` from
    Releases and use **Import mod .zip** (dropping the zip on the launcher
    window works too). Unzipping by hand also works: put the files in
    `mods/recomp_achievements/`.
@@ -64,8 +64,22 @@ on-screen pad).
 | UP / DOWN | move (hold to scroll) |
 | LEFT / RIGHT | change filter: All, Earned, Missing, In progress, Missable, RA list, Bonus, From mods (plus a tab for each mod that adds achievements), Archived |
 | A | switch the details between the description and how it's checked |
+| START | pin or unpin the selected achievement |
 | SELECT | leaderboard card (RIGHT for Extra Credit, then About) |
-| B / START | back |
+| B | back |
+
+**Pinning.** Pin up to three achievements you're working on. They sit at
+the top of every list and show at the top right of the game as you play,
+with their progress, until you earn them (which unpins them) or unpin
+them. Pins are kept in your save, so they follow Save Sync.
+
+**Second screen.** On a device with a second display (the AYN Thor's
+bottom screen, or the desktop companion window) the menu can live there,
+by touch: filter chips along the top, tap an achievement for its details
+and a Pin button, drag to scroll. With **Kanto Gear** installed it's an
+app in Gear: open it from there, and **Close** hands the screen back to
+Gear and its other apps. Without Gear, turn on **SECOND SCREEN** in the
+options. **Close** puts it away, and opening TROPHIES brings it back.
 
 A gold disc with a tick means earned, a ring means locked, a partly green
 ring shows progress, and a slashed ring means archived (earned with a mod
@@ -94,6 +108,10 @@ Options are in the Mods manager:
   Dark, Gruvbox Light, Nord or Midnight
 - **MENU SIZE**: Full Screen (default) or Game Area (only the game's own
   screen, which keeps it clear of a phone's on-screen pad in landscape)
+- **PINNED TRACKER**: On (default) or Off, for the pinned achievements at
+  the top right of the game
+- **SECOND SCREEN**: Off (default) or On, the menu on a second display
+  (with Kanto Gear it's an app there instead)
 - **MENU FONT**: Auto (default), Smooth or Pixel. Pixel draws the modern
   menu and popups in the engine's Plain Pixel font, for screens that shrink
   the picture to fit and wash out thin letters. Auto uses it when the window

@@ -89,6 +89,7 @@ function Native3.newScreen(o)
   local reveal = mod.options:get("showHidden") == true
   local closing, settled = false, false
   local blink = 0
+  local flash, flashUntil = nil, 0 -- a pin message in the title bar, for 90 frames
 
   local function rebuild()
     rows = Browser.model(engine, { reference = mod.options:get("showReference") })
@@ -122,13 +123,30 @@ function Native3.newScreen(o)
       if card == 1 then pcall(engine.dispatch, engine, "ui.card_opened", {}) end
       return
     end
+    if pressed("start") then
+      local row = detail or list[index]
+      local msg = Browser.togglePin(engine, row)
+      if msg then
+        flash, flashUntil = msg, blink + 90
+        local key = row.key
+        rebuild()
+        if detail then
+          for _, r in ipairs(rows) do if r.key == key then detail = r end end
+        else
+          for i, r in ipairs(list) do if r.key == key then index = i end end
+          if index - scroll > VISIBLE then scroll = index - VISIBLE end
+          if index - scroll < 1 then scroll = math.max(0, index - 1) end
+        end
+      end
+      return
+    end
     if detail then
       if pressed("b") or pressed("a") then detail, page = nil, 1
       elseif pressed("right") and not detail.reference then page = 2
       elseif pressed("left") then page = 1 end
       return
     end
-    if pressed("b") or pressed("start") then closing = true return end
+    if pressed("b") then closing = true return end
     if pressed("up") and index > 1 then index = index - 1 end
     if pressed("down") and index < #list then index = index + 1 end
     if pressed("left") then
@@ -181,7 +199,7 @@ function Native3.newScreen(o)
 
   -- Earned is filled green, in progress part filled, locked hollow,
   -- archived and reference gray.
-  local function icon(kind, x, y, part)
+  local function icon(kind, x, y, part, pin)
     local g = love.graphics
     local function px(c) g.setColor(c[1], c[2], c[3], 1) end
     local dark = kind == "earned" and PAL[6] or PAL[2]
@@ -197,6 +215,7 @@ function Native3.newScreen(o)
     elseif kind == "archived" or kind == "reference" then
       px(PAL[3]); g.rectangle("fill", x + 1, y + 1, 5, 5)
     end
+    if pin then px(PAL[8]); g.rectangle("fill", x + 2, y + 2, 3, 3) end
     g.setColor(1, 1, 1, 1)
   end
 
@@ -212,7 +231,8 @@ function Native3.newScreen(o)
     local f = filters[filterIndex]
     local label = f.label
     chrome("{DPAD_UPDOWN}PICK {DPAD_LEFTRIGHT}FILTER {A_BUTTON}INFO {B_BUTTON}BACK",
-           "TROPHIES: " .. label, ("%d/%d  %dP"):format(t.earned, t.total, t.points))
+           flash and blink < flashUntil and flash or ("TROPHIES: " .. label),
+           ("%d/%d  %dP"):format(t.earned, t.total, t.points))
     if #list == 0 then
       print("NOTHING HERE YET.", LABEL_X, ROW_Y0, C.DARK_GRAY)
       if not engine.active then print("LOAD A SAVE FIRST.", LABEL_X, ROW_Y0 + ROW_STEP, C.DARK_GRAY) end
@@ -230,7 +250,7 @@ function Native3.newScreen(o)
       elseif row.goal and (row.progress or 0) > 0 then
         kind, part = "progress", math.max(1, math.min(4, math.floor((row.progress / row.goal) * 5)))
       end
-      icon(kind, ICON_X, y + 3, part)
+      icon(kind, ICON_X, y + 3, part, row.pinned and not row.unlocked)
       local right
       if kind == "progress" then right = ("%d/%d"):format(row.progress, row.goal)
       elseif not row.reference then right = tostring(row.points or 0) end
@@ -255,9 +275,10 @@ function Native3.newScreen(o)
       return (row.how == "backfill" and "EARNED FROM SAVE" or "EARNED") .. when, C.GREEN
     end
     if row.goal then
-      return ("%d/%d %s"):format(row.progress or 0, row.goal, row.unit or ""), C.BLUE
+      return ("%d/%d %s"):format(row.progress or 0, row.goal, row.unit or "")
+        .. (row.pinned and " · PINNED" or ""), C.BLUE
     end
-    return "NOT YET EARNED", C.RED
+    return row.pinned and "PINNED" or "NOT YET EARNED", row.pinned and C.BLUE or C.RED
   end
 
   local function originOf(row)
@@ -329,7 +350,9 @@ function Native3.newScreen(o)
       print("UNLOCKED LOCALLY. NOT SENT TO RA.", LABEL_X - 4, WIN_Y + WIN_H - 14, C.DARK_GRAY, { small = true })
       return
     end
-    chrome("{DPAD_LEFTRIGHT}PAGE {B_BUTTON}BACK", shown.title, pts)
+    local pinnable = not (row.reference or row.unlocked or row.archived)
+    chrome("{DPAD_LEFTRIGHT}PAGE " .. (pinnable and (row.pinned and "START UNPIN " or "START PIN ") or "")
+             .. "{B_BUTTON}BACK", flash and blink < flashUntil and flash or shown.title, pts)
     local footer = WIN_Y + WIN_H - 28
     para(shown.description, ROW_Y0, footer, C.NORMAL)
     local status, scol = statusOf(row)

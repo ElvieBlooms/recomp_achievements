@@ -132,6 +132,13 @@ Modern.GAME_NAMES = {
   firered = "Pokémon FireRed", leafgreen = "Pokémon LeafGreen",
 }
 
+-- The backdrop as 0xRRGGBB, for the second screen's bars.
+function Modern.backdropHex()
+  local c = C.backdrop or { 0, 0, 0 }
+  local function b(v) return math.max(0, math.min(255, math.floor((v or 0) * 255 + 0.5))) end
+  return b(c[1]) * 65536 + b(c[2]) * 256 + b(c[3])
+end
+
 -- Filter names for this menu, same ids as Browser's filters.
 Modern.FILTER_LABELS = {
   all = "All", earned = "Earned", missing = "Missing", progress = "In progress", missable = "Missable",
@@ -164,7 +171,9 @@ local PIXEL_EM = 15
 local fonts = {}
 
 -- Screen pixels per LÖVE unit; 1 except on high-DPI windows (Android).
+local onCanvas = false -- Modern.drawSecond: a 1:1 canvas, not the window
 local function dpi()
+  if onCanvas then return 1 end
   local d = G and G.getDPIScale and G.getDPIScale() or 1
   return (type(d) == "number" and d > 0) and d or 1
 end
@@ -358,11 +367,31 @@ function Modern.origin(row)
   return "Added by the " .. tostring(row.providerName or row.provider or "?") .. " mod"
 end
 
+-- The "How it's checked" text for a row.
+function Modern.howChecked(row)
+  if row.listed then
+    return "Part of " .. tostring(row.listTitle or "this cart") .. "'s own list, checked by the "
+      .. tostring(row.providerName or row.provider) .. " mod." .. (row.note and ("\n\n" .. row.note) or "")
+  elseif row.source ~= "core" then return "Checked by the " .. tostring(row.providerName or row.provider) .. " mod."
+  elseif row.fidelity == "interpretation" then
+    return "A close local version of the RetroAchievements goal, adapted for Gen1Recomp." .. (row.note and ("\n\n" .. row.note) or "")
+  elseif row.official and row.note then
+    -- rules first for challenges, since they're what the player needs
+    return row.note .. "\n\nChecked by this mod with its own logic."
+  elseif row.official then
+    return "Checked by this mod from your save and gameplay, with its own logic written for Gen1Recomp."
+  end
+  return "A bonus achievement made for this mod." .. (row.note and ("\n\n" .. row.note) or "")
+end
+
 function Modern.status(row)
   if row.reference then return row.tracked and "Tracked here" or "Not tracked yet", C.muted end
   if row.archived then return "Archived", C.muted end
   if row.unlocked then return row.how == "backfill" and "Earned · from your save" or "Earned", C.earned end
-  if row.goal and (row.progress or 0) > 0 then return "In progress", C.progress end
+  if row.goal and (row.progress or 0) > 0 then
+    return row.pinned and "Pinned · in progress" or "In progress", C.progress
+  end
+  if row.pinned then return "Pinned", C.progress end
   return "Locked", C.faint
 end
 
@@ -503,6 +532,217 @@ function Modern.drawProgress(c, shown, vp, opts)
   G.pop()
 end
 
+-- The tracker: pinned achievements in small see-through cards at the top
+-- right, for as long as they're pinned. Same card as a progress note; one
+-- with no count shows its description where the bar goes.
+-- rows: Engine:pinnedRows(); opts as drawProgress.
+function Modern.drawTracker(rows, vp, opts)
+  if not rows or #rows == 0 then return end
+  G = love.graphics
+  local x0, y0 = vp.gameX or 0, vp.gameY or 0
+  local W, H = vp.gameWidth or 160, vp.gameHeight or 144
+  local u = math.min(W / 160, H / 144)
+  Modern.apply(opts.theme, opts.font, u)
+  local accent = Modern.accent(opts.game)
+  local fTitle, fTiny = font(3.9 * u), font(3.3 * u)
+  local pad, r = 2.2 * u, 2.8 * u
+  local w = math.floor(W * 0.42)
+  local barH = math.max(2, 1.1 * u)
+  local h = pad * 2 + fh(fTitle) + math.max(barH + 1.4 * u, fh(fTiny) + 0.6 * u)
+  local x = x0 + W - w - 3 * u
+  G.push("all")
+  G.setScissor(x0, y0, W, H)
+  for i, row in ipairs(rows) do
+    local y = y0 + 3 * u + (i - 1) * (h + 1.5 * u)
+    rrect("fill", x, y, w, h, 2.2 * u, C.panel, 0.72)
+    local goal, value = tonumber(row.goal), tonumber(row.progress) or 0
+    local frac = goal and goal > 0 and math.min(1, value / goal) or 0
+    local cx, cy = x + pad + r, y + h / 2
+    G.setLineWidth(math.max(1, r * 0.3))
+    color(C.faint, 0.8); G.circle("line", cx, cy, r)
+    color(accent)
+    if frac > 0 then G.arc("line", "open", cx, cy, r, -math.pi / 2, -math.pi / 2 + frac * math.pi * 2, 24) end
+    local tx = x + pad * 2 + r * 2
+    local right = x + w - pad
+    local count = ""
+    if goal and goal > 0 then
+      count = row.unit == "PCT" and ("%d%%"):format(value) or ("%d / %d"):format(value, goal)
+    end
+    local cw = count ~= "" and fTiny:getWidth(count) or 0
+    if count ~= "" then text(fTiny, count, right - cw, y + pad + (fh(fTitle) - fh(fTiny)) / 2, accent) end
+    text(fTitle, Modern.ellipsize(fTitle, row.title or "", right - (cw > 0 and cw + 2 * u or 0) - tx), tx, y + pad, C.text, 0.95)
+    if goal and goal > 0 then
+      bar(tx, y + pad + fh(fTitle) + 0.8 * u, right - tx, barH, frac, accent)
+    else
+      text(fTiny, Modern.ellipsize(fTiny, row.description or "", right - tx), tx, y + pad + fh(fTitle) + 0.3 * u, C.muted, 0.95)
+    end
+  end
+  G.pop()
+end
+
+-- ------------------ second screen
+-- The menu for a second display (ui/second.lua): drawn into a canvas of
+-- v.W x v.H pixels and touched rather than pressed, so it's bigger and
+-- simpler. Returns the tap targets: { x, y, w, h, action, arg }.
+-- v = { W, H, theme, game, gameTitle, totals, chips = { { label, active } },
+--       list, scroll, detail, pins, pinMax, flash, Browser, reveal,
+--       closeLabel }
+Modern.SECOND = { header = 92, chips = 50, row = 70, footer = 72 }
+
+function Modern.drawSecond(v)
+  G = love.graphics
+  Modern.apply(v.theme, "smooth")
+  onCanvas = true
+  local W, H, L = v.W, v.H, Modern.SECOND
+  local hits = {}
+  local accent = Modern.accent(v.game)
+  local fTitle, fBody, fSmall, fTiny = font(26), font(20), font(17), font(15)
+  local pad = 18
+  G.push("all")
+  G.origin()
+  G.clear(C.backdrop[1], C.backdrop[2], C.backdrop[3], 1)
+
+  -- header: game, totals, bar
+  text(fTitle, "Achievements", pad, 14, C.text)
+  if v.gameTitle then textRight(fSmall, v.gameTitle, W - pad, 14 + (fh(fTitle) - fh(fSmall)) / 2, accent) end
+  local t = v.totals
+  if t then
+    local s = ("%d / %d earned · %d / %d pts"):format(t.earned, t.total, t.points, t.maxPoints)
+    text(fSmall, s, pad, 14 + fh(fTitle) + 8, C.muted)
+    bar(pad, L.header - 12, W - pad * 2, 5, t.total > 0 and t.earned / t.total or 0, accent)
+  end
+
+  -- filter chips
+  local cy, cx = L.header + 6, pad
+  local chipH = L.chips - 14
+  for i, chip in ipairs(v.chips or {}) do
+    local cw = fSmall:getWidth(chip.label) + 26
+    if cx + cw > W - pad then break end
+    if chip.active then rrect("fill", cx, cy, cw, chipH, chipH / 2, accent)
+    else
+      G.setLineWidth(2); rrect("line", cx + 1, cy + 1, cw - 2, chipH - 2, chipH / 2, C.faint)
+    end
+    text(fSmall, chip.label, cx + 13, cy + (chipH - fh(fSmall)) / 2, chip.active and C.backdrop or C.muted)
+    hits[#hits + 1] = { x = cx, y = cy, w = cw, h = chipH, action = "filter", arg = i }
+    cx = cx + cw + 8
+  end
+
+  local top, bottom = L.header + L.chips, H - L.footer
+  local buttons = {}
+  if v.detail then
+    -- one achievement, big
+    local row = v.detail
+    local shown = v.Browser.display(row, v.reveal)
+    local y = top + 6
+    local rr = 22
+    icon(pad + rr, y + rr, rr, row)
+    local label, scolor = Modern.status(row)
+    text(fSmall, label, pad + rr * 2 + 14, y + 2, scolor)
+    text(fSmall, ("%d points"):format(row.points or 0), pad + rr * 2 + 14, y + 4 + fh(fSmall), C.muted)
+    y = y + rr * 2 + 14
+    local function para(f, str, c, gap)
+      for _, line in ipairs(wrap(f, str or "", W - pad * 2)) do
+        if y + fh(f) > bottom - 8 then return end
+        text(f, line, pad, y, c); y = y + fh(f) + 2
+      end
+      y = y + (gap or 0)
+    end
+    para(fTitle, shown.title, C.text, 6)
+    para(fBody, shown.description, C.muted, 12)
+    if not row.unlocked and row.goal and row.goal > 0 then
+      local count = ("%d / %d"):format(row.progress or 0, row.goal)
+      bar(pad, y + fh(fSmall) / 2 - 3, W - pad * 3 - fSmall:getWidth(count), 6, (row.progress or 0) / row.goal, C.progress)
+      textRight(fSmall, count, W - pad, y, C.muted)
+      y = y + fh(fSmall) + 14
+    end
+    if not row.reference then
+      para(fSmall, "How it's checked", C.text, 2)
+      para(fTiny, Modern.howChecked(row), C.faint, 8)
+      para(fTiny, Modern.origin(row), C.faint, 0)
+    end
+    if not (row.reference or row.unlocked or row.archived) then
+      buttons[#buttons + 1] = { label = row.pinned and "Unpin" or "Pin", action = "pin", accent = not row.pinned }
+    end
+    buttons[#buttons + 1] = { label = "Back", action = "back" }
+  else
+    -- the list
+    local rowH = L.row
+    G.setScissor(0, top, W, bottom - top)
+    if #v.list == 0 then
+      local msg = v.totals and "Nothing here yet" or "Load a save to see achievements"
+      text(fBody, msg, (W - fBody:getWidth(msg)) / 2, top + 40, C.faint)
+    end
+    for n, row in ipairs(v.list) do
+      local ry = top + (n - 1) * rowH - (v.scroll or 0)
+      if ry + rowH >= top and ry < bottom then
+        if row.pinned and not row.unlocked then
+          rrect("fill", pad - 8, ry + 3, W - pad * 2 + 16, rowH - 6, 10, C.raised)
+          rrect("fill", pad - 8, ry + 12, 4, rowH - 24, 2, accent)
+        end
+        local r = 15
+        icon(pad + r, ry + rowH / 2, r, row)
+        local tx = pad + r * 2 + 14
+        local shown = v.Browser.display(row, v.reveal)
+        local pts = (row.points or 0) > 0 and tostring(row.points) or ""
+        local ptsW = pts ~= "" and fSmall:getWidth(pts) + 10 or 0
+        text(fBody, Modern.ellipsize(fBody, shown.title, W - pad - tx - ptsW), tx, ry + 10,
+             row.unlocked and C.text or C.muted)
+        if pts ~= "" then textRight(fSmall, pts, W - pad, ry + 12, C.faint) end
+        local sy = ry + 14 + fh(fBody)
+        local subW = W - pad - tx
+        if not row.unlocked and row.goal and (row.progress or 0) > 0 then
+          local count = ("%d / %d"):format(row.progress, row.goal)
+          local cw = fTiny:getWidth(count)
+          bar(tx, sy + fh(fTiny) / 2 - 2, subW - cw - 12, 4, row.progress / row.goal, C.progress)
+          textRight(fTiny, count, W - pad, sy, C.muted)
+        else
+          local sub
+          if row.unlocked and row.at then sub = "Earned " .. (dateOf(row.at) or "")
+          elseif row.pinned then sub = "Pinned · " .. tostring(shown.description or "")
+          elseif row.raType == "missable" then sub = "Missable · " .. tostring(shown.description or "")
+          else sub = shown.description end
+          text(fTiny, Modern.ellipsize(fTiny, sub or "", subW), tx, sy, C.faint)
+        end
+        local hy, hh = math.max(ry, top), math.min(ry + rowH, bottom) - math.max(ry, top)
+        if hh > 8 then hits[#hits + 1] = { x = 0, y = hy, w = W, h = hh, action = "open", arg = n } end
+      end
+    end
+    G.setScissor()
+    if #v.list * rowH > bottom - top then
+      local trackH = bottom - top
+      local thumbH = math.max(30, trackH * trackH / (#v.list * rowH))
+      local maxScroll = #v.list * rowH - trackH
+      local thumbY = top + (trackH - thumbH) * ((v.scroll or 0) / math.max(1, maxScroll))
+      rrect("fill", W - 6, thumbY, 3, thumbH, 1.5, C.faint, 0.7)
+    end
+    buttons[#buttons + 1] = { label = ("Pinned %d/%d"):format(v.pins or 0, v.pinMax or 3), action = "pinned",
+                              accent = v.pinnedOnly }
+  end
+  buttons[#buttons + 1] = { label = v.closeLabel or "Close", action = "close" }
+
+  -- footer buttons, right to left from the edge
+  local fy = H - L.footer + 12
+  local bh = L.footer - 24
+  rrect("fill", 0, H - L.footer, W, L.footer, 0, C.panel)
+  local bx = W - pad
+  for i = #buttons, 1, -1 do
+    local b = buttons[i]
+    local bw = math.max(96, fBody:getWidth(b.label) + 34)
+    bx = bx - bw
+    if b.accent then rrect("fill", bx, fy, bw, bh, 12, accent)
+    else rrect("fill", bx, fy, bw, bh, 12, C.raised) end
+    text(fBody, b.label, bx + (bw - fBody:getWidth(b.label)) / 2, fy + (bh - fh(fBody)) / 2,
+         b.accent and C.backdrop or C.text)
+    hits[#hits + 1] = { x = bx, y = fy, w = bw, h = bh, action = b.action }
+    bx = bx - 10
+  end
+  if v.flash then text(fSmall, v.flash, pad, fy + (bh - fh(fSmall)) / 2, accent) end
+
+  G.pop()
+  onCanvas = false
+  return hits
+end
+
 -- ------------------ screen
 -- deps: { mod, engine, Browser, Share, game }
 function Modern.newScreen(deps)
@@ -537,6 +777,10 @@ function Modern.newScreen(deps)
 
   function self:update(dt)
     dt = tonumber(dt) or 1 / 60
+    if st.flashFor then
+      st.flashFor = st.flashFor - dt
+      if st.flashFor <= 0 then st.flash, st.flashFor = nil, nil end
+    end
     local input = game.input
     if not input then return end
     -- Close a frame after B or START, and skip the frame we opened on, so
@@ -553,7 +797,18 @@ function Modern.newScreen(deps)
       elseif pressed("left") and Share then st.modal = math.max(1, st.modal - 1) end
       return
     end
-    if pressed("b") or pressed("start") then st.closing = true return end
+    if pressed("b") then st.closing = true return end
+    if pressed("start") then
+      local row = st.list[st.index]
+      local msg = Browser.togglePin(engine, row)
+      if msg then
+        st.flash, st.flashFor = msg:sub(1, 1) .. msg:sub(2):lower(), 1.5
+        local key = row.key
+        rebuild()
+        for i, r in ipairs(st.list) do if r.key == key then st.index = i end end
+      end
+      return
+    end
     if pressed("select") then
       st.modal = Share and 1 or 3
       if st.modal == 1 then pcall(engine.dispatch, engine, "ui.card_opened", {}) end
@@ -711,6 +966,11 @@ function Modern.newScreen(deps)
       end
       local r = 3.6 * u
       icon(lx + 4 * u + r, ry + (rowH - 1.2 * u) / 2, r, row)
+      if row.pinned and not row.unlocked then
+        -- a pin: an accent dot on the icon's shoulder
+        color(C.panel); G.circle("fill", lx + 4 * u + 2 * r - 0.4 * u, ry + (rowH - 1.2 * u) / 2 - r + 0.4 * u, 1.7 * u)
+        color(accent); G.circle("fill", lx + 4 * u + 2 * r - 0.4 * u, ry + (rowH - 1.2 * u) / 2 - r + 0.4 * u, 1.2 * u)
+      end
       local tx = lx + 6 * u + 2 * r
       local shown = Browser.display(row, reveal)
       local pts = (row.points or 0) > 0 and tostring(row.points) or ""
@@ -729,6 +989,7 @@ function Modern.newScreen(deps)
         local sub
         if row.unlocked and row.at then sub = "Earned " .. (dateOf(row.at) or "")
         elseif row.archived then sub = "Archived · mod not loaded"
+        elseif row.pinned then sub = "Pinned · " .. tostring(shown.description or "")
         elseif row.raType == "missable" then sub = "Missable · " .. tostring(shown.description or "")
         else sub = shown.description end
         text(fTiny, Modern.ellipsize(fTiny, sub, subW), tx, sy, C.faint)
@@ -784,20 +1045,7 @@ function Modern.newScreen(deps)
         if row.unlocked and row.at then para(fTiny, "Earned " .. (dateOf(row.at) or ""), C.faint, 1 * u) end
       else
         para(fBody, "How it's checked", C.text, 2.5 * u)
-        local how
-        if row.listed then
-          how = "Part of " .. tostring(row.listTitle or "this cart") .. "'s own list, checked by the "
-            .. tostring(row.providerName or row.provider) .. " mod." .. (row.note and ("\n\n" .. row.note) or "")
-        elseif row.source ~= "core" then how = "Checked by the " .. tostring(row.providerName or row.provider) .. " mod."
-        elseif row.fidelity == "interpretation" then
-          how = "A close local version of the RetroAchievements goal, adapted for Gen1Recomp." .. (row.note and ("\n\n" .. row.note) or "")
-        elseif row.official and row.note then
-          -- rules first for challenges, since they're what the player needs
-          how = row.note .. "\n\nChecked by this mod with its own logic."
-        elseif row.official then
-          how = "Checked by this mod from your save and gameplay, with its own logic written for Gen1Recomp."
-        else how = "A bonus achievement made for this mod." .. (row.note and ("\n\n" .. row.note) or "") end
-        para(fSmall, how, C.muted, 3.5 * u)
+        para(fSmall, Modern.howChecked(row), C.muted, 3.5 * u)
         if row.official and row.raId then
           para(fTiny, ("RetroAchievements game %s, achievement %s"):format(tostring(row.raGameId or "?"), tostring(row.raId)), C.faint, 1 * u)
         end
@@ -822,8 +1070,16 @@ function Modern.newScreen(deps)
     end
     hint("leftright", "Filter")
     hint("updown", "Move")
+    local sel = st.list[st.index]
+    if sel and not (sel.reference or sel.unlocked or sel.archived) then
+      hint("START", sel.pinned and "Unpin" or "Pin")
+    end
     if Share then hint("SELECT", "Leaderboard") end
     hint("B", "Back")
+    if st.flash then
+      local fw = fTiny:getWidth(st.flash)
+      text(fTiny, st.flash, x0 + W - fw - 6 * u, fy + 0.6 * u, accent)
+    end
 
     if st.modal then self:drawModal(x0, y0, W, H, u, accent, fonts) end
     G.pop()

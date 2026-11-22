@@ -107,7 +107,8 @@ function Text.drawRight(Font, s, rightTx, ty)
 end
 
 -- A status mark that doesn't rely on colour: filled square for earned,
--- hollow for locked, hollow with a slash for archived, a dot for reference.
+-- hollow for locked, hollow with a slash for archived, a dot for reference,
+-- hollow with a dot inside for pinned.
 function Text.mark(kind, tx, ty)
   local x, y = tx * 8 + 1, ty * 8 + 1
   love.graphics.setColor(0, 0, 0, 1)
@@ -117,6 +118,9 @@ function Text.mark(kind, tx, ty)
     love.graphics.rectangle("line", x + 0.5, y + 0.5, 5, 5)
     love.graphics.line(x, y + 6, x + 6, y)
   elseif kind == "reference" then
+    love.graphics.rectangle("fill", x + 2, y + 2, 2, 2)
+  elseif kind == "pinned" then
+    love.graphics.rectangle("line", x + 0.5, y + 0.5, 5, 5)
     love.graphics.rectangle("fill", x + 2, y + 2, 2, 2)
   else
     love.graphics.rectangle("line", x + 0.5, y + 0.5, 5, 5)
