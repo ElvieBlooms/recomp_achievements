@@ -1876,6 +1876,26 @@ test("main mod alone never touches the network", function()
 end)
 
 -- ------------------ pins, tracker, second screen
+test("popups sit in the part of the game that's on screen", function()
+  local Modern = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/modern.lua"))()
+  -- no view: the whole game rectangle
+  local x, y, w, h, u = Modern.visible({ gameX = 100, gameY = 0, gameWidth = 800, gameHeight = 720 })
+  check(x == 100 and y == 0 and w == 800 and h == 720 and u == 5, "game rect as is")
+  -- trimmed at the sides, as on the AYN Thor: the view, at the game's scale
+  x, y, w, h, u = Modern.visible({ gameX = 100, gameY = 0, gameWidth = 800, gameHeight = 720,
+                                   viewX = 140, viewY = 0, viewWidth = 720, viewHeight = 720 })
+  check(x == 140 and w == 720 and h == 720, "the visible part")
+  eq(u, 5, "scale still from the game")
+  -- a view wider than the game (widescreen): stays on the game
+  x, y, w, h = Modern.visible({ gameX = 100, gameY = 0, gameWidth = 800, gameHeight = 720,
+                                viewX = 0, viewY = 0, viewWidth = 1000, viewHeight = 720 })
+  check(x == 100 and w == 800, "kept to the game")
+  -- nonsense view ignored
+  x, y, w, h = Modern.visible({ gameX = 100, gameY = 0, gameWidth = 800, gameHeight = 720,
+                                viewX = 2000, viewY = 0, viewWidth = 10, viewHeight = 720 })
+  check(x == 100 and w == 800, "no overlap, game rect")
+end)
+
 test("pins: START pins in the menu, top of the list, tracker, unpinned on unlock", function()
   local env = H.boot({ "recomp_achievements" }, { modern = true })
   env:newGame()

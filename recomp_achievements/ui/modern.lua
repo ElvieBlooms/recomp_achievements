@@ -432,6 +432,24 @@ function Modern.unit(vp, W, H)
 end
 
 -- ------------------ popups
+-- Where popups go: the part of the game that's actually on screen. The
+-- engine can trim the game's rectangle to fit (seen on the AYN Thor), and
+-- then hands render.hud both: gameX.. is the whole rectangle and viewX.. the
+-- part you see. Its own corner UI sits in the view, so ours does too. The
+-- scale u still comes from the whole rectangle, so text matches the game.
+function Modern.visible(vp)
+  local x, y = vp.gameX or 0, vp.gameY or 0
+  local w, h = vp.gameWidth or 160, vp.gameHeight or 144
+  local u = math.min(w / 160, h / 144)
+  local vx, vy, vw, vh = tonumber(vp.viewX), tonumber(vp.viewY), tonumber(vp.viewWidth), tonumber(vp.viewHeight)
+  if vx and vy and vw and vh and vw > 0 and vh > 0 then
+    local x2, y2 = math.min(x + w, vx + vw), math.min(y + h, vy + vh)
+    local nx, ny = math.max(x, vx), math.max(y, vy)
+    if x2 - nx > 0 and y2 - ny > 0 then x, y, w, h = nx, ny, x2 - nx, y2 - ny end
+  end
+  return x, y, w, h, u
+end
+
 -- Unlock popups in the menu's style; ui/toast.lua decides when.
 -- c: { kind = "unlock" | "summary" | "more", title, points }
 -- shown: how far it has slid in, 0..1
@@ -439,9 +457,7 @@ end
 --         font = the MENU FONT option }
 function Modern.drawToast(c, shown, vp, opts)
   G = love.graphics
-  local x0, y0 = vp.gameX or 0, vp.gameY or 0
-  local W, H = vp.gameWidth or 160, vp.gameHeight or 144
-  local u = math.min(W / 160, H / 144)
+  local x0, y0, W, H, u = Modern.visible(vp)
   Modern.apply(opts.theme, opts.font, u)
   local accent = Modern.accent(opts.game)
   local heading = c.kind == "summary" and "Welcome back" or c.kind == "more" and "More achievements"
@@ -500,9 +516,7 @@ end
 -- "3 / 50" and a bar, for a moment after an achievement moves along.
 function Modern.drawProgress(c, shown, vp, opts)
   G = love.graphics
-  local x0, y0 = vp.gameX or 0, vp.gameY or 0
-  local W, H = vp.gameWidth or 160, vp.gameHeight or 144
-  local u = math.min(W / 160, H / 144)
+  local x0, y0, W, H, u = Modern.visible(vp)
   Modern.apply(opts.theme, opts.font, u)
   local accent = Modern.accent(opts.game)
   local ease = 1 - (1 - shown) * (1 - shown)
@@ -539,9 +553,7 @@ end
 function Modern.drawTracker(rows, vp, opts)
   if not rows or #rows == 0 then return end
   G = love.graphics
-  local x0, y0 = vp.gameX or 0, vp.gameY or 0
-  local W, H = vp.gameWidth or 160, vp.gameHeight or 144
-  local u = math.min(W / 160, H / 144)
+  local x0, y0, W, H, u = Modern.visible(vp)
   Modern.apply(opts.theme, opts.font, u)
   local accent = Modern.accent(opts.game)
   local fTitle, fTiny = font(3.9 * u), font(3.3 * u)

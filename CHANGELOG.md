@@ -20,6 +20,11 @@ Pin it, track it, put it on the other screen.
 ### Changed
 - START in the menu pins instead of closing it. B still closes.
 
+### Fixed
+- Popups, progress notes and the tracker stay on the game where the engine
+  trims it to fit the screen (seen on the AYN Thor), instead of hanging off
+  its right edge.
+
 ### Upgrading
 - Update both zips together if you use Recomp Achievements Online.
 
