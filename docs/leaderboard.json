@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-22T22:59:42Z",
+ "updated": "2026-11-22T23:07:26Z",
  "banned": [],
  "games": {
   "red": {
@@ -1462,6 +1462,44 @@
      "src": "online:7541d6b81d5f75af592fd77690f1b7dc"
     },
     {
+     "name": "JOtt",
+     "points": 209,
+     "earned": 27,
+     "sources": {
+      "bonus": {
+       "earned": 1,
+       "total": 1,
+       "points": 1
+      },
+      "emerald_lens": {
+       "earned": 9,
+       "total": 10,
+       "points": 68
+      },
+      "max_raids": {
+       "earned": 9,
+       "total": 14,
+       "points": 100
+      },
+      "name_tags": {
+       "earned": 7,
+       "total": 13,
+       "points": 35
+      },
+      "national_dex_gen3": {
+       "earned": 1,
+       "total": 33,
+       "points": 5
+      }
+     },
+     "saveId": "RQ1SP6",
+     "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
+     "via": "online",
+     "date": "2026-11-22T23:07:26Z",
+     "first": "2026-11-07T17:32:32Z",
+     "src": "online:afa684f8bc5f1471024d000e56174a33"
+    },
+    {
      "name": "Chibi",
      "points": 205,
      "earned": 26,
@@ -1498,44 +1536,6 @@
      "date": "2026-11-19T20:14:10Z",
      "first": "2026-11-19T16:31:55Z",
      "src": "online:e50c2e6c434dc93119483a5647a9a01e"
-    },
-    {
-     "name": "JOtt",
-     "points": 114,
-     "earned": 19,
-     "sources": {
-      "bonus": {
-       "earned": 1,
-       "total": 1,
-       "points": 1
-      },
-      "emerald_lens": {
-       "earned": 9,
-       "total": 10,
-       "points": 68
-      },
-      "facets": {
-       "earned": 1,
-       "total": 9,
-       "points": 5
-      },
-      "name_tags": {
-       "earned": 7,
-       "total": 13,
-       "points": 35
-      },
-      "national_dex_gen3": {
-       "earned": 1,
-       "total": 33,
-       "points": 5
-      }
-     },
-     "saveId": "RQ1SP6",
-     "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
-     "via": "online",
-     "date": "2026-11-22T22:59:42Z",
-     "first": "2026-11-07T17:32:32Z",
-     "src": "online:afa684f8bc5f1471024d000e56174a33"
     },
     {
      "name": "RED",
