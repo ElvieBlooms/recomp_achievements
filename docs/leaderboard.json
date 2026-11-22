@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-22T08:18:47Z",
+ "updated": "2026-11-22T08:23:04Z",
  "banned": [],
  "games": {
   "red": {
@@ -335,6 +335,18 @@
   "firered": {
    "entries": [
     {
+     "name": "JOtt",
+     "points": 206,
+     "earned": 29,
+     "saveId": "RQ1SP6",
+     "time": 1070,
+     "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
+     "via": "online",
+     "date": "2026-11-22T08:23:04Z",
+     "first": "2026-11-07T17:32:28Z",
+     "src": "online:afa684f8bc5f1471024d000e56174a33"
+    },
+    {
      "name": "RED",
      "points": 152,
      "earned": 21,
@@ -345,18 +357,6 @@
      "date": "2026-11-21T12:59:32Z",
      "first": "2026-11-14T08:23:54Z",
      "src": "online:9e978cee45b76d21ece4c7ecdeb3054d"
-    },
-    {
-     "name": "JOtt",
-     "points": 151,
-     "earned": 27,
-     "saveId": "RQ1SP6",
-     "time": 1070,
-     "owner": "discord:4ae547ccf43d6e7d14fddfdc619986b2",
-     "via": "online",
-     "date": "2026-11-22T08:18:47Z",
-     "first": "2026-11-07T17:32:28Z",
-     "src": "online:afa684f8bc5f1471024d000e56174a33"
     },
     {
      "name": "Chibi",
