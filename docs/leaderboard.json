@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-23T06:21:27Z",
+ "updated": "2026-11-23T13:38:14Z",
  "banned": [],
  "games": {
   "red": {
@@ -1077,17 +1077,12 @@
        "earned": 6,
        "total": 17,
        "points": 12
-      },
-      "facets": {
-       "earned": 0,
-       "total": 10,
-       "points": 0
       }
      },
      "saveId": "2Z93NV",
      "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
      "via": "online",
-     "date": "2026-11-22T23:39:59Z",
+     "date": "2026-11-23T13:38:14Z",
      "first": "2026-11-12T11:35:18Z",
      "src": "online:161ca197d233c27dd67382bf65a5e8de"
     },
