@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-23T00:51:46Z",
+ "updated": "2026-11-23T04:32:49Z",
  "banned": [],
  "games": {
   "red": {
@@ -8,6 +8,18 @@
    "maxPoints": 745,
    "total": 93,
    "entries": [
+    {
+     "name": "ASH",
+     "points": 218,
+     "earned": 26,
+     "saveId": "3F8KXX",
+     "time": 1811,
+     "owner": "online:9444ed5a42d2d9834f306cdac0a0b317",
+     "via": "online",
+     "date": "2026-11-23T04:32:49Z",
+     "first": "2026-11-23T04:32:49Z",
+     "src": "online:9444ed5a42d2d9834f306cdac0a0b317"
+    },
     {
      "name": "RED",
      "points": 28,
