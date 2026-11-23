@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-23T04:32:49Z",
+ "updated": "2026-11-23T04:32:52Z",
  "banned": [],
  "games": {
   "red": {
@@ -666,6 +666,39 @@
  "extra": {
   "red": {
    "entries": [
+    {
+     "name": "ASH",
+     "points": 134,
+     "earned": 12,
+     "sources": {
+      "bonus": {
+       "earned": 10,
+       "total": 16,
+       "points": 127
+      },
+      "emerald_lens": {
+       "earned": 2,
+       "total": 9,
+       "points": 7
+      },
+      "facets": {
+       "earned": 0,
+       "total": 11,
+       "points": 0
+      },
+      "name_tags": {
+       "earned": 0,
+       "total": 13,
+       "points": 0
+      }
+     },
+     "saveId": "3F8KXX",
+     "owner": "online:9444ed5a42d2d9834f306cdac0a0b317",
+     "via": "online",
+     "date": "2026-11-23T04:32:52Z",
+     "first": "2026-11-23T04:32:52Z",
+     "src": "online:9444ed5a42d2d9834f306cdac0a0b317"
+    },
     {
      "name": "RED",
      "points": 16,
