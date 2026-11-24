@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-24T01:33:03Z",
+ "updated": "2026-11-24T18:05:49Z",
  "banned": [],
  "games": {
   "red": {
@@ -369,6 +369,18 @@
      "date": "2026-11-21T12:59:32Z",
      "first": "2026-11-14T08:23:54Z",
      "src": "online:9e978cee45b76d21ece4c7ecdeb3054d"
+    },
+    {
+     "name": "Jacob",
+     "points": 19,
+     "earned": 5,
+     "saveId": "19NA0S",
+     "time": 555,
+     "owner": "online:d34428a275f02a4b1382f4d3c46317f5",
+     "via": "online",
+     "date": "2026-11-24T18:05:49Z",
+     "first": "2026-11-24T18:05:49Z",
+     "src": "online:d34428a275f02a4b1382f4d3c46317f5"
     },
     {
      "name": "Chibi",
