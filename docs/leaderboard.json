@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-24T18:05:49Z",
+ "updated": "2026-11-24T18:31:41Z",
  "banned": [],
  "games": {
   "red": {
@@ -1593,6 +1593,39 @@
      "date": "2026-11-19T20:14:10Z",
      "first": "2026-11-19T16:31:55Z",
      "src": "online:e50c2e6c434dc93119483a5647a9a01e"
+    },
+    {
+     "name": "Red",
+     "points": 23,
+     "earned": 4,
+     "sources": {
+      "bonus": {
+       "earned": 0,
+       "total": 1,
+       "points": 0
+      },
+      "emerald_lens": {
+       "earned": 4,
+       "total": 10,
+       "points": 23
+      },
+      "facets": {
+       "earned": 0,
+       "total": 9,
+       "points": 0
+      },
+      "national_dex_gen3": {
+       "earned": 0,
+       "total": 33,
+       "points": 0
+      }
+     },
+     "saveId": "CG2JP8",
+     "owner": "online:550ae075e3617e229e3b1f0f2ae4d488",
+     "via": "online",
+     "date": "2026-11-24T18:31:41Z",
+     "first": "2026-11-24T18:31:41Z",
+     "src": "online:550ae075e3617e229e3b1f0f2ae4d488"
     },
     {
      "name": "RED",
