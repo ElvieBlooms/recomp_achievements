@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-25T06:13:34Z",
+ "updated": "2026-11-25T13:21:08Z",
  "banned": [],
  "games": {
   "red": {
@@ -2059,13 +2059,13 @@
    "entries": [
     {
      "name": "ELVIE",
-     "points": 87,
-     "earned": 16,
+     "points": 102,
+     "earned": 18,
      "sources": {
       "bonus": {
-       "earned": 3,
+       "earned": 4,
        "total": 16,
-       "points": 6
+       "points": 11
       },
       "emerald_lens": {
        "earned": 6,
@@ -2073,9 +2073,9 @@
        "points": 43
       },
       "facets": {
-       "earned": 2,
+       "earned": 3,
        "total": 12,
-       "points": 25
+       "points": 35
       },
       "name_tags": {
        "earned": 5,
@@ -2086,7 +2086,7 @@
      "saveId": "2JJB78",
      "owner": "online:7d2419d7ed1f98b0b5b79ef297105f7e",
      "via": "online",
-     "date": "2026-11-14T21:32:22Z",
+     "date": "2026-11-25T13:21:08Z",
      "first": "2026-11-14T13:26:48Z",
      "src": "online:7d2419d7ed1f98b0b5b79ef297105f7e"
     },
