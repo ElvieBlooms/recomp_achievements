@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-25T17:18:08Z",
+ "updated": "2026-11-25T17:33:43Z",
  "banned": [],
  "games": {
   "red": {
@@ -1505,6 +1505,29 @@
      "date": "2026-11-20T04:55:21Z",
      "first": "2026-11-20T04:55:21Z",
      "src": "online:8e372eb9c2571905ad47424fa05560d2"
+    },
+    {
+     "name": "Gold",
+     "points": 7,
+     "earned": 2,
+     "sources": {
+      "bonus": {
+       "earned": 2,
+       "total": 17,
+       "points": 7
+      },
+      "facets": {
+       "earned": 0,
+       "total": 10,
+       "points": 0
+      }
+     },
+     "saveId": "KB8VZS",
+     "owner": "online:c3b1b3d7b2897bf88829ac8c0f55a5d1",
+     "via": "online",
+     "date": "2026-11-25T17:33:43Z",
+     "first": "2026-11-25T17:33:43Z",
+     "src": "online:c3b1b3d7b2897bf88829ac8c0f55a5d1"
     },
     {
      "name": "AIDAN",
