@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-25T17:18:02Z",
+ "updated": "2026-11-25T17:18:08Z",
  "banned": [],
  "games": {
   "red": {
@@ -188,6 +188,18 @@
      "via": "discord",
      "date": "2026-11-07T01:48:36Z",
      "first": "2026-11-07T01:48:36Z"
+    },
+    {
+     "name": "Theeohn",
+     "points": 2,
+     "earned": 2,
+     "saveId": "6YRTHX",
+     "time": 197,
+     "owner": "online:aec86eda91a7becdea09375e4a838e68",
+     "via": "online",
+     "date": "2026-11-25T17:18:08Z",
+     "first": "2026-11-25T17:18:08Z",
+     "src": "online:aec86eda91a7becdea09375e4a838e68"
     },
     {
      "name": "WES",
