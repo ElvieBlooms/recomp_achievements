@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-25T05:26:51Z",
+ "updated": "2026-11-25T06:06:55Z",
  "banned": [],
  "games": {
   "red": {
@@ -503,6 +503,18 @@
      "date": "2026-11-23T00:10:42Z",
      "first": "2026-11-15T13:02:26Z",
      "src": "online:c16850d1cab56b7a6718b472c11dfb4b"
+    },
+    {
+     "name": "PAU",
+     "points": 256,
+     "earned": 54,
+     "saveId": "XPG8J7",
+     "time": 2766,
+     "owner": "online:5841326ee34e14e4e6974e800da044cf",
+     "via": "online",
+     "date": "2026-11-25T06:06:55Z",
+     "first": "2026-11-25T06:06:55Z",
+     "src": "online:5841326ee34e14e4e6974e800da044cf"
     },
     {
      "name": "ANTHONY",
