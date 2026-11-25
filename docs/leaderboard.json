@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-25T13:41:17Z",
+ "updated": "2026-11-25T13:50:21Z",
  "banned": [],
  "games": {
   "red": {
@@ -143,6 +143,18 @@
      "src": "online:90711ee70fa3196ce60165b2111e46cf"
     },
     {
+     "name": "eightbt",
+     "points": 3,
+     "earned": 3,
+     "saveId": "NT4G1Y",
+     "time": 129,
+     "owner": "online:7b402e0949eb5d24d29968bd6fec9c80",
+     "via": "online",
+     "date": "2026-11-25T13:50:21Z",
+     "first": "2026-11-25T02:05:23Z",
+     "src": "online:7b402e0949eb5d24d29968bd6fec9c80"
+    },
+    {
      "name": "Ryu",
      "points": 2,
      "earned": 2,
@@ -176,18 +188,6 @@
      "via": "discord",
      "date": "2026-11-07T01:48:36Z",
      "first": "2026-11-07T01:48:36Z"
-    },
-    {
-     "name": "eightbt",
-     "points": 2,
-     "earned": 2,
-     "saveId": "NT4G1Y",
-     "time": 123,
-     "owner": "online:7b402e0949eb5d24d29968bd6fec9c80",
-     "via": "online",
-     "date": "2026-11-25T02:05:23Z",
-     "first": "2026-11-25T02:05:23Z",
-     "src": "online:7b402e0949eb5d24d29968bd6fec9c80"
     },
     {
      "name": "WES",
