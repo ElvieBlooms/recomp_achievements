@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-26T15:21:13Z",
+ "updated": "2026-11-26T15:36:28Z",
  "banned": [],
  "games": {
   "red": {
@@ -108,13 +108,13 @@
    "entries": [
     {
      "name": "Jake",
-     "points": 207,
-     "earned": 28,
+     "points": 208,
+     "earned": 29,
      "saveId": "9GZ8XA",
-     "time": 2496,
+     "time": 2512,
      "owner": "online:7a065edaa737e34af5cb9c53b910293e",
      "via": "online",
-     "date": "2026-11-26T07:05:15Z",
+     "date": "2026-11-26T15:36:28Z",
      "first": "2026-11-26T07:01:29Z",
      "src": "online:7a065edaa737e34af5cb9c53b910293e"
     },
