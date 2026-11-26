@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-26T04:35:04Z",
+ "updated": "2026-11-26T07:01:21Z",
  "banned": [],
  "games": {
   "red": {
@@ -983,6 +983,24 @@
      "date": "2026-11-14T10:38:02Z",
      "first": "2026-11-12T14:03:47Z",
      "src": "online:2d3a62e805866ad0626db202e81e3930"
+    },
+    {
+     "name": "Jake",
+     "points": 72,
+     "earned": 9,
+     "sources": {
+      "bonus": {
+       "earned": 9,
+       "total": 16,
+       "points": 72
+      }
+     },
+     "saveId": "9GZ8XA",
+     "owner": "online:7a065edaa737e34af5cb9c53b910293e",
+     "via": "online",
+     "date": "2026-11-26T07:01:21Z",
+     "first": "2026-11-26T07:01:21Z",
+     "src": "online:7a065edaa737e34af5cb9c53b910293e"
     },
     {
      "name": "FALLON",
