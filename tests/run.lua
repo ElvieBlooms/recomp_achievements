@@ -2145,6 +2145,29 @@ test("second screen: taking turns with Field Notes (Screen Share)", function()
   check(not off, "display not turned off under us")
 end)
 
+test("Screen Share: a power-off owed during Galar Rising's raid is paid after", function()
+  local ScreenShare = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/screenshare.lua"))()
+  local wants, padOn = true, false
+  local exports = { max_raids = { secondScreenShown = function() return padOn end } }
+  local share = ScreenShare.new({ mod = { find = function(id) return exports[id] and { exports = exports[id] } end },
+    id = "recomp_achievements", name = "Trophies", legacy = { "max_raids" },
+    shown = function() return wants end })
+  local power = {}
+  local screen = { setEnabled = function(on) power[#power + 1] = on end }
+  share:frame(screen, false)
+  eq(power[#power], true, "on for us")
+  padOn = true
+  share:frame(screen, false)
+  wants = false -- SECOND SCREEN off mid-raid
+  share:frame(screen, false)
+  eq(#power, 1, "nothing touched under the pad")
+  padOn = false
+  share:frame(screen, false)
+  eq(power[#power], false, "off once the raid is over")
+  share:frame(screen, false)
+  eq(#power, 2, "and only once")
+end)
+
 test("second screen: Extras chip, thick text kept to the canvas", function()
   local Browser = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/browser.lua"))()
   local rows = {

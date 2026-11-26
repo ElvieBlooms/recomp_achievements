@@ -157,23 +157,27 @@ end
 -- and whether it has only just got it back (repaint now).
 function M:frame(screen, managed)
   local want = self:shown()
-  if want and self:legacyHolds() then
-    -- not a frame, a touch or a power change until they're done
+  if (want or self.owesOff) and self:legacyHolds() then
+    -- not a frame, a touch or a power change until they're done. If this
+    -- mod had the screen, it still owes the display a power-off should it
+    -- close meanwhile: done once they let go.
     self.held = true
-    if self.front then self.front, self.away = false, true end
+    if self.front then self.front, self.away, self.owesOff = false, true, true end
     return false, false
   end
   self.held = false
+  if want then self.owesOff = false end
   local front = want and not self:behind()
   local power = type(screen) == "table" and not managed and screen.setEnabled or nil
   local regained = false
   if front and not self.front then
     regained = true
     if power then pcall(power, true) end
-  elseif not front and self.front and not want and power and not self:anyPeerShown() then
+  elseif not front and (self.front or self.owesOff) and not want and power and not self:anyPeerShown() then
     -- closed, and nobody else is waiting for the screen
     pcall(power, false)
   end
+  if not want then self.owesOff = false end
   self.front = front
   if not front then return false, false end
   -- NaviPlay's gate hands us a stand-in bridge that reports the screen gone

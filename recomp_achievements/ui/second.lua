@@ -157,10 +157,16 @@ end
 -- ------------------ open and close
 function Second:show()
   self.open, self.dirty = true, true
-  if self.viaGear then self.gearOpen = true end
   -- in front of anything else on the screen
   if self.share then self.share:claim() end
   if self.hook and (self.viaGear or self.mod.options:get("secondScreen") == "on") then self:hook() end
+end
+
+-- Another mod's button for us (Screen Share). With Gear that also opens our
+-- app; TROPHIES on the main screen doesn't, so it never takes Gear's screen.
+function Second:bringUp()
+  if self.viaGear then self.gearOpen = true end
+  self:show()
 end
 
 function Second:close()
@@ -269,7 +275,7 @@ function Second.install(o)
     mod = mod, id = "recomp_achievements", name = "Trophies", legacy = Second.OTHERS,
     shown = function() return self:up() == true end,
     available = function() return self.viaGear or mod.options:get("secondScreen") == "on" end,
-    open = function() self:show() end,
+    open = function() self:bringUp() end,
   })
   mod.exports.secondScreen = self.share.exports
   -- Kanto Gear: an app in its Silph Store instead of the option
