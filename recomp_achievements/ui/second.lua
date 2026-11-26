@@ -9,12 +9,15 @@
 --     CLOSE hands the screen back to Gear;
 --   * otherwise SECOND SCREEN: ON shows it, CLOSE hides it, and opening
 --     TROPHIES on the main screen brings it back.
--- The bridge has no way to share, so two mods showing at once take turns
--- frame by frame. Gear is what keeps them apart, and NaviPlay's gate: it
--- wraps render.compose outside us and hands us a stand-in bridge that drops
--- our frames while NaviPlay is on the screen. Galar Rising pushes its raid
--- pad straight to the bridge instead, and says so with secondScreenShown();
--- while it does we stay off the screen entirely (Second.OTHERS).
+-- The bridge has no way to share, so mods that use it take turns through
+-- ui/screenshare.lua (Screen Share), which Field Notes carries too: the one
+-- opened last is in front and the rest wait behind it, and each shows a
+-- button for the others so you can switch on the screen itself. NaviPlay's
+-- gate still works as before: it wraps render.compose outside us and hands
+-- us a stand-in bridge that drops our frames while NaviPlay is on the
+-- screen. Galar Rising pushes its raid pad straight to the bridge, and says
+-- so with secondScreenShown(); while it does we stay off the screen
+-- entirely (Second.OTHERS).
 -- ------------------
 
 local Second = {}
@@ -64,7 +67,7 @@ function Second.new(o)
   local self = {
     mod = o.mod, engine = o.engine, Browser = o.Browser, Modern = o.Modern,
     chip = 1, scroll = 0, detail = nil, hits = {}, dirty = true, nextPush = 0,
-    open = false, gearOpen = false, viaGear = false, wasUp = false,
+    open = false, gearOpen = false, viaGear = false,
     flash = nil, flashUntil = 0, touch = nil,
   }
   return setmetatable(self, { __index = Second })
@@ -78,21 +81,6 @@ end
 function Second:up()
   if self.viaGear then return self.gearOpen end
   return self.mod.options:get("secondScreen") == "on" and self.open
-end
-
--- true while another mod has the screen (Second.OTHERS)
-function Second:othersHold()
-  local find = self.mod.find
-  if not find then return false end
-  for _, id in ipairs(Second.OTHERS) do
-    local other = find(id)
-    local fn = other and type(other.exports) == "table" and other.exports.secondScreenShown
-    if type(fn) == "function" then
-      local ok, on = pcall(fn)
-      if ok and on == true then return true end
-    end
-  end
-  return false
 end
 
 function Second:rows()
@@ -138,6 +126,10 @@ function Second:tap(x, y)
   elseif hit.action == "pinned" then
     self.chip = self.chip == #Second.CHIPS and 1 or #Second.CHIPS
     self.scroll = 0
+  elseif hit.action == "peer" then
+    -- hand the screen to another mod; we wait behind it
+    local peer = self.peers and self.peers[hit.arg]
+    if peer then pcall(peer.open) end
   elseif hit.action == "close" then
     self:close()
   end
@@ -165,6 +157,9 @@ end
 -- ------------------ open and close
 function Second:show()
   self.open, self.dirty = true, true
+  if self.viaGear then self.gearOpen = true end
+  -- in front of anything else on the screen
+  if self.share then self.share:claim() end
   if self.hook and (self.viaGear or self.mod.options:get("secondScreen") == "on") then self:hook() end
 end
 
@@ -205,6 +200,8 @@ function Second:frame(screen)
     ok = true
   end
   local pins = engine.active and #engine.ledger:pins() or 0
+  -- the other mods on the screen, a button each (ui/screenshare.lua)
+  self.peers = (not self.detail and self.share) and self.share:others() or {}
   self.canvas = self.canvas or love.graphics.newCanvas(Second.W, Second.H, { dpiscale = 1 })
   love.graphics.push("all")
   love.graphics.setCanvas(self.canvas)
@@ -216,6 +213,7 @@ function Second:frame(screen)
     heading = Second.CHIPS[self.chip].id == "extras" and "Extra Credit" or nil,
     pinnedOnly = self.chip == #Second.CHIPS,
     flash = self.flash and self:now() < self.flashUntil and self.flash or nil,
+    peers = self.peers,
     Browser = self.Browser, reveal = mod.options:get("showHidden") == true,
   })
   if self.Modern.endSecond then self.Modern.endSecond() end
@@ -239,32 +237,14 @@ end
 -- render.compose, every frame
 function Second:compose(ctx)
   local screen = type(ctx) == "table" and ctx.secondScreen
-  local up = self:up()
-  if (up or self.wasUp) and self:othersHold() then
-    -- not a frame, a touch or a power change until they're done: turning the
-    -- display off now would blank their pad. Repaint as soon as they let go.
-    self.away, self.held = true, true
-    return
-  end
-  self.held = false
-  if up ~= self.wasUp then
-    self.wasUp, self.dirty = up, true
-    if screen and screen.setEnabled and not self.viaGear then
-      -- turn the display on for us, and off again when we close, unless
-      -- Gear is managing it
-      pcall(screen.setEnabled, up)
-    end
-  end
-  if not (up and screen and screen.push and screen.usable and screen.usable()) then return end
-  -- Another mod can hold the screen for a while (NaviPlay's gate reports it
-  -- gone, detected() false, and drops our frames). Repaint the moment it's
-  -- back rather than up to a second later. Frames still go out meanwhile: on
-  -- some bridges detected() only turns true after the first one.
-  if screen.detected then
-    local okS, seen = pcall(screen.detected)
-    if okS and seen == false then self.away = true
-    elseif self.away then self.away, self.dirty = false, true end
-  end
+  if not (screen and screen.push and screen.usable and screen.usable()) then return end
+  -- Screen Share decides who's in front, turns the display on and off, and
+  -- keeps us off it while Galar Rising's pad is up or NaviPlay's gate says
+  -- the screen is away
+  local front, regained = self.share:frame(screen, self.viaGear)
+  self.held = self.share.held
+  if regained then self.dirty, self.touch = true, nil end
+  if not front then return end
   for _ = 1, 64 do
     local event = screen.pollTouch and screen.pollTouch()
     if not event then break end
@@ -280,11 +260,18 @@ function Second:compose(ctx)
 end
 
 -- ------------------ install
--- o: { mod, engine, Browser, Modern, titles = { [game] = "Pokémon Red", ... } }
+-- o: { mod, engine, Browser, Modern, ScreenShare, titles = { [game] = "Pokémon Red", ... } }
 function Second.install(o)
   local self = Second.new(o)
   self.titles = o.titles
   local mod = self.mod
+  self.share = o.ScreenShare.new({
+    mod = mod, id = "recomp_achievements", name = "Trophies", legacy = Second.OTHERS,
+    shown = function() return self:up() == true end,
+    available = function() return self.viaGear or mod.options:get("secondScreen") == "on" end,
+    open = function() self:show() end,
+  })
+  mod.exports.secondScreen = self.share.exports
   -- Kanto Gear: an app in its Silph Store instead of the option
   local gear = mod.find and mod.find("kanto_gear")
   local modules = gear and gear.exports and gear.exports.modules
@@ -312,7 +299,7 @@ function Second.install(o)
       id = "recomp_achievements", label = "TROPHIES", category = "ADVENTURE", accent = "amber",
       description = { "RECOMP ACHIEVEMENTS BY TOUCH.", "RETROACHIEVEMENTS LISTS, PINS", "AND PROGRESS. NOT GEAR STAMPS." },
       icon = { pal = { g = "e0b040", d = "7a5a10", p = "fff3c0" }, rows = rows },
-      open = function() self.gearOpen, self.dirty = true, true; return true end,
+      open = function() self.gearOpen, self.dirty = true, true; self.share:claim(); return true end,
       shown = function() return self.gearOpen end,
       available = function() return true end,
     })

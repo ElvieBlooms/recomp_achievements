@@ -218,7 +218,15 @@ still works and shows the list's numbers; the board refuses it.
 ## 8. Sharing the second screen
 
 Since 2.9.0 the menu can show on a second display (SECOND SCREEN, or the
-TROPHIES app in Kanto Gear). Two ways to share it:
+TROPHIES app in Kanto Gear). Three ways to share it:
+
+- Best, since 2.9.1: carry `ui/screenshare.lua` (Screen Share), as Field
+  Notes does, and export what it gives you as `secondScreen`. Of the mods
+  that want the screen, the one opened last is in front; only it pushes
+  frames, polls touches and turns the display on, the rest wait, and the
+  display goes off when the last one closes. `share:others()` lists the
+  other mods so you can show a button for each, as we do. Keep your copy of
+  the file in step with ours (Screen Share api 1).
 
 - Wrap `render.compose` outside ours (a priority above 0) and hand us a
   stand-in `ctx.secondScreen`, as NaviPlay's gate does. While you hold the

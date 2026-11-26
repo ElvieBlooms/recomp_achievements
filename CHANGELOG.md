@@ -1,5 +1,27 @@
 # Changelog
 
+## 2.9.1
+
+Field Notes and the achievements menu share the second screen properly.
+
+### Fixed
+- With Field Notes also on the second screen (and no Kanto Gear to keep them
+  apart), the two flickered between each other, a tap could land in the
+  wrong one, and closing the menu turned the display off under Field Notes.
+  They now take turns: the one you opened last is in front, the other waits
+  where you left it, and the display only goes off when the last one closes.
+
+### New
+- A **Field Notes** button at the bottom of the menu's list on the second
+  screen switches to it, and Field Notes has a **TROPHIES** button back.
+- Other mods can take turns the same way by carrying `ui/screenshare.lua`
+  (docs/PROVIDER_API.md, section 8).
+
+### Upgrading
+- Update both zips together if you use Recomp Achievements Online.
+
+Everything else is unchanged from 2.9.0.
+
 ## 2.9.0
 
 The bottom screen was just sitting there. Pin it, track it, put it on the

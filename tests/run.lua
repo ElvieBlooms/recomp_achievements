@@ -2069,6 +2069,82 @@ test("second screen and tracker keep off Galar Rising's raid", function()
   check(not trackerDrawn(), "tracker hidden during a raid")
 end)
 
+test("second screen: taking turns with Field Notes (Screen Share)", function()
+  local env = H.boot({ "recomp_achievements" }, { modern = true })
+  env.loader.modOptions.recomp_achievements.secondScreen = "on"
+  env:newGame()
+  -- Field Notes, as other mods see it: the same ui/screenshare.lua, shown
+  -- until it's closed, opened from its own button on our footer
+  local ScreenShare = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/screenshare.lua"))()
+  local notesOpen = true
+  local finder = { find = function(id) return { exports = env.loader.exports[id] } end }
+  local notes = ScreenShare.new({ mod = finder, id = "field_notes", name = "Field Notes",
+    shown = function() return notesOpen end, available = function() return true end,
+    open = function() notesOpen = true end })
+  env.loader.mods.field_notes = { enabled = true, manifest = { id = "field_notes", version = "0.2.0" } }
+  env.loader.exports.field_notes = { secondScreen = notes.exports }
+  local pushed, touches, power = 0, {}, {}
+  local screen = {
+    usable = function() return true end, detected = function() return true end,
+    push = function() pushed = pushed + 1; return true end,
+    pollTouch = function() return table.remove(touches, 1) end,
+    setEnabled = function(on) power[#power + 1] = on end,
+  }
+  local Runtime = require("src.mods.Runtime")
+  local function both()
+    Runtime.call("render.compose", function() return false end, {}, { secondScreen = screen })
+    notes:frame(screen, false)
+  end
+  local ach = env:exports("recomp_achievements")
+  eq(type(ach.secondScreen) == "table" and ach.secondScreen.api, 1, "exports Screen Share")
+
+  -- both shown and neither opened yet: Field Notes (the lower id) has it
+  both(); both()
+  check(notes.front, "Field Notes in front to start with")
+  local before = pushed
+  touches[1] = "tap,10,10"
+  both()
+  check(not ach.secondScreenShown(), "we wait behind it")
+  eq(#touches, 1, "its touches left alone")
+  table.remove(touches, 1)
+
+  -- opening TROPHIES puts us in front
+  openMenu(env)
+  env:press("b"); env:frame(); env:frame()
+  both(); both()
+  check(ach.secondScreenShown() and not notes.front, "TROPHIES brings us in front")
+  check(pushed > before, "and we draw")
+
+  -- our footer has a Field Notes button that hands it back
+  local Second = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/second.lua"))()
+  local hits = {}
+  -- find it through the drawn frame's tap targets
+  local Modern = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/modern.lua"))()
+  local okDraw, drawn = pcall(Modern.drawSecond, { W = Second.W, H = Second.H, theme = "gameboy", chips = {},
+    list = {}, peers = { { name = "Field Notes", open = notes.exports.open } }, Browser = {} })
+  check(okDraw, "drew with a peer button: " .. tostring(drawn))
+  local peerHit
+  for _, h in ipairs(okDraw and drawn or {}) do if h.action == "peer" then peerHit = h end end
+  check(peerHit ~= nil and peerHit.arg == 1, "a button for Field Notes")
+  if peerHit then
+    touches[1] = ("tap,%d,%d"):format(peerHit.x + 5, peerHit.y + 5)
+    both(); both(); both()
+    check(notes.front and not ach.secondScreenShown(), "the button puts Field Notes in front")
+  end
+
+  -- Field Notes closes: we're back, and the display stays on
+  openMenu(env)
+  env:press("b"); env:frame(); env:frame()
+  both()
+  power = {}
+  notesOpen = false
+  both(); both()
+  check(ach.secondScreenShown(), "back when Field Notes closes")
+  local off = false
+  for _, on in ipairs(power) do if on == false then off = true end end
+  check(not off, "display not turned off under us")
+end)
+
 test("second screen: Extras chip, thick text kept to the canvas", function()
   local Browser = assert(loadfile(H.PROJECT .. "/recomp_achievements/ui/browser.lua"))()
   local rows = {

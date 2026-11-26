@@ -34,7 +34,7 @@ and each achievement's author, and are credited in the game. See
 ## Install
 
 1. In the launcher, open **MODS** and find Recomp Achievements under
-   **Find mods**, or download `recomp_achievements-2.9.0.zip` from
+   **Find mods**, or download `recomp_achievements-2.9.1.zip` from
    Releases and use **Import mod .zip** (dropping the zip on the launcher
    window works too). Unzipping by hand also works: put the files in
    `mods/recomp_achievements/`.
@@ -86,6 +86,10 @@ With **NaviPlay** installed, the menu waits while NaviPlay is on the second
 screen and comes back when you close NaviPlay. During a **Galar Rising**
 raid with its battle pad on the second screen, the menu steps aside until
 the raid ends, and the pinned tracker hides while the raid fills the screen.
+With **Field Notes** on the second screen too, the two take turns: the one
+you opened last is in front, each has a button for the other at the bottom
+(Field Notes there, TROPHIES in Field Notes), and closing one brings the
+other back.
 
 A gold disc with a tick means earned, a ring means locked, a partly green
 ring shows progress, and a slashed ring means archived (earned with a mod

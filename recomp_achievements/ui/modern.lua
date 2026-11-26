@@ -603,7 +603,7 @@ end
 -- simpler. Returns the tap targets: { x, y, w, h, action, arg }.
 -- v = { W, H, theme, game, gameTitle, totals, chips = { { label, active } },
 --       list, scroll, detail, pins, pinMax, flash, Browser, reveal,
---       closeLabel, heading }
+--       closeLabel, heading, peers = { { name, open } } }
 Modern.SECOND = { header = 92, chips = 50, row = 70, footer = 72 }
 
 function Modern.drawSecond(v)
@@ -735,6 +735,10 @@ function Modern.drawSecond(v)
       local thumbY = top + (trackH - thumbH) * ((v.scroll or 0) / math.max(1, maxScroll))
       rrect("fill", W - 6, thumbY, 3, thumbH, 1.5, faint, 0.7)
     end
+    -- the other mods sharing the screen (ui/screenshare.lua), to switch to
+    for i, peer in ipairs(v.peers or {}) do
+      buttons[#buttons + 1] = { label = peer.name, action = "peer", arg = i }
+    end
     buttons[#buttons + 1] = { label = ("Pinned %d/%d"):format(v.pins or 0, v.pinMax or 3), action = "pinned",
                               accent = v.pinnedOnly }
   end
@@ -753,7 +757,7 @@ function Modern.drawSecond(v)
     else rrect("fill", bx, fy, bw, bh, 12, C.raised) end
     text(fBody, b.label, bx + (bw - fBody:getWidth(b.label)) / 2, fy + (bh - fh(fBody)) / 2,
          b.accent and C.backdrop or C.text)
-    hits[#hits + 1] = { x = bx, y = fy, w = bw, h = bh, action = b.action }
+    hits[#hits + 1] = { x = bx, y = fy, w = bw, h = bh, action = b.action, arg = b.arg }
     bx = bx - 10
   end
   if v.flash then text(fSmall, v.flash, pad, fy + (bh - fh(fSmall)) / 2, accent) end
