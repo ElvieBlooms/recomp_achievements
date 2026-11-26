@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-26T07:01:21Z",
+ "updated": "2026-11-26T07:01:29Z",
  "banned": [],
  "games": {
   "red": {
@@ -106,6 +106,18 @@
    "maxPoints": 458,
    "total": 76,
    "entries": [
+    {
+     "name": "Jake",
+     "points": 207,
+     "earned": 28,
+     "saveId": "9GZ8XA",
+     "time": 2496,
+     "owner": "online:7a065edaa737e34af5cb9c53b910293e",
+     "via": "online",
+     "date": "2026-11-26T07:01:29Z",
+     "first": "2026-11-26T07:01:29Z",
+     "src": "online:7a065edaa737e34af5cb9c53b910293e"
+    },
     {
      "name": "ASH",
      "points": 206,
