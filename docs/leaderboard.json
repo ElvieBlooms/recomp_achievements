@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-26T15:36:28Z",
+ "updated": "2026-11-26T16:30:29Z",
  "banned": [],
  "games": {
   "red": {
@@ -560,7 +560,7 @@
      "time": 1756,
      "owner": "online:a0026c663dc288a8069113206cdef0ef",
      "via": "online",
-     "date": "2026-11-15T18:44:36Z",
+     "date": "2026-11-26T16:30:29Z",
      "first": "2026-11-15T00:52:26Z",
      "src": "online:a0026c663dc288a8069113206cdef0ef"
     },
