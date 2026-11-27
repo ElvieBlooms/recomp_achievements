@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updated": "2026-11-27T03:39:58Z",
+ "updated": "2026-11-27T13:44:14Z",
  "banned": [],
  "games": {
   "red": {
@@ -22,13 +22,13 @@
     },
     {
      "name": "RED",
-     "points": 28,
-     "earned": 7,
+     "points": 33,
+     "earned": 8,
      "saveId": "W6Y6FC",
-     "time": 311,
+     "time": 505,
      "owner": "discord:58cfd7e6ccce179174e6cdf71a0ad54c",
      "via": "online",
-     "date": "2026-11-12T20:27:06Z",
+     "date": "2026-11-27T13:44:14Z",
      "first": "2026-11-12T13:51:48Z",
      "src": "online:192d979615f2b23e6b032c61ca2b435c"
     },
